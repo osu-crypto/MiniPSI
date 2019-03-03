@@ -22,7 +22,7 @@ namespace osuCrypto
 	
 		simple.init(mTheirInputSize, recvMaxBinSize, recvNumDummies);
 
-		EllipticCurve mCurve(p224, OneBlock);
+		EllipticCurve mCurve(p256k1, OneBlock);
 		mFieldSize = mCurve.bitCount();
 
 		std::cout << "s mFieldSize= " << mFieldSize << "\n";
@@ -727,7 +727,7 @@ namespace osuCrypto
 	{
 		chls[0].asyncSend(mG_K);
 
-		EllipticCurve mCurve(p224, OneBlock);
+		EllipticCurve mCurve(p256k1, OneBlock);
 
 		EccNumber nK(mCurve);
 		nK.fromBytes(mK);
@@ -738,40 +738,18 @@ namespace osuCrypto
 		std::vector<std::thread> thrds(numThreads);
 		std::mutex mtx;
 
-		u64 polyMaskBytes = (mFieldSize + 7) / 8;
+		u64 polyMaskBytes = 33;
 		u64 hashMaskBits = (40 + log2(mTheirInputSize) + 2 ) ;
 		u64 hashMaskBytes =  (hashMaskBits + 7) / 8;
 
-		u64 lastPolyMaskBytes = polyMaskBytes - mMiniPolySlices * sizeof(block);
 		u64 n1n2MaskBits = (40 + log2(mTheirInputSize*mMyInputSize));
 		u64 n1n2MaskBytes = (n1n2MaskBits+7)/8;
 
-		
-
-		std::array<std::vector<u64>, 2>permute;
-		int idxPermuteDone[2];
-		for (u64 j = 0; j < 2; j++)
-		{
-			permute[j].resize(inputs.size());
-			for (u64 i = 0; i < inputs.size(); i++)
-				permute[j][i] = i;
-
-			//permute position
-			//std::shuffle(permute[j].begin(), permute[j].end(), mPrng);
-			idxPermuteDone[j] = 0; //count the number of permutation that is done.
-		}
-
 
 		//=====================Poly=====================
-		std::array<std::vector<u8>, mMiniPolySlices> recvBuffs;
 		u64 degree = mTheirInputSize - 1;
-
-		std::array<ZZ_p*, mMiniPolySlices > zzY1;
-		for (u64 i = 0; i < mMiniPolySlices ; i++)
-			zzY1[i] = new ZZ_p[inputs.size()];
-
 		
-			mPrime = mPrime128;
+			mPrime = mPrime264;
 			ZZ_p::init(ZZ(mPrime));
 
 			ZZ_p* zzX = new ZZ_p[inputs.size()];
@@ -790,12 +768,13 @@ namespace osuCrypto
 			build_tree(p_tree, zzX, degree * 2 + 1, numThreads, mPrime);
 			block rcvBlk;
 
-			std::array<ZZ_pX, mMiniPolySlices> recvPolynomials;
+			ZZ_pX recvPolynomial;
 
-			for (u64 idxBlk = 0; idxBlk < mMiniPolySlices; idxBlk++)
-			{
+			std::vector<u8> recvBuffs;
+
+			
 				u64 iterRecvs = 0;
-				chls[0].recv(recvBuffs[idxBlk]);
+				chls[0].recv(recvBuffs);
 
 				std::cout << "s recvBuffs[idxBlk].size(): " << recvBuffs[idxBlk].size() << std::endl;
 
@@ -819,8 +798,11 @@ namespace osuCrypto
 
 				}
 
-			}
+			
 		
+
+
+
 
 
 		auto computeGlobalHash = [&](u64 t)

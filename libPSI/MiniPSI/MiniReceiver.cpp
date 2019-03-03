@@ -21,13 +21,13 @@ namespace osuCrypto
 		mMyInputSize = myInputSize;
 		mTheirInputSize = theirInputSize;
 		mPrng.SetSeed(prng.get<block>());
-		
+
 		mBalance.init(mMyInputSize, recvMaxBinSize, recvNumDummies);
 
 
 		//seed for subset-sum exp
 		mCurveSeed = mPrng.get<block>();
-		EllipticCurve mCurve(p224, OneBlock);
+		EllipticCurve mCurve(p256k1, OneBlock);
 		//mCurve.getMiracl().IOBASE = 10;
 		mFieldSize = mCurve.bitCount();
 
@@ -67,10 +67,10 @@ namespace osuCrypto
 		{
 			std::iota(indices.begin(), indices.end(), 0);
 			std::random_shuffle(indices.begin(), indices.end()); //random permutation and get 1st K indices
-		
+
 			EccPoint g_sum(mCurve);
 			int sum = 0;
-			
+
 			for (u64 j = 0; j < mChoseSeedsSize; j++)
 			{
 				sum += indices[j]; //sum
@@ -84,12 +84,12 @@ namespace osuCrypto
 			std::vector<u64> subIdx(indices.begin(), indices.begin() + mChoseSeedsSize);
 			mSubsetSum.push_back(std::make_pair(mG_pairs[i].first, subIdx));
 
-			std::cout << "r sum= " << mG_pairs[i].first 
+			std::cout << "r sum= " << mG_pairs[i].first
 				<< " - " << sizeof(mG_pairs[i].second)
 				<< " - " << g_sum.sizeBytes()
-				<< " - " << toBlock(mG_pairs[i].second) 
-				<< " - " << toBlock(mG_pairs[i].second + sizeof(block)) 
-				<< " - "  << toBlock(mG_pairs[i].second + g_sum.sizeBytes()-2*sizeof(block)) << std::endl;
+				<< " - " << toBlock(mG_pairs[i].second)
+				<< " - " << toBlock(mG_pairs[i].second + sizeof(block))
+				<< " - " << toBlock(mG_pairs[i].second + g_sum.sizeBytes() - 2 * sizeof(block)) << std::endl;
 
 			EccPoint g_sumTest(mCurve);
 			g_sumTest.fromBytes(mG_pairs[i].second);
@@ -101,9 +101,9 @@ namespace osuCrypto
 			g_sumTest.fromBytes(tempBlk);
 			std::cout << g_sumTest << "\n";
 
-		}		
+		}
 	}
-	
+
 #if 0
 	void MiniReceiver::output(span<block> inputs, span<Channel> chls)
 	{
@@ -533,118 +533,118 @@ namespace osuCrypto
 #endif // PSI_PRIN
 		//#####################Receive Mask #####################
 
-		
+
 
 		auto receivingMasks = [&](u64 hIdx, Channel chl)
+		{
+
+			std::vector<u8> recvBuffs;
+			chl.recv(recvBuffs); //receive Hash
+
+
+			/*block aaa;
+			memcpy((u8*)&aaa, recvBuffs.data(), n1n2MaskBytes);
+			std::cout << aaa << " recvBuffs[0] \n";*/
+
+			block theirMasks, theirDiff;
+
+			memcpy((u8*)&theirMasks, recvBuffs.data(), n1n2MaskBytes);
+			memcpy((u8*)&theirDiff, recvBuffs.data() + n1n2MaskBytes, n1n2MaskBytes);
+
+
+			/*auto theirMasks = recvBuffs.data();
+
+			auto theirMasks = recvBuffs.data();
+			auto theirDiff = recvBuffs.data()+ n1n2MaskBytes;*/
+
+			bool isOverBound = true;
+			u64 maskLength = hashMaskBytes;
+
+
+			u64 iterTheirMask = 0;
+			u64 iterTheirDiff = n1n2MaskBytes;
+			u64 iterX = 0;
+
+			while (iterTheirDiff < recvBuffs.size())
 			{
 
-				std::vector<u8> recvBuffs;
-				chl.recv(recvBuffs); //receive Hash
+				auto match = localMasks[hIdx].find(*(u32*)&theirMasks);
 
+				maskLength = isOverBound ? n1n2MaskBytes : hashMaskBytes;
 
-				/*block aaa;
-				memcpy((u8*)&aaa, recvBuffs.data(), n1n2MaskBytes);
-				std::cout << aaa << " recvBuffs[0] \n";*/
-
-				block theirMasks, theirDiff;
-
-				memcpy((u8*)&theirMasks, recvBuffs.data(), n1n2MaskBytes);
-				memcpy((u8*)&theirDiff, recvBuffs.data() + n1n2MaskBytes, n1n2MaskBytes);
-
-
-				/*auto theirMasks = recvBuffs.data();
-
-				auto theirMasks = recvBuffs.data();
-				auto theirDiff = recvBuffs.data()+ n1n2MaskBytes;*/
-
-				bool isOverBound = true;
-				u64 maskLength = hashMaskBytes;
-
-
-				u64 iterTheirMask = 0;
-				u64 iterTheirDiff = n1n2MaskBytes;
-				u64 iterX = 0;
-
-				while (iterTheirDiff < recvBuffs.size())
+				if (match != localMasks[hIdx].end())//if match, check for whole bits
 				{
-
-					auto match = localMasks[hIdx].find(*(u32*)&theirMasks);
-
-					maskLength = isOverBound ? n1n2MaskBytes : hashMaskBytes;
-
-					if (match != localMasks[hIdx].end())//if match, check for whole bits
+					if (memcmp((u8*)&theirMasks, &match->second.first, maskLength) == 0) // check full mask
 					{
-						if (memcmp((u8*)&theirMasks, &match->second.first, maskLength) == 0) // check full mask
+						if (isMultiThreaded)
 						{
-							if (isMultiThreaded)
-							{
-								std::lock_guard<std::mutex> lock(mtx);
-								mIntersection.push_back(match->second.second);
-							}
-							else
-							{
-								mIntersection.push_back(match->second.second);
-							}
-
-							//std::cout << "r mask: " << match->second.first << "\n";
-
+							std::lock_guard<std::mutex> lock(mtx);
+							mIntersection.push_back(match->second.second);
 						}
-					}
-
-					if (memcmp((u8*)&theirDiff, &ZeroBlock, hashMaskBytes) == 0)
-					{
-						isOverBound = true;
-						iterTheirMask = iterTheirDiff + hashMaskBytes;
-						memcpy((u8*)&theirMasks, recvBuffs.data() + iterTheirMask, n1n2MaskBytes);
-
-						iterTheirDiff = iterTheirMask + n1n2MaskBytes;
-						memcpy((u8*)&theirDiff, recvBuffs.data() + iterTheirDiff, n1n2MaskBytes);
-
-					}
-					else
-					{
-						block next = theirDiff + theirMasks;
-
-						/*std::cout << IoStream::lock;
-						std::cout << "r mask: " << iterX << "  " << next << " - " << theirMasks << " ===diff:===" << theirDiff << "\n";
-						std::cout << IoStream::unlock;*/
-
-						theirMasks = next;
-
-
-						if (isOverBound)
-							iterTheirMask += n1n2MaskBytes;
 						else
-							iterTheirMask += hashMaskBytes;
+						{
+							mIntersection.push_back(match->second.second);
+						}
 
-						iterTheirDiff += hashMaskBytes;
-						memcpy((u8*)&theirDiff, recvBuffs.data() + iterTheirDiff, hashMaskBytes);
-						isOverBound = false;
+						//std::cout << "r mask: " << match->second.first << "\n";
+
 					}
-					iterX++;
 				}
-			};
 
-	
-			if (isMultiThreaded)
-			{
-				for (u64 i = 0; i <2; ++i)
+				if (memcmp((u8*)&theirDiff, &ZeroBlock, hashMaskBytes) == 0)
 				{
-					thrds[i] = std::thread([=] {
-						receivingMasks(i,chls[i]);
-					});
+					isOverBound = true;
+					iterTheirMask = iterTheirDiff + hashMaskBytes;
+					memcpy((u8*)&theirMasks, recvBuffs.data() + iterTheirMask, n1n2MaskBytes);
+
+					iterTheirDiff = iterTheirMask + n1n2MaskBytes;
+					memcpy((u8*)&theirDiff, recvBuffs.data() + iterTheirDiff, n1n2MaskBytes);
+
 				}
+				else
+				{
+					block next = theirDiff + theirMasks;
 
-				for (u64 i = 0; i < 2; ++i)
-					thrds[i].join();
+					/*std::cout << IoStream::lock;
+					std::cout << "r mask: " << iterX << "  " << next << " - " << theirMasks << " ===diff:===" << theirDiff << "\n";
+					std::cout << IoStream::unlock;*/
+
+					theirMasks = next;
+
+
+					if (isOverBound)
+						iterTheirMask += n1n2MaskBytes;
+					else
+						iterTheirMask += hashMaskBytes;
+
+					iterTheirDiff += hashMaskBytes;
+					memcpy((u8*)&theirDiff, recvBuffs.data() + iterTheirDiff, hashMaskBytes);
+					isOverBound = false;
+				}
+				iterX++;
 			}
-			else
+		};
+
+
+		if (isMultiThreaded)
+		{
+			for (u64 i = 0; i < 2; ++i)
 			{
-				receivingMasks(0, chls[0]);
-				receivingMasks(1, chls[0]);
+				thrds[i] = std::thread([=] {
+					receivingMasks(i, chls[i]);
+				});
 			}
 
-			
+			for (u64 i = 0; i < 2; ++i)
+				thrds[i].join();
+		}
+		else
+		{
+			receivingMasks(0, chls[0]);
+			receivingMasks(1, chls[0]);
+		}
+
+
 
 	}
 
@@ -652,9 +652,9 @@ namespace osuCrypto
 
 	void MiniReceiver::outputBigPoly(span<block> inputs, span<Channel> chls)
 	{
-		
 
-		EllipticCurve mCurve(p224, OneBlock);
+
+		EllipticCurve mCurve(p256k1, OneBlock);
 		//mCurve.getMiracl().IOBASE = 10;
 
 		u8* mG_K;
@@ -664,7 +664,7 @@ namespace osuCrypto
 
 		std::cout << "r g^k= " << g_k << std::endl;
 
-		
+
 
 
 		u64 numThreads(chls.size());
@@ -672,7 +672,7 @@ namespace osuCrypto
 		std::vector<std::thread> thrds(numThreads);
 
 		std::mutex mtx;
-		u64 polyMaskBytes = (mFieldSize + 7) / 8;
+		u64 polyMaskBytes = g_k.sizeBytes();
 		u64 hashMaskBytes = (40 + log2(mMyInputSize) + 2 + 7) / 8;
 
 		u64 n1n2MaskBits = (40 + log2(mTheirInputSize*mMyInputSize));
@@ -682,84 +682,68 @@ namespace osuCrypto
 		//localMasks.reserve(inputs.size());
 
 		//=====================Poly=====================
-			mPrime = mPrime128;
-			ZZ_p::init(ZZ(mPrime));
+		mPrime = mPrime264;
+		ZZ_p::init(ZZ(mPrime));
 
-			u64 degree = inputs.size() - 1;
-			ZZ_p* zzX = new ZZ_p[inputs.size()];
-			std::array<ZZ_p*, mMiniPolySlices> zzY;
-			for (u64 i = 0; i < mMiniPolySlices; i++)
-				zzY[i] = new ZZ_p[inputs.size()];
+		u64 degree = inputs.size() - 1;
+		ZZ_p* zzX = new ZZ_p[inputs.size()];
+		ZZ_p* zzY = new ZZ_p[inputs.size()];
 
-			ZZ zz;
-			ZZ_pX *M = new ZZ_pX[degree * 2 + 1];;
-			ZZ_p *a = new ZZ_p[degree + 1];;
-			ZZ_pX* temp = new ZZ_pX[degree * 2 + 1];
-			std::array<ZZ_pX, mMiniPolySlices> Polynomials;
-			std::array<std::vector<u8>, mMiniPolySlices> sendBuffs;
+		ZZ zz;
+		ZZ_pX *M = new ZZ_pX[degree * 2 + 1];;
+		ZZ_p *a = new ZZ_p[degree + 1];;
+		ZZ_pX* temp = new ZZ_pX[degree * 2 + 1];
+		ZZ_pX Polynomial;
+		std::vector<u8> sendBuff;
 
 
-			for (u64 idx = 0; idx < inputs.size(); idx++)
-			{
-				ZZFromBytes(zz, (u8*)&inputs[idx], sizeof(block));
-				zzX[idx] = to_ZZ_p(zz);
-			}
+		for (u64 idx = 0; idx < inputs.size(); idx++)
+		{
+			ZZFromBytes(zz, (u8*)&inputs[idx], sizeof(block));
+			zzX[idx] = to_ZZ_p(zz);
+		}
 
-			for (u64 idx = 0; idx < inputs.size(); idx++)
-			{
-				u8* yri = new u8[mFieldSize];
+		for (u64 idx = 0; idx < inputs.size(); idx++)
+		{
+			u8* yri = new u8[polyMaskBytes];
 
+			ZZFromBytes(zz, mG_pairs[idx].second, polyMaskBytes);
+			std::cout << "r P(x)= " << idx << " - " << toBlock(mG_pairs[idx].second) << std::endl;
+			zzY[idx] = to_ZZ_p(zz);
 
-				for (u64 idxBlk = 0; idxBlk < mMiniPolySlices; idxBlk++)
-				{
-					ZZFromBytes(zz, mG_pairs[idx].second+ idxBlk* sizeof(block), sizeof(block));
-					std::cout << "r P(x)= " << idx << " - " << toBlock(mG_pairs[idx].second + idxBlk * sizeof(block)) << std::endl;
-					zzY[idxBlk][idx] = to_ZZ_p(zz);
-				}
+			BytesFromZZ(yri, rep(zzY[idx]), polyMaskBytes);
+			std::cout << "rr P(x)= " << idx << " - " << toBlock(yri) << std::endl;
 
+			EccPoint g_sumTest(mCurve);
+			g_sumTest.fromBytes(mG_pairs[idx].second);
+			std::cout << sizeof(mG_pairs[idx].second) << "\n";
+			std::cout << g_sumTest << "\n";
 
-				for (u64 idxBlk = 0; idxBlk < mMiniPolySlices; ++idxBlk) //slicing
-				{
-					BytesFromZZ(yri + idxBlk * sizeof(block), rep(zzY[idxBlk][idx]), sizeof(block));
-					std::cout << "rr P(x)= " << idx << " - " << toBlock(yri + idxBlk * sizeof(block)) << std::endl;
-				}
+			//memcpy(yri, mG_pairs[idx].second, mFieldSize);
+			g_sumTest.fromBytes(yri);
+			std::cout << sizeof(yri) << "\n";
+			std::cout << g_sumTest << "\n";
 
-				EccPoint g_sumTest(mCurve);
-				g_sumTest.fromBytes(mG_pairs[idx].second);
-				std::cout << sizeof(mG_pairs[idx].second) << "\n";
-				std::cout << g_sumTest << "\n";
-
-			
-
-				//memcpy(yri, mG_pairs[idx].second, mFieldSize);
-				g_sumTest.fromBytes(yri);
-				std::cout << sizeof(yri) << "\n";
-				std::cout << g_sumTest << "\n";
-
-			}
+		}
 
 
-			prepareForInterpolate(zzX, degree, M, a, numThreads, mPrime);
+		prepareForInterpolate(zzX, degree, M, a, numThreads, mPrime);
 
-			for (u64 idxBlk = 0; idxBlk < mMiniPolySlices; idxBlk++)
-			{
 
-				iterative_interpolate_zp(Polynomials[idxBlk], temp, zzY[idxBlk], a, M, degree * 2 + 1, numThreads, mPrime);
+		iterative_interpolate_zp(Polynomial, temp, zzY, a, M, degree * 2 + 1, numThreads, mPrime);
 
-				u64 iterSends = 0;
-				sendBuffs[idxBlk].resize(inputs.size() * sizeof(block));
-				for (int c = 0; c <= degree; c++) {
-					BytesFromZZ(sendBuffs[idxBlk].data() + iterSends, rep(Polynomials[idxBlk].rep[c]), sizeof(block));
+		u64 iterSends = 0;
+		sendBuff.resize(inputs.size() * polyMaskBytes);
+		for (int c = 0; c <= degree; c++) {
+			BytesFromZZ(sendBuff.data() + iterSends, rep(Polynomial.rep[c]), polyMaskBytes);
 
-					std::cout << "r SetCoeff rcvBlk= " << c << " - " << toBlock(sendBuffs[idxBlk].data() + iterSends) << std::endl;
+			std::cout << "r SetCoeff rcvBlk= " << c << " - " << toBlock(sendBuff.data() + iterSends) << std::endl;
 
-					iterSends += sizeof(block);
+			iterSends += sizeof(block);
 
-				}
+		}
 
-				chls[0].asyncSend(std::move(sendBuffs[idxBlk]));
-
-			}
+		chls[0].asyncSend(std::move(sendBuff));
 
 
 
