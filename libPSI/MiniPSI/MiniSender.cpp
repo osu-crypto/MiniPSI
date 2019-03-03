@@ -742,8 +742,6 @@ namespace osuCrypto
 		std::vector<std::thread> thrds(numThreads);
 		std::mutex mtx;
 
-		u64 hashMaskBits = (40 + log2(mTheirInputSize) + 2 ) ;
-		u64 hashMaskBytes =  (hashMaskBits + 7) / 8;
 
 		u64 n1n2MaskBits = (40 + log2(mTheirInputSize*mMyInputSize));
 		u64 n1n2MaskBytes = (n1n2MaskBits+7)/8;
@@ -802,6 +800,7 @@ namespace osuCrypto
 				}
 
 
+
 		auto computeGlobalHash = [&](u64 t)
 		{
 			u64 startIdx = mMyInputSize * t / numThreads;
@@ -816,6 +815,7 @@ namespace osuCrypto
 			std::cout << "s endIdx= " << endIdx << std::endl;
 
 			EccPoint point_ri(mCurve);
+			u8* temp = new u8[point_ri.sizeBytes()];
 
 			for (u64 idx = 0; idx < endIdx - startIdx; idx++)
 			{
@@ -839,11 +839,12 @@ namespace osuCrypto
 				std::cout << "s yri_K= " << yri_K << std::endl;
 
 
-				//yri_K.toBytes(sendIter);
-				//sendIter += n1n2MaskBytes;
+				yri_K.toBytes(temp);
+				memcpy(sendIter, temp, n1n2MaskBytes);
+				sendIter += n1n2MaskBytes;
 				
 			}
-		//	chls[t].asyncSend(std::move(sendBuff));	//send H(x)^a
+		 chls[t].asyncSend(std::move(sendBuff));	// some bits of g^(subsum ri)^k
 		};
 
 

@@ -2,7 +2,7 @@ $RemoteUserName='trieun'
 $RemoteHostName='eve.eecs.oregonstate.edu'
 $PrivateKey='C:\EvePrivatekey.ppk'
 $SolutionDir=$PWD
-$RemoteWorkingDir='/scratch/nini/prtyPSI'
+$RemoteWorkingDir='/scratch/nini/miniPSI'
 
 # only files with these extensions will be copied
 $FileMasks='**.cpp;**.c;**.h;*.bin,*.S,*.sh,*CMake*;*/Tools/*.txt;*/gsl/*;**.mak;thirdparty/linux/**.get;*/libOTe_Tests/testData/*.txt,*.get'

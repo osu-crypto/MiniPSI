@@ -83,6 +83,16 @@ namespace tests_libOTe
 
 		thrd.join();
 
+
+		std::cout << "recv.mIntersection.size(): " << recv.mIntersection.size() << std::endl;
+		for (u64 i = 0; i < recv.mIntersection.size(); ++i)//thrds.size()
+		{
+			std::cout << "#id: " << recv.mIntersection[i] <<
+				"\t" << recvSet[recv.mIntersection[i]] << std::endl;
+		}
+
+
+
 		for (u64 i = 0; i < numThreads; ++i)
 		{
 			sendChls[i].close();
