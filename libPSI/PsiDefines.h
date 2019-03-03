@@ -43,6 +43,51 @@ namespace osuCrypto
 	static const ZZ mPrime188 = to_ZZ("392318858461667547739736838950479151006397215279002157113");  //nextprime(2^188)
 	static const ZZ mPrime264 = to_ZZ("29642774844752946028434172162224104410437116074403984394101141506025761187823791");  //nextprime(2^264)
 
+	inline void getExpParams(u64 setSize, u64& numSeeds, u64& numChosen)
+	{
+
+		if (setSize <= (1 << 10))
+		{
+			numSeeds = 512;
+			numChosen = 16;
+		}
+		else if (setSize <= (1 << 12))
+		{
+			numSeeds = 512;
+			numChosen = 17;
+		}
+		else if (setSize <= (1 << 14))
+		{
+			numSeeds = 1024;
+			numChosen = 16;
+		}
+		else if (setSize <= (1 << 16))
+		{
+			numSeeds = 2048;
+			numChosen = 14;
+		}
+		else if (setSize <= (1 << 18))
+		{
+			numSeeds = 2048;
+			numChosen = 15;
+		}
+		else if (setSize <= (1 << 20))
+		{
+			numSeeds = 2048;
+			numChosen = 16;
+		}
+		else if (setSize <= (1 << 22))
+		{
+			numSeeds = 2048;
+			numChosen = 16;
+		}
+		else if (setSize <= (1 << 24))
+		{
+			numSeeds = 2048;
+			numChosen = 18;
+		}
+	}
+
 	inline u64 getFieldSizeInBits(u64 setSize)
 	{
 

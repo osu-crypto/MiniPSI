@@ -140,9 +140,9 @@ void Sender(span<block> inputs, u64 theirSetSize, string ipAddr_Port, u64 numThr
 	MiniSender sender;
 	gTimer.reset();
 	gTimer.setTimePoint("s_start");
-
 	sender.init(inputs.size(), theirSetSize,40, prng0,sendChls);
 	gTimer.setTimePoint("s_offline");
+
 	sender.outputBigPoly(inputs, sendChls);
 
 	gTimer.setTimePoint("s_end");
@@ -178,7 +178,7 @@ void Receiver( span<block> inputs, u64 theirSetSize, string ipAddr_Port, u64 num
 	
 	gTimer.setTimePoint("r_offline");
 	
-		recv.outputBigPoly(inputs, recvChls);
+	recv.outputBigPoly(inputs, recvChls);
 	
 	gTimer.setTimePoint("r_end");
 
@@ -214,7 +214,7 @@ void Receiver( span<block> inputs, u64 theirSetSize, string ipAddr_Port, u64 num
 void MiniPSI_impl()
 {
 	setThreadName("Sender");
-	u64 setSenderSize = 1 << 6, setRecvSize = 1 << 6, psiSecParam = 40, numThreads(1);
+	u64 setSenderSize = 1 << 12, setRecvSize = 1 << 12, psiSecParam = 40, numThreads(1);
 
 	PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
 	PRNG prng1(_mm_set_epi32(4253465, 3434565, 234435, 23987025));
@@ -262,6 +262,8 @@ void MiniPSI_impl()
 
 	thrd.join();
 
+	std::cout << gTimer << std::endl;
+
 
 	std::cout << "recv.mIntersection.size(): " << recv.mIntersection.size() << std::endl;
 	for (u64 i = 0; i < recv.mIntersection.size(); ++i)//thrds.size()
@@ -295,7 +297,7 @@ int main(int argc, char** argv)
 	MiniPSI_impl();
 	return 0;
 	
-	u64 sendSetSize = 1 << 8, recvSetSize = 1 << 8, numThreads = 1;
+	u64 sendSetSize = 1 << 10, recvSetSize = 1 << 10, numThreads = 1;
 
 		
 	PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));

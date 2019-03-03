@@ -25,7 +25,7 @@ namespace osuCrypto
     {
     public:
      
-		int mSetSeedsSize = 128, mChoseSeedsSize = 20;
+		u64 mSetSeedsSize, mChoseSeedsSize;
 		Ecc2mParams mCurveParam;
 		block mCurveSeed;
 		
