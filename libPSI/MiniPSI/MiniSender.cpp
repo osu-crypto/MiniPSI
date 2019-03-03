@@ -22,8 +22,7 @@ namespace osuCrypto
 	
 		simple.init(mTheirInputSize, recvMaxBinSize, recvNumDummies);
 
-		EllipticCurve mCurve(p256k1, OneBlock);
-		mCurve.getMiracl().IOBASE = 10;
+		EllipticCurve mCurve(p224, OneBlock);
 		mFieldSize = mCurve.bitCount();
 
 		std::cout << "s mFieldSize= " << mFieldSize << "\n";
@@ -36,8 +35,8 @@ namespace osuCrypto
 
 		auto g_k = pG*nK;
 
-		mG_K = new u8[mFieldSize];
-		mK = new u8[mFieldSize];
+		mG_K = new u8[g_k.sizeBytes()];
+		mK = new u8[nK.sizeBytes()];
 
 		g_k.toBytes(mG_K); //g^k
 		nK.toBytes(mK);  //k
@@ -728,8 +727,7 @@ namespace osuCrypto
 	{
 		chls[0].asyncSend(mG_K);
 
-		EllipticCurve mCurve(p256k1, OneBlock);
-		mCurve.getMiracl().IOBASE = 10;
+		EllipticCurve mCurve(p224, OneBlock);
 
 		EccNumber nK(mCurve);
 		nK.fromBytes(mK);
@@ -838,17 +836,15 @@ namespace osuCrypto
 			std::cout << "s startIdx= " << startIdx << std::endl;
 			std::cout << "s endIdx= " << endIdx << std::endl;
 
-			std::vector<EccPoint> mG_seeds;
-			mG_seeds.reserve(endIdx - startIdx);
-
-			
+			EccPoint point_ri(mCurve);
 
 			for (u64 idx = 0; idx < endIdx - startIdx; idx++)
 			{
 				std::cout << "s idx= " << idx << std::endl;
 				u64 idxItem = startIdx + idx;
 
-				u8* yri = new u8[mFieldSize];
+				
+				u8* yri = new u8[point_ri.sizeBytes()];
 
 				for (u64 idxBlk = 0; idxBlk < mMiniPolySlices; ++idxBlk) //slicing
 				{
@@ -858,13 +854,11 @@ namespace osuCrypto
 				std::cout << "s yri= " << toBlock(yri) << std::endl;
 				std::cout << "s yri= " << toBlock(yri+ sizeof(block)) << std::endl;
 
-				//EccPoint point_ri(mCurve);
-			//	mG_seeds.emplace_back(mCurve);
-			//	mG_seeds[idx].fromBytes(yri);
+				point_ri.fromBytes(yri);
 
-			/*	std::cout << "s point_ri= " << point_ri << std::endl;
+				std::cout << "s point_ri= " << point_ri << std::endl;
 
-				auto yri_K = point_ri*nK;
+				/*auto yri_K = point_ri*nK;
 				std::cout << "s yri_K= " << yri_K << std::endl;
 
 

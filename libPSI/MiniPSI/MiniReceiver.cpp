@@ -27,8 +27,8 @@ namespace osuCrypto
 
 		//seed for subset-sum exp
 		mCurveSeed = mPrng.get<block>();
-		EllipticCurve mCurve(p256k1, OneBlock);
-		mCurve.getMiracl().IOBASE = 10;
+		EllipticCurve mCurve(p224, OneBlock);
+		//mCurve.getMiracl().IOBASE = 10;
 		mFieldSize = mCurve.bitCount();
 
 		std::cout << "r mFieldSize= " << mFieldSize << "\n";
@@ -77,18 +77,28 @@ namespace osuCrypto
 				g_sum = g_sum + mG_seeds[indices[j]]; //g^sum
 			}
 
-			u8* temp = new u8[mFieldSize];
+			u8* temp = new u8[g_sum.sizeBytes()];
 			g_sum.toBytes(temp);
 			mG_pairs.push_back(std::make_pair(sum, temp));
 
 			std::vector<u64> subIdx(indices.begin(), indices.begin() + mChoseSeedsSize);
 			mSubsetSum.push_back(std::make_pair(mG_pairs[i].first, subIdx));
 
-			std::cout << "r sum= " << mG_pairs[i].first << " - " << toBlock(mG_pairs[i].second) << " - " << toBlock(mG_pairs[i].second + sizeof(block)) << std::endl;
+			std::cout << "r sum= " << mG_pairs[i].first 
+				<< " - " << sizeof(mG_pairs[i].second)
+				<< " - " << g_sum.sizeBytes()
+				<< " - " << toBlock(mG_pairs[i].second) 
+				<< " - " << toBlock(mG_pairs[i].second + sizeof(block)) 
+				<< " - "  << toBlock(mG_pairs[i].second + g_sum.sizeBytes()-2*sizeof(block)) << std::endl;
 
 			EccPoint g_sumTest(mCurve);
 			g_sumTest.fromBytes(mG_pairs[i].second);
 			std::cout << g_sum << "\n";
+			std::cout << g_sumTest << "\n";
+
+			u8* tempBlk = new u8[g_sum.sizeBytes()];
+			tempBlk = mG_pairs[i].second;
+			g_sumTest.fromBytes(tempBlk);
 			std::cout << g_sumTest << "\n";
 
 		}		
@@ -644,8 +654,8 @@ namespace osuCrypto
 	{
 		
 
-		EllipticCurve mCurve(p256k1, OneBlock);
-		mCurve.getMiracl().IOBASE = 10;
+		EllipticCurve mCurve(p224, OneBlock);
+		//mCurve.getMiracl().IOBASE = 10;
 
 		u8* mG_K;
 		chls[0].recv(mG_K);
@@ -719,10 +729,12 @@ namespace osuCrypto
 				std::cout << sizeof(mG_pairs[idx].second) << "\n";
 				std::cout << g_sumTest << "\n";
 
-				g_sumTest.fromBytes(&*yri);
+			
+
+				//memcpy(yri, mG_pairs[idx].second, mFieldSize);
+				g_sumTest.fromBytes(yri);
 				std::cout << sizeof(yri) << "\n";
 				std::cout << g_sumTest << "\n";
-
 
 			}
 
