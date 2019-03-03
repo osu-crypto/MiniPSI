@@ -29,9 +29,9 @@ namespace osuCrypto
 		Ecc2mParams mCurveParam;
 		block mCurveSeed;
 		
-		
-		std::vector<std::pair<u64, u8*>> mG_pairs; //sum ri, g^sum
-		std::vector<std::pair<u64, std::vector<u64>>> mSubsetSum; //all ri in sum ri
+		std::vector<u8*> mSeeds; //all ri in bytes for computing (g^k)^(subsum ri) later
+		std::vector<std::pair<std::vector<u64>, u8*>> mG_pairs; //{index of sub ri}, g^(subsum ri)
+		//std::vector<std::pair<u64, std::vector<u64>>> mSubsetSum; //all ri in sum ri
 
 
 		bool mHasBase;

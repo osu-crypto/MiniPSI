@@ -41,27 +41,32 @@ namespace osuCrypto
 		std::cout << "r mPolyBytes= " << mPolyBytes << "\n";
 
 
-		std::vector<EccNumber> mSeeds;
-		std::vector<EccPoint> mG_seeds;
-		mSeeds.reserve(mSetSeedsSize);
-		mG_seeds.reserve(mSetSeedsSize);
+		std::vector<EccNumber> nSeeds;
+		std::vector<EccPoint> pG_seeds;
+		
+		nSeeds.reserve(mSetSeedsSize);
+		pG_seeds.reserve(mSetSeedsSize);
+		mSeeds.resize(mSetSeedsSize);
+		
 
 		//seeds
 		for (u64 i = 0; i < mSetSeedsSize; i++)
 		{
 			// get a random value from Z_p
-			mSeeds.emplace_back(mCurve);
-			mSeeds[i].randomize(prng);
+			nSeeds.emplace_back(mCurve);
+			nSeeds[i].randomize(prng);
 
-			//      mG_seeds[i] = g ^ mSeeds[i]
-			mG_seeds.emplace_back(mCurve);
-			mG_seeds[i] = mG * mSeeds[i];
+			mSeeds[i] = new u8[nSeeds[i].sizeBytes()];
+			nSeeds[i].toBytes(mSeeds[i]); //store mSeeds byte for computing (g^k)^(subsum ri) later
+
+			//      pG_seeds[i] = g ^ mSeeds[i]
+			pG_seeds.emplace_back(mCurve);
+			pG_seeds[i] = mG * nSeeds[i];  //g^ri
 			//std::cout << mG_seeds[i] << std::endl;
 		}
 
 		//generate all pairs from seeds
 		mG_pairs.reserve(myInputSize);
-		mSubsetSum.reserve(myInputSize);
 
 		std::vector<u64> indices(mSetSeedsSize);
 
@@ -72,23 +77,19 @@ namespace osuCrypto
 			std::random_shuffle(indices.begin(), indices.end()); //random permutation and get 1st K indices
 
 			EccPoint g_sum(mCurve);
-			int sum = 0;
 
 			for (u64 j = 0; j < mChoseSeedsSize; j++)
-			{
-				sum += indices[j]; //sum
-				g_sum = g_sum + mG_seeds[indices[j]]; //g^sum
-			}
+				g_sum = g_sum + pG_seeds[indices[j]]; //g^sum
+
+
+			std::vector<u64> subIdx(indices.begin(), indices.begin() + mChoseSeedsSize);
 
 			u8* temp = new u8[g_sum.sizeBytes()];
 			g_sum.toBytes(temp);
-			mG_pairs.push_back(std::make_pair(sum, temp));
+			mG_pairs.push_back(std::make_pair(subIdx, temp));
 
-			std::vector<u64> subIdx(indices.begin(), indices.begin() + mChoseSeedsSize);
-			mSubsetSum.push_back(std::make_pair(mG_pairs[i].first, subIdx));
 
-			std::cout << "r sum= " << mG_pairs[i].first
-				<< " - " << sizeof(mG_pairs[i].second)
+			std::cout << "r sum= " << mG_pairs[i].first[0]
 				<< " - " << g_sum.sizeBytes()
 				<< " - " << toBlock(mG_pairs[i].second)
 				<< " - " << toBlock(mG_pairs[i].second + sizeof(block))
@@ -656,7 +657,6 @@ namespace osuCrypto
 	void MiniReceiver::outputBigPoly(span<block> inputs, span<Channel> chls)
 	{
 
-
 		EllipticCurve mCurve(p256k1, OneBlock);
 		//mCurve.getMiracl().IOBASE = 10;
 
@@ -669,7 +669,6 @@ namespace osuCrypto
 
 
 
-
 		u64 numThreads(chls.size());
 		const bool isMultiThreaded = numThreads > 1;
 		std::vector<std::thread> thrds(numThreads);
@@ -679,9 +678,6 @@ namespace osuCrypto
 
 		u64 n1n2MaskBits = (40 + log2(mTheirInputSize*mMyInputSize));
 		u64 n1n2MaskBytes = (n1n2MaskBits + 7) / 8;
-
-		std::unordered_map<u32, std::pair<block, u64>> localMasks;
-		//localMasks.reserve(inputs.size());
 
 		//=====================Poly=====================
 		mPrime = mPrime264;
@@ -749,9 +745,52 @@ namespace osuCrypto
 
 		gTimer.setTimePoint("r_Poly");
 
-		//std::cout << localMasks.size() << " localMasks.size()\n";
 
-		//#####################(g^K)^ri #####################
+
+
+		//#####################(g^K)^ (subsum ri) #####################
+
+		//compute seeds (g^K)^ri
+		std::vector<EccNumber> nSeeds;
+		std::vector<EccPoint> pgK_seeds;
+
+		nSeeds.reserve(mSetSeedsSize);
+		pgK_seeds.reserve(mSetSeedsSize);
+		
+
+		//seeds
+		for (u64 i = 0; i < mSetSeedsSize; i++)
+		{
+			nSeeds.emplace_back(mCurve);
+			nSeeds[i].fromBytes(mSeeds[i]); //restore mSeeds byte for computing (g^k)^(subsum ri) later
+			
+			pgK_seeds.emplace_back(mCurve);
+			pgK_seeds[i] = g_k * nSeeds[i];  //(g^k)^ri
+			//std::cout << mG_seeds[i] << std::endl;
+		}
+
+		//generate all pairs from seeds
+		std::unordered_map<u32, std::pair<block, u64>> localMasks;
+		localMasks.reserve(inputs.size());
+
+
+		for (u64 i = 0; i < inputs.size(); i++)
+		{
+			EccPoint gk_sum(mCurve);
+
+			for (u64 j = 0; j < mG_pairs[i].first.size(); j++) //for all subset ri
+				gk_sum = gk_sum + pgK_seeds[mG_pairs[i].first[j]]; //(g^k)^(subsum ri)
+
+
+			std::cout << "r gk_sum: " << i << " - " << gk_sum  << std::endl;
+			u8* gk_sum_byte = new u8[gk_sum.sizeBytes()];
+			gk_sum.toBytes(gk_sum_byte);
+
+			localMasks.emplace(*(u32*)&gk_sum_byte, std::pair<block, u64>(toBlock(gk_sum_byte), i));
+
+		}
+
+		gTimer.setTimePoint("r_gkr");
 
 
 		//#####################Receive Mask #####################

@@ -829,16 +829,15 @@ namespace osuCrypto
 				if(mPolyBytes!= point_ri.sizeBytes())
 					std::cout << "mPolyBytes!= point_ri.sizeBytes()" << mPolyBytes <<" != "<< point_ri.sizeBytes() << std::endl;
 
-				std::cout << "s yri= " << toBlock(yri) << std::endl;
-				std::cout << "s yri= " << toBlock(yri+ sizeof(block)) << std::endl;
+				std::cout << "s yri= " << toBlock(yri) <<" - " << toBlock(yri+ sizeof(block)) << std::endl;
 
 				point_ri.fromBytes(yri);
 
 				std::cout << "s point_ri= " << point_ri << std::endl;
 
-				/*auto yri_K = point_ri*nK;
+				auto yri_K = point_ri*nK;
 				std::cout << "s yri_K= " << yri_K << std::endl;
-*/
+
 
 				//yri_K.toBytes(sendIter);
 				//sendIter += n1n2MaskBytes;
