@@ -753,6 +753,7 @@ namespace osuCrypto
 			ZZ_p::init(ZZ(mPrime));
 
 			ZZ_p* zzX = new ZZ_p[inputs.size()];
+			ZZ_p* zzY = new ZZ_p[inputs.size()];
 			ZZ zz;
 
 			for (u64 idx = 0; idx < inputs.size(); idx++)
@@ -776,33 +777,26 @@ namespace osuCrypto
 				u64 iterRecvs = 0;
 				chls[0].recv(recvBuffs);
 
-				std::cout << "s recvBuffs[idxBlk].size(): " << recvBuffs[idxBlk].size() << std::endl;
+				std::cout << "s recvBuffs[idxBlk].size(): " << recvBuffs.size() << std::endl;
 
 				for (int c = 0; c <= degree; c++) {
-					memcpy((u8*)&rcvBlk, recvBuffs[idxBlk].data() + iterRecvs, sizeof(block));
+					memcpy((u8*)&rcvBlk, recvBuffs.data() + iterRecvs, sizeof(block));
 					iterRecvs += sizeof(block);
 
 					std::cout << "s SetCoeff rcvBlk= " <<c << " - " << rcvBlk << std::endl;
 
-
 					ZZFromBytes(zz, (u8*)&rcvBlk, sizeof(block));
-					SetCoeff(recvPolynomials[idxBlk], c, to_ZZ_p(zz));
+					SetCoeff(recvPolynomial, c, to_ZZ_p(zz));
 				}
-				evaluate(recvPolynomials[idxBlk], p_tree, reminders, degree * 2 + 1, zzY1[idxBlk], numThreads, mPrime);
+				evaluate(recvPolynomial, p_tree, reminders, degree * 2 + 1, zzY, numThreads, mPrime);
 
 				for (u64 idx = 0; idx < inputs.size(); idx++)
 				{
 					block pY;
-					BytesFromZZ((u8*)&pY, rep(zzY1[idxBlk][idx]), sizeof(block));
+					BytesFromZZ((u8*)&pY, rep(zzY[idx]), sizeof(block));
 					std::cout << "s P(y)= " << idx << " - " << pY << std::endl;
 
 				}
-
-			
-		
-
-
-
 
 
 		auto computeGlobalHash = [&](u64 t)
@@ -827,11 +821,7 @@ namespace osuCrypto
 
 				
 				u8* yri = new u8[point_ri.sizeBytes()];
-
-				for (u64 idxBlk = 0; idxBlk < mMiniPolySlices; ++idxBlk) //slicing
-				{
-					BytesFromZZ(yri + idxBlk* sizeof(block), rep(zzY1[idxBlk][idxItem]), sizeof(block));
-				}
+				BytesFromZZ(yri , rep(zzY[idxItem]), sizeof(block));
 
 				std::cout << "s yri= " << toBlock(yri) << std::endl;
 				std::cout << "s yri= " << toBlock(yri+ sizeof(block)) << std::endl;
