@@ -37,6 +37,9 @@ namespace osuCrypto
 		EccPoint mG(mCurve);
 		mG = mCurve.getGenerator();
 		std::cout << mG << std::endl;
+		mPolyBytes = mG.sizeBytes();
+		std::cout << "r mPolyBytes= " << mPolyBytes << "\n";
+
 
 		std::vector<EccNumber> mSeeds;
 		std::vector<EccPoint> mG_seeds;
@@ -672,7 +675,6 @@ namespace osuCrypto
 		std::vector<std::thread> thrds(numThreads);
 
 		std::mutex mtx;
-		u64 polyMaskBytes = g_k.sizeBytes();
 		u64 hashMaskBytes = (40 + log2(mMyInputSize) + 2 + 7) / 8;
 
 		u64 n1n2MaskBits = (40 + log2(mTheirInputSize*mMyInputSize));
@@ -705,13 +707,13 @@ namespace osuCrypto
 
 		for (u64 idx = 0; idx < inputs.size(); idx++)
 		{
-			u8* yri = new u8[polyMaskBytes];
+			u8* yri = new u8[mPolyBytes];
 
-			ZZFromBytes(zz, mG_pairs[idx].second, polyMaskBytes);
+			ZZFromBytes(zz, mG_pairs[idx].second, mPolyBytes);
 			std::cout << "r P(x)= " << idx << " - " << toBlock(mG_pairs[idx].second) << std::endl;
 			zzY[idx] = to_ZZ_p(zz);
 
-			BytesFromZZ(yri, rep(zzY[idx]), polyMaskBytes);
+			BytesFromZZ(yri, rep(zzY[idx]), mPolyBytes);
 			std::cout << "rr P(x)= " << idx << " - " << toBlock(yri) << std::endl;
 
 			EccPoint g_sumTest(mCurve);
@@ -733,27 +735,24 @@ namespace osuCrypto
 		iterative_interpolate_zp(Polynomial, temp, zzY, a, M, degree * 2 + 1, numThreads, mPrime);
 
 		u64 iterSends = 0;
-		sendBuff.resize(inputs.size() * polyMaskBytes);
+		sendBuff.resize(inputs.size() * mPolyBytes);
 		for (int c = 0; c <= degree; c++) {
-			BytesFromZZ(sendBuff.data() + iterSends, rep(Polynomial.rep[c]), polyMaskBytes);
+			BytesFromZZ(sendBuff.data() + iterSends, rep(Polynomial.rep[c]), mPolyBytes);
 
 			std::cout << "r SetCoeff rcvBlk= " << c << " - " << toBlock(sendBuff.data() + iterSends) << std::endl;
 
-			iterSends += polyMaskBytes;
+			iterSends += mPolyBytes;
 
 		}
 
 		chls[0].asyncSend(std::move(sendBuff));
 
-
-
-		//for (u64 j = 0; j < numSuperBlocks; ++j) //slicing
-		//	chls[0].asyncSend(std::move(sendBuffs[j]));
-
-
 		gTimer.setTimePoint("r_Poly");
 
 		//std::cout << localMasks.size() << " localMasks.size()\n";
+
+		//#####################(g^K)^ri #####################
+
 
 		//#####################Receive Mask #####################
 

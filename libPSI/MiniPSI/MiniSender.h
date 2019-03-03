@@ -31,7 +31,7 @@ namespace osuCrypto {
 		SimpleIndex simple;
 
 		//bool mHasBase;
-		u64 mMyInputSize, mTheirInputSize, mPolyNumBytes, mPolyDegree, mStepSize, mPsiSecParam, mFieldSize;
+		u64 mMyInputSize, mTheirInputSize, mPolyBytes, mPolyDegree, mStepSize, mPsiSecParam, mFieldSize;
 		PRNG mPrng;
 		ZZ mPrime;
 

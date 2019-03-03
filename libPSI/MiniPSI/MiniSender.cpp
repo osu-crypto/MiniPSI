@@ -32,6 +32,10 @@ namespace osuCrypto
 		EccPoint pG(mCurve);
 		nK.randomize(mPrng);
 		pG = mCurve.getGenerator();
+		mPolyBytes = pG.sizeBytes();
+		std::cout << "s mPolyBytes= " << mPolyBytes << "\n";
+
+
 
 		auto g_k = pG*nK;
 
@@ -738,7 +742,6 @@ namespace osuCrypto
 		std::vector<std::thread> thrds(numThreads);
 		std::mutex mtx;
 
-		u64 polyMaskBytes = 33;
 		u64 hashMaskBits = (40 + log2(mTheirInputSize) + 2 ) ;
 		u64 hashMaskBytes =  (hashMaskBits + 7) / 8;
 
@@ -767,7 +770,7 @@ namespace osuCrypto
 			
 
 			build_tree(p_tree, zzX, degree * 2 + 1, numThreads, mPrime);
-			u8* rcvBlk=new u8[polyMaskBytes];
+			u8* rcvBlk=new u8[mPolyBytes];
 
 			ZZ_pX recvPolynomial;
 
@@ -780,21 +783,21 @@ namespace osuCrypto
 				std::cout << "s recvBuffs[idxBlk].size(): " << recvBuffs.size() << std::endl;
 
 				for (int c = 0; c <= degree; c++) {
-					memcpy((u8*)&rcvBlk, recvBuffs.data() + iterRecvs, polyMaskBytes);
-					iterRecvs += polyMaskBytes;
+					memcpy(rcvBlk, recvBuffs.data() + iterRecvs, mPolyBytes);
+					iterRecvs += mPolyBytes;
 
 					std::cout << "s SetCoeff rcvBlk= " <<c << " - " << toBlock(rcvBlk) << std::endl;
 
-					ZZFromBytes(zz, (u8*)&rcvBlk, polyMaskBytes);
+					ZZFromBytes(zz, rcvBlk, mPolyBytes);
 					SetCoeff(recvPolynomial, c, to_ZZ_p(zz));
 				}
 				evaluate(recvPolynomial, p_tree, reminders, degree * 2 + 1, zzY, numThreads, mPrime);
 
 				for (u64 idx = 0; idx < inputs.size(); idx++)
 				{
-					block pY;
-					BytesFromZZ((u8*)&pY, rep(zzY[idx]), polyMaskBytes);
-					std::cout << "s P(y)= " << idx << " - " << pY << std::endl;
+					u8* pY=new u8[mPolyBytes];
+					BytesFromZZ(pY, rep(zzY[idx]), mPolyBytes);
+					std::cout << "s P(y)= " << idx << " - " << toBlock(pY) << std::endl;
 
 				}
 
@@ -821,7 +824,10 @@ namespace osuCrypto
 
 				
 				u8* yri = new u8[point_ri.sizeBytes()];
-				BytesFromZZ(yri , rep(zzY[idxItem]), sizeof(block));
+				BytesFromZZ(yri , rep(zzY[idxItem]), mPolyBytes);
+
+				if(mPolyBytes!= point_ri.sizeBytes())
+					std::cout << "mPolyBytes!= point_ri.sizeBytes()" << mPolyBytes <<" != "<< point_ri.sizeBytes() << std::endl;
 
 				std::cout << "s yri= " << toBlock(yri) << std::endl;
 				std::cout << "s yri= " << toBlock(yri+ sizeof(block)) << std::endl;
@@ -832,10 +838,10 @@ namespace osuCrypto
 
 				/*auto yri_K = point_ri*nK;
 				std::cout << "s yri_K= " << yri_K << std::endl;
+*/
 
-
-				yri_K.toBytes(sendIter);
-				sendIter += n1n2MaskBytes;*/
+				//yri_K.toBytes(sendIter);
+				//sendIter += n1n2MaskBytes;
 				
 			}
 		//	chls[t].asyncSend(std::move(sendBuff));	//send H(x)^a

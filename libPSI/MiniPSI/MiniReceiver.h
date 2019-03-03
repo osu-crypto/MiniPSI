@@ -38,7 +38,7 @@ namespace osuCrypto
 		BalancedIndex mBalance;
 
 
-		u64 mMyInputSize, mTheirInputSize, mPolyNumBytes, mPolyDegree, mPsiSecParam;
+		u64 mMyInputSize, mTheirInputSize, mPolyBytes, mPolyDegree, mPsiSecParam;
 		std::vector<block> mS;
 		u64 mFieldSize;
 
