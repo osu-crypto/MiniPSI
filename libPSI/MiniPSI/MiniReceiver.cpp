@@ -739,7 +739,7 @@ namespace osuCrypto
 
 			std::cout << "r SetCoeff rcvBlk= " << c << " - " << toBlock(sendBuff.data() + iterSends) << std::endl;
 
-			iterSends += sizeof(block);
+			iterSends += polyMaskBytes;
 
 		}
 

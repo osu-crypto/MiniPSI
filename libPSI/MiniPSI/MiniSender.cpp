@@ -767,7 +767,7 @@ namespace osuCrypto
 			
 
 			build_tree(p_tree, zzX, degree * 2 + 1, numThreads, mPrime);
-			block rcvBlk;
+			u8* rcvBlk=new u8[polyMaskBytes];
 
 			ZZ_pX recvPolynomial;
 
@@ -780,12 +780,12 @@ namespace osuCrypto
 				std::cout << "s recvBuffs[idxBlk].size(): " << recvBuffs.size() << std::endl;
 
 				for (int c = 0; c <= degree; c++) {
-					memcpy((u8*)&rcvBlk, recvBuffs.data() + iterRecvs, sizeof(block));
-					iterRecvs += sizeof(block);
+					memcpy((u8*)&rcvBlk, recvBuffs.data() + iterRecvs, polyMaskBytes);
+					iterRecvs += polyMaskBytes;
 
 					std::cout << "s SetCoeff rcvBlk= " <<c << " - " << rcvBlk << std::endl;
 
-					ZZFromBytes(zz, (u8*)&rcvBlk, sizeof(block));
+					ZZFromBytes(zz, (u8*)&rcvBlk, polyMaskBytes);
 					SetCoeff(recvPolynomial, c, to_ZZ_p(zz));
 				}
 				evaluate(recvPolynomial, p_tree, reminders, degree * 2 + 1, zzY, numThreads, mPrime);
@@ -793,7 +793,7 @@ namespace osuCrypto
 				for (u64 idx = 0; idx < inputs.size(); idx++)
 				{
 					block pY;
-					BytesFromZZ((u8*)&pY, rep(zzY[idx]), sizeof(block));
+					BytesFromZZ((u8*)&pY, rep(zzY[idx]), polyMaskBytes);
 					std::cout << "s P(y)= " << idx << " - " << pY << std::endl;
 
 				}
