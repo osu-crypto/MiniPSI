@@ -17,6 +17,8 @@
   <ItemGroup>
     <ClCompile Include="ECDH\EcdhPsiReceiver.cpp" />
     <ClCompile Include="ECDH\EcdhPsiSender.cpp" />
+    <ClCompile Include="miniPSI\MiniReceiver.cpp" />
+    <ClCompile Include="miniPSI\MiniSender.cpp" />
     <ClCompile Include="Poly\polyFFT.cpp" />
     <ClCompile Include="Poly\polyFFT2.cpp" />
     <ClCompile Include="Poly\polyNTL.cpp" />
@@ -28,6 +30,8 @@
   <ItemGroup>
     <ClInclude Include="ECDH\EcdhPsiReceiver.h" />
     <ClInclude Include="ECDH\EcdhPsiSender.h" />
+    <ClInclude Include="miniPSI\MiniReceiver.h" />
+    <ClInclude Include="miniPSI\MiniSender.h" />
     <ClInclude Include="Poly\polyFFT.h" />
     <ClInclude Include="Poly\polyFFT2.h" />
     <ClInclude Include="Poly\polyNTL.h" />

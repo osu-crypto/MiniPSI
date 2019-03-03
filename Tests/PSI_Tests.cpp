@@ -32,6 +32,9 @@
 #include "PRTY/PrtyReceiver.h"
 #include "Tools/BalancedIndex.h"
 #include "Tools/SimpleIndex.h"
+#include "cryptoTools/Crypto/Curve.h"
+#include "cryptoTools/Crypto/RandomOracle.h"
+#include "cryptoTools/Common/Log.h"
 
 #include "Common.h"
 #include <thread>
@@ -893,5 +896,6 @@ namespace tests_libOTe
 
 
 	}
+
 
 }

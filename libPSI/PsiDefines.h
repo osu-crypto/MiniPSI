@@ -17,6 +17,9 @@ using namespace NTL;
 
 namespace osuCrypto
 {
+	
+	static const u8 mMiniPolySlices(2); //2*128 
+
 	static const u64 stepSize(1 << 8);
 	static const u64 stepSizeMaskSent(1<<11);
 	static const u8 numSuperBlocks(4); //wide of T (or field size)

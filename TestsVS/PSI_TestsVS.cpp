@@ -2,6 +2,7 @@
 #ifdef  _MSC_VER
 #include "CppUnitTest.h"
 #include "PSI_Tests.h"
+#include "miniPSI_Tests.h"
 #include "NcoOT_Tests.h"
 #include "Common.h"
 
@@ -47,6 +48,19 @@ namespace tests_libOTe
 			InitDebugPrinting();
 			prfOtRow_Test_Impl();
 		}
+
+		TEST_METHOD(exp_Impl_TestVS)
+		{
+			InitDebugPrinting();
+			exp_test();
+		}
+		TEST_METHOD(MiniPSI_Impl_TestVS)
+		{
+			InitDebugPrinting();
+			MiniPSI_impl();
+		}
+
+		
 
 	};
 }

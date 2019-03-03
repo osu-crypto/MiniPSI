@@ -3,12 +3,6 @@
 
 namespace tests_libOTe
 {
-	void Hashing_Test_Impl();
-	void NTL_Poly_Test_Impl();
-	void myTest();
-	void seft_balance();
-	void Poly_Test_Impl();
-	void Prty_PSI_impl();
-	void prfOtRow_Test_Impl();
-
+	void exp_test();
+	void MiniPSI_impl();
 }

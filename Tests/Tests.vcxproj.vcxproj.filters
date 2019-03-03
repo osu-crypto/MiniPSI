@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="AknOt_Tests.cpp" />
+    <ClCompile Include="BaseOT_Tests.cpp" />
+    <ClCompile Include="Common.cpp" />
+    <ClCompile Include="NcoOT_Tests.cpp" />
+    <ClCompile Include="PSI_Tests.cpp" />
+    <ClCompile Include="OTOracleReceiver.cpp" />
+    <ClCompile Include="OTOracleSender.cpp" />
+    <ClCompile Include="OT_Tests.cpp" />
+    <ClCompile Include="UnitTests.cpp" />
+    <ClCompile Include="miniPSI_Tests.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="AknOt_Tests.h" />
+    <ClInclude Include="BaseOT_Tests.h" />
+    <ClInclude Include="Common.h" />
+    <ClInclude Include="NcoOT_Tests.h" />
+    <ClInclude Include="PSI_Tests.h" />
+    <ClInclude Include="OTOracleReceiver.h" />
+    <ClInclude Include="OTOracleSender.h" />
+    <ClInclude Include="OT_Tests.h" />
+    <ClInclude Include="testData\code1280_BCH511.h" />
+    <ClInclude Include="testData\code128_BCH511.h" />
+    <ClInclude Include="testData\code256_BCH511.h" />
+    <ClInclude Include="testData\code384_BCH511.h" />
+    <ClInclude Include="testData\code640_BCH511.h" />
+    <ClInclude Include="UnitTests.h" />
+    <ClInclude Include="miniPSI_Tests.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="CMakeLists.txt" />
+  </ItemGroup>
+</Project>
