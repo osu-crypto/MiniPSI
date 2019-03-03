@@ -783,7 +783,7 @@ namespace osuCrypto
 					memcpy((u8*)&rcvBlk, recvBuffs.data() + iterRecvs, polyMaskBytes);
 					iterRecvs += polyMaskBytes;
 
-					std::cout << "s SetCoeff rcvBlk= " <<c << " - " << rcvBlk << std::endl;
+					std::cout << "s SetCoeff rcvBlk= " <<c << " - " << toBlock(rcvBlk) << std::endl;
 
 					ZZFromBytes(zz, (u8*)&rcvBlk, polyMaskBytes);
 					SetCoeff(recvPolynomial, c, to_ZZ_p(zz));
