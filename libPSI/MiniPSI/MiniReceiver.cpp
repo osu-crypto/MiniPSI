@@ -251,7 +251,8 @@ namespace osuCrypto
 
 			//std::cout << "r gk_sum: " << i << " - " << gk_sum << std::endl;
 			std::cout << "r toBlock(gk_sum_byte): " << i << " - " << toBlock(gk_sum_byte) << std::endl;
-			localMasks.emplace(*(u64*)&gk_sum_byte, std::pair<block, u64>(toBlock(gk_sum_byte), i));
+			block temp = toBlock(gk_sum_byte);
+			localMasks.emplace(*(u64*)&temp, std::pair<block, u64>(temp, i));
 
 		}
 		std::cout << "r gkr done\n";
@@ -289,7 +290,7 @@ namespace osuCrypto
 
 							auto& msk = *(u64*)(theirMasks);
 
-							std::cout << "r msk: " << i+k << " - " << toBlock(msk) << std::endl;
+							//std::cout << "r msk: " << i+k << " - " << toBlock(msk) << std::endl;
 
 							// check 64 first bits
 							auto match = localMasks.find(msk);
@@ -297,6 +298,8 @@ namespace osuCrypto
 							//if match, check for whole bits
 							if (match != localMasks.end())
 							{
+								//std::cout << "match != localMasks.end()" << std::endl;
+
 								if (memcmp(theirMasks, &match->second.first, n1n2MaskBytes) == 0) // check full mask
 								{
 									if (isMultiThreaded)
