@@ -140,7 +140,7 @@ namespace osuCrypto
 		std::mutex mtx;
 
 		u64 n1n2MaskBits = (40 + log2(mTheirInputSize*mMyInputSize));
-		u64 n1n2MaskBytes = (n1n2MaskBits + 7) / 8;
+		u64 n1n2MaskBytes = 64/8;// (n1n2MaskBits + 7) / 8;
 
 		//=====================Poly=====================
 		mPrime = mPrime264;
