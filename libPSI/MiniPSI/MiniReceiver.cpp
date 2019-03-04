@@ -25,6 +25,8 @@ namespace osuCrypto
 		mBalance.init(mMyInputSize, recvMaxBinSize, recvNumDummies);
 		getExpParams(mMyInputSize, mSetSeedsSize, mChoseSeedsSize);
 
+		
+
 		std::cout << "r mSetSeedsSize= " << mMyInputSize <<" - " <<mSetSeedsSize  << " - "<< mChoseSeedsSize << "\n";
 
 		//seed for subset-sum exp
@@ -248,8 +250,7 @@ namespace osuCrypto
 			gk_sum.toBytes(gk_sum_byte);
 
 			//std::cout << "r gk_sum: " << i << " - " << gk_sum << std::endl;
-			//std::cout << "r toBlock(gk_sum_byte): " << i << " - " << toBlock(gk_sum_byte) << std::endl;
-
+			std::cout << "r toBlock(gk_sum_byte): " << i << " - " << toBlock(gk_sum_byte) << std::endl;
 			localMasks.emplace(*(u64*)&gk_sum_byte, std::pair<block, u64>(toBlock(gk_sum_byte), i));
 
 		}
@@ -278,7 +279,7 @@ namespace osuCrypto
 
 
 					auto theirMasks = recvBuffs.data();
-					//std::cout << "r toBlock(recvBuffs): " << i << " - " << toBlock(theirMasks) << std::endl;
+					std::cout << "r toBlock(recvBuffs): " << i << " - " << toBlock(theirMasks) << std::endl;
 
 
 					if (n1n2MaskBytes >= sizeof(u64)) //unordered_map only work for key >= 64 bits. i.e. setsize >=2^12
@@ -287,6 +288,9 @@ namespace osuCrypto
 						{
 
 							auto& msk = *(u64*)(theirMasks);
+
+							std::cout << "r msk: " << i+k << " - " << toBlock(msk) << std::endl;
+
 							// check 64 first bits
 							auto match = localMasks.find(msk);
 
@@ -313,15 +317,16 @@ namespace osuCrypto
 					{
 						for (u64 k = 0; k < curStepSize; ++k)
 						{
-
+							//std::cout << "r theirMasks: " << i + k << " - " << toBlock(theirMasks) << std::endl;
 							for (auto match = localMasks.begin(); match != localMasks.end(); ++match)
 							{
+								//std::cout << "r myMasks: " << i + k << " - " << match->second.first << std::endl;
+
 								if (memcmp(theirMasks, &match->second.first, n1n2MaskBytes) == 0) // check full mask
-								{
 									mIntersection.push_back(match->second.second);
-								}
-								theirMasks += n1n2MaskBytes;
 							}
+							theirMasks += n1n2MaskBytes;
+
 						}
 					}
 

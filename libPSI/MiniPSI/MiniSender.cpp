@@ -170,10 +170,10 @@ namespace osuCrypto
 					yri_K.toBytes(temp);
 					memcpy(sendBuff.data() + idx*n1n2MaskBytes, temp, n1n2MaskBytes);
 
-					//std::cout << "s sendIter= " << idx << " - " << toBlock(temp) << std::endl;
+					std::cout << "s sendIter= " << idxItem << " - " << toBlock(temp) << std::endl;
 				}
 
-				//	std::cout << "s toBlock(sendBuff): "<< toBlock(sendBuff.data()) << std::endl;
+				std::cout << "s toBlock(sendBuff): "<< toBlock(sendBuff.data()) << std::endl;
 
 				chls[t].asyncSend(std::move(sendBuff));	// some bits of g^(subsum ri)^k
 			}

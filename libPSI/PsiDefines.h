@@ -46,7 +46,12 @@ namespace osuCrypto
 	inline void getExpParams(u64 setSize, u64& numSeeds, u64& numChosen)
 	{
 
-		if (setSize <= (1 << 10))
+		if (setSize <= (1 << 8))
+		{
+			numSeeds = 256;
+			numChosen = 16;
+		}
+		else if (setSize <= (1 << 10))
 		{
 			numSeeds = 512;
 			numChosen = 16;
