@@ -135,46 +135,48 @@ namespace osuCrypto
 			u64 tempEndIdx = mMyInputSize* (t + 1) / numThreads;
 			u64 endIdx = std::min(tempEndIdx, mMyInputSize);
 
-			std::vector<u8> sendBuff(n1n2MaskBytes * (endIdx - startIdx));
-
-			//std::cout << "s startIdx= " << startIdx << "s endIdx= " << endIdx << std::endl;
-
-			EccPoint point_ri(mCurve);
-			u8* temp = new u8[point_ri.sizeBytes()];
-
-			for (u64 idx = 0; idx < endIdx - startIdx; idx++)
+			for (u64 i = startIdx; i < endIdx; i += stepSizeMaskSent)
 			{
-				//std::cout << "s idx= " << idx << std::endl;
-				u64 idxItem = startIdx + idx;
-				
-				u8* yri = new u8[point_ri.sizeBytes()];
-				BytesFromZZ(yri , rep(zzY[idxItem]), mPolyBytes);
+				auto curStepSize = std::min(stepSizeMaskSent, endIdx - i);
 
-				//if(mPolyBytes!= point_ri.sizeBytes())
-				//	std::cout << "mPolyBytes!= point_ri.sizeBytes()" << mPolyBytes <<" != "<< point_ri.sizeBytes() << std::endl;
+				std::vector<u8> sendBuff(n1n2MaskBytes * curStepSize);
 
-				//std::cout << "s yri= " << toBlock(yri) <<" - " << toBlock(yri+ sizeof(block)) << std::endl;
+				//std::cout << "s startIdx= " << startIdx << "s endIdx= " << endIdx << std::endl;
 
-				point_ri.fromBytes(yri);
+				EccPoint point_ri(mCurve);
+				u8* temp = new u8[point_ri.sizeBytes()];
 
-				//std::cout << "s point_ri= " << point_ri << std::endl;
+				for (u64 idx = 0; idx < curStepSize; idx++)
+				{
+					//std::cout << "s idx= " << idx << std::endl;
+					u64 idxItem = i + idx;
 
-				auto yri_K = point_ri*nK;
-				//std::cout << "s yri_K= " << yri_K << std::endl;
+					u8* yri = new u8[point_ri.sizeBytes()];
+					BytesFromZZ(yri, rep(zzY[idxItem]), mPolyBytes);
+
+					//if(mPolyBytes!= point_ri.sizeBytes())
+					//	std::cout << "mPolyBytes!= point_ri.sizeBytes()" << mPolyBytes <<" != "<< point_ri.sizeBytes() << std::endl;
+
+					//std::cout << "s yri= " << toBlock(yri) <<" - " << toBlock(yri+ sizeof(block)) << std::endl;
+
+					point_ri.fromBytes(yri);
+
+					//std::cout << "s point_ri= " << point_ri << std::endl;
+
+					auto yri_K = point_ri*nK;
+					//std::cout << "s yri_K= " << yri_K << std::endl;
 
 
-				yri_K.toBytes(temp);
-				memcpy(sendBuff.data()+idx*n1n2MaskBytes, temp, n1n2MaskBytes);
+					yri_K.toBytes(temp);
+					memcpy(sendBuff.data() + idx*n1n2MaskBytes, temp, n1n2MaskBytes);
 
-				//std::cout << "s sendIter= " << idx << " - " << toBlock(temp) << std::endl;
+					//std::cout << "s sendIter= " << idx << " - " << toBlock(temp) << std::endl;
+				}
 
+				//	std::cout << "s toBlock(sendBuff): "<< toBlock(sendBuff.data()) << std::endl;
 
-				
+				chls[t].asyncSend(std::move(sendBuff));	// some bits of g^(subsum ri)^k
 			}
-
-		//	std::cout << "s toBlock(sendBuff): "<< toBlock(sendBuff.data()) << std::endl;
-
-		 chls[t].asyncSend(std::move(sendBuff));	// some bits of g^(subsum ri)^k
 		};
 
 

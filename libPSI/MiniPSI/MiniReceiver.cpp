@@ -25,7 +25,7 @@ namespace osuCrypto
 		mBalance.init(mMyInputSize, recvMaxBinSize, recvNumDummies);
 		getExpParams(mMyInputSize, mSetSeedsSize, mChoseSeedsSize);
 
-		std::cout << "r mSetSeedsSize= " << mMyInputSize <<" - "<< mChoseSeedsSize << "\n";
+		std::cout << "r mSetSeedsSize= " << mMyInputSize <<" - " <<mSetSeedsSize  << " - "<< mChoseSeedsSize << "\n";
 
 		//seed for subset-sum exp
 		mCurveSeed = mPrng.get<block>();
@@ -340,7 +340,7 @@ namespace osuCrypto
 			thrd.join();
 
 		gTimer.setTimePoint("r on masks done");
-		std::cout << "r on mask done\n";
+		std::cout << "r gkr done\n";
 
 	}
 

@@ -214,7 +214,7 @@ void Receiver( span<block> inputs, u64 theirSetSize, string ipAddr_Port, u64 num
 void MiniPSI_impl()
 {
 	setThreadName("Sender");
-	u64 setSenderSize = 1 << 12, setRecvSize = 1 << 12, psiSecParam = 40, numThreads(1);
+	u64 setSenderSize = 1 << 20, setRecvSize = 1 << 20, psiSecParam = 40, numThreads(1);
 
 	PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
 	PRNG prng1(_mm_set_epi32(4253465, 3434565, 234435, 23987025));
@@ -252,6 +252,7 @@ void MiniPSI_impl()
 	MiniReceiver recv;
 
 	auto thrd = std::thread([&]() {
+		gTimer.setTimePoint("r start ");
 		recv.init(recvSet.size(), sendSet.size(), 40, prng1, recvChls);
 		recv.outputBigPoly(recvSet, recvChls);
 
@@ -271,6 +272,17 @@ void MiniPSI_impl()
 		std::cout << "#id: " << recv.mIntersection[i] <<
 			"\t" << recvSet[recv.mIntersection[i]] << std::endl;
 	}
+
+	u64 dataSent = 0, dataRecv(0);
+	for (u64 g = 0; g < recvChls.size(); ++g)
+	{
+		dataSent += recvChls[g].getTotalDataSent();
+		dataRecv += recvChls[g].getTotalDataRecv();
+		recvChls[g].resetStats();
+	}
+
+	std::cout << "      Total Comm = " << string_format("%5.2f", (dataRecv + dataSent) / std::pow(2.0, 20)) << " MB\n";
+
 
 
 
@@ -297,7 +309,7 @@ int main(int argc, char** argv)
 	MiniPSI_impl();
 	return 0;
 	
-	u64 sendSetSize = 1 << 10, recvSetSize = 1 << 10, numThreads = 1;
+	u64 sendSetSize = 1 << 12, recvSetSize = 1 << 12, numThreads = 1;
 
 		
 	PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
