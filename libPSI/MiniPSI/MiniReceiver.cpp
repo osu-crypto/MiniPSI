@@ -230,8 +230,7 @@ namespace osuCrypto
 			
 			pgK_seeds.emplace_back(mCurve);
 			pgK_seeds[i] = g_k * nSeeds[i];  //(g^k)^ri
-			//std::cout << mG_seeds[i] << std::endl;
-		}
+			//std::cout << mG_seeds[i] << std::endl;		}
 
 		//generate all pairs from seeds
 		std::unordered_map<u64, std::pair<block, u64>> localMasks;

@@ -54,11 +54,18 @@ namespace tests_libOTe
 			InitDebugPrinting();
 			exp_test();
 		}
-		TEST_METHOD(MiniPSI_Impl_TestVS)
+		TEST_METHOD(MiniPSI_TestVS)
 		{
 			InitDebugPrinting();
-			MiniPSI_impl();
+			MiniPSI_impl1();
 		}
+
+		TEST_METHOD(DhPSI_TestVS)
+		{
+			InitDebugPrinting();
+			DhPSI_impl();
+		}
+
 
 		
 

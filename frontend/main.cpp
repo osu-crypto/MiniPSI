@@ -214,7 +214,7 @@ void Receiver( span<block> inputs, u64 theirSetSize, string ipAddr_Port, u64 num
 void MiniPSI_impl()
 {
 	setThreadName("Sender");
-	u64 setSenderSize = 1 << 20, setRecvSize = 1 << 20, psiSecParam = 40, numThreads(1);
+	u64 setSenderSize = 1 << 6, setRecvSize = 1 << 6, psiSecParam = 40, numThreads(1);
 
 	PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
 	PRNG prng1(_mm_set_epi32(4253465, 3434565, 234435, 23987025));

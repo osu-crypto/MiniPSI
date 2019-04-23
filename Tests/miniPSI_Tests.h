@@ -4,5 +4,6 @@
 namespace tests_libOTe
 {
 	void exp_test();
-	void MiniPSI_impl();
+	void MiniPSI_impl1();
+	void DhPSI_impl();
 }
