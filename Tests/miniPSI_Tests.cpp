@@ -33,7 +33,7 @@ using namespace osuCrypto;
 namespace tests_libOTe
 {
 
-	void MiniPSI_impl1()
+	void MiniPSI_impl2()
 	{
 		setThreadName("Sender");
 		u64 setSenderSize = 1 << 6, setRecvSize = 1 << 6, psiSecParam = 40, numThreads(1);
@@ -103,7 +103,7 @@ namespace tests_libOTe
 			recvChls[g].resetStats();
 		}
 
-//		std::cout << "      Total Comm = " << string_format("%5.2f", (dataRecv + dataSent) / std::pow(2.0, 20)) << " MB\n";
+		//		std::cout << "      Total Comm = " << string_format("%5.2f", (dataRecv + dataSent) / std::pow(2.0, 20)) << " MB\n";
 
 
 
@@ -118,7 +118,8 @@ namespace tests_libOTe
 
 
 	}
-	
+
+
 	void DhPSI_impl()
 	{
 		setThreadName("Sender");

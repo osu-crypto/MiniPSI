@@ -25,9 +25,9 @@ namespace osuCrypto
 		mBalance.init(mMyInputSize, recvMaxBinSize, recvNumDummies);
 		getExpParams(mMyInputSize, mSetSeedsSize, mChoseSeedsSize);
 
-		
 
-		std::cout << "r mSetSeedsSize= " << mMyInputSize <<" - " <<mSetSeedsSize  << " - "<< mChoseSeedsSize << "\n";
+
+		std::cout << "r mSetSeedsSize= " << mMyInputSize << " - " << mSetSeedsSize << " - " << mChoseSeedsSize << "\n";
 
 		//seed for subset-sum exp
 		mCurveSeed = mPrng.get<block>();
@@ -47,11 +47,11 @@ namespace osuCrypto
 
 		std::vector<EccNumber> nSeeds;
 		std::vector<EccPoint> pG_seeds;
-		
+
 		nSeeds.reserve(mSetSeedsSize);
 		pG_seeds.reserve(mSetSeedsSize);
 		mSeeds.resize(mSetSeedsSize);
-		
+
 
 		//seeds
 		for (u64 i = 0; i < mSetSeedsSize; i++)
@@ -68,7 +68,7 @@ namespace osuCrypto
 			pG_seeds[i] = mG * nSeeds[i];  //g^ri
 			//std::cout << mG_seeds[i] << std::endl;
 		}
-		std::cout <<"pG_seeds done" << std::endl;
+		std::cout << "pG_seeds done" << std::endl;
 		gTimer.setTimePoint("r off pG_seeds done");
 
 		//generate all pairs from seeds
@@ -112,11 +112,11 @@ namespace osuCrypto
 			//std::cout << g_sumTest << "\n";
 
 		}
-	
+
 		std::cout << "mG_pairs done" << std::endl;
 		gTimer.setTimePoint("r off mG_pairs done");
 
-	
+
 	}
 
 	void MiniReceiver::outputBigPoly(span<block> inputs, span<Channel> chls)
@@ -140,7 +140,7 @@ namespace osuCrypto
 		std::mutex mtx;
 
 		u64 n1n2MaskBits = (40 + log2(mTheirInputSize*mMyInputSize));
-		u64 n1n2MaskBytes = 64/8;// (n1n2MaskBits + 7) / 8;
+		u64 n1n2MaskBytes = 64 / 8;// (n1n2MaskBits + 7) / 8;
 
 		//=====================Poly=====================
 		mPrime = mPrime264;
@@ -220,60 +220,61 @@ namespace osuCrypto
 
 		nSeeds.reserve(mSetSeedsSize);
 		pgK_seeds.reserve(mSetSeedsSize);
-		
+
 
 		//seeds
 		for (u64 i = 0; i < mSetSeedsSize; i++)
 		{
 			nSeeds.emplace_back(mCurve);
 			nSeeds[i].fromBytes(mSeeds[i]); //restore mSeeds byte for computing (g^k)^(subsum ri) later
-			
+
 			pgK_seeds.emplace_back(mCurve);
 			pgK_seeds[i] = g_k * nSeeds[i];  //(g^k)^ri
-			//std::cout << mG_seeds[i] << std::endl;		}
+			//std::cout << mG_seeds[i] << std::endl;		
+		}
 
 		//generate all pairs from seeds
-		std::unordered_map<u64, std::pair<block, u64>> localMasks;
-		localMasks.reserve(inputs.size());
+			std::unordered_map<u64, std::pair<block, u64>> localMasks;
+			localMasks.reserve(inputs.size());
 
 
-		for (u64 i = 0; i < inputs.size(); i++)
-		{
-			EccPoint gk_sum(mCurve);
-
-			for (u64 j = 0; j < mG_pairs[i].first.size(); j++) //for all subset ri
-				gk_sum = gk_sum + pgK_seeds[mG_pairs[i].first[j]]; //(g^k)^(subsum ri)
-
-
-			u8* gk_sum_byte = new u8[gk_sum.sizeBytes()];
-			gk_sum.toBytes(gk_sum_byte);
-
-			//std::cout << "r gk_sum: " << i << " - " << gk_sum << std::endl;
-			std::cout << "r toBlock(gk_sum_byte): " << i << " - " << toBlock(gk_sum_byte) << std::endl;
-			block temp = toBlock(gk_sum_byte);
-			localMasks.emplace(*(u64*)&temp, std::pair<block, u64>(temp, i));
-
-		}
-		std::cout << "r gkr done\n";
-
-		gTimer.setTimePoint("r_gkr");
-
-
-		//#####################Receive Mask #####################
-
-
-		auto receiveMask = [&](u64 t)
-		{
-			auto& chl = chls[t]; //parallel along with inputs
-			u64 startIdx = mTheirInputSize * t / numThreads;
-			u64 tempEndIdx = mTheirInputSize* (t + 1) / numThreads;
-			u64 endIdx = std::min(tempEndIdx, mTheirInputSize);
-
-
-			for (u64 i = startIdx; i < endIdx; i += stepSizeMaskSent)
+			for (u64 i = 0; i < inputs.size(); i++)
 			{
-				auto curStepSize = std::min(stepSizeMaskSent, endIdx - i);
-				std::vector<u8> recvBuffs;
+				EccPoint gk_sum(mCurve);
+
+				for (u64 j = 0; j < mG_pairs[i].first.size(); j++) //for all subset ri
+					gk_sum = gk_sum + pgK_seeds[mG_pairs[i].first[j]]; //(g^k)^(subsum ri)
+
+
+				u8* gk_sum_byte = new u8[gk_sum.sizeBytes()];
+				gk_sum.toBytes(gk_sum_byte);
+
+				//std::cout << "r gk_sum: " << i << " - " << gk_sum << std::endl;
+				std::cout << "r toBlock(gk_sum_byte): " << i << " - " << toBlock(gk_sum_byte) << std::endl;
+				block temp = toBlock(gk_sum_byte);
+				localMasks.emplace(*(u64*)&temp, std::pair<block, u64>(temp, i));
+
+			}
+			std::cout << "r gkr done\n";
+
+			gTimer.setTimePoint("r_gkr");
+
+
+			//#####################Receive Mask #####################
+
+
+			auto receiveMask = [&](u64 t)
+			{
+				auto& chl = chls[t]; //parallel along with inputs
+				u64 startIdx = mTheirInputSize * t / numThreads;
+				u64 tempEndIdx = mTheirInputSize* (t + 1) / numThreads;
+				u64 endIdx = std::min(tempEndIdx, mTheirInputSize);
+
+
+				for (u64 i = startIdx; i < endIdx; i += stepSizeMaskSent)
+				{
+					auto curStepSize = std::min(stepSizeMaskSent, endIdx - i);
+					std::vector<u8> recvBuffs;
 
 					chl.recv(recvBuffs); //receive Hash
 
@@ -332,23 +333,23 @@ namespace osuCrypto
 						}
 					}
 
+				}
+
+			};
+
+			for (u64 i = 0; i < thrds.size(); ++i)//thrds.size()
+			{
+				thrds[i] = std::thread([=] {
+					receiveMask(i);
+				});
 			}
 
-		};
+			for (auto& thrd : thrds)
+				thrd.join();
 
-		for (u64 i = 0; i < thrds.size(); ++i)//thrds.size()
-		{
-			thrds[i] = std::thread([=] {
-				receiveMask(i);
-			});
+			gTimer.setTimePoint("r on masks done");
+			std::cout << "r gkr done\n";
+
 		}
 
-		for (auto& thrd : thrds)
-			thrd.join();
-
-		gTimer.setTimePoint("r on masks done");
-		std::cout << "r gkr done\n";
-
 	}
-
-}
