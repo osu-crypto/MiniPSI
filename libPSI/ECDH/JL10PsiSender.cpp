@@ -1,4 +1,4 @@
-#include "EcdhPsiSender.h"
+#include "JL10PsiSender.h"
 #include "cryptoTools/Crypto/Curve.h"
 #include "cryptoTools/Crypto/RandomOracle.h"
 #include "cryptoTools/Common/Log.h"
@@ -7,15 +7,15 @@
 namespace osuCrypto
 {
 
-    EcdhPsiSender::EcdhPsiSender()
+    JL10PsiSender::JL10PsiSender()
     {
     }
 
 
-    EcdhPsiSender::~EcdhPsiSender()
+    JL10PsiSender::~JL10PsiSender()
     {
     }
-    void EcdhPsiSender::init(u64 n, u64 secParam, block seed)
+    void JL10PsiSender::init(u64 n, u64 secParam, block seed)
     {
         mN = n;
         mSecParam = secParam;
@@ -23,7 +23,7 @@ namespace osuCrypto
     }
 
 
-    void EcdhPsiSender::sendInput_k283(std::vector<block>& inputs, span<Channel> chls)
+    void JL10PsiSender::sendInput_k283(std::vector<block>& inputs, span<Channel> chls)
     {
 		std::cout << "curveParam = k283\n";
 
@@ -175,7 +175,7 @@ namespace osuCrypto
 
     }
 
-	void EcdhPsiSender::sendInput_Curve25519(std::vector<block>& inputs, span<Channel> chls)
+	void JL10PsiSender::sendInput_Curve25519(std::vector<block>& inputs, span<Channel> chls)
 	{
 		std::cout << "curveParam = Curve25519\n";
 
@@ -327,7 +327,7 @@ namespace osuCrypto
 
 	}
 
-	void EcdhPsiSender::sendInput(std::vector<block>& inputs, span<Channel> chl, int curveType)
+	void JL10PsiSender::sendInput(std::vector<block>& inputs, span<Channel> chl, int curveType)
 	{
 		if (curveType == 0)
 			sendInput_k283(inputs, chl);

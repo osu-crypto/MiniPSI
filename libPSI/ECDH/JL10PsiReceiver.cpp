@@ -1,4 +1,4 @@
-#include "EcdhPsiReceiver.h"
+#include "JL10PsiReceiver.h"
 #include "cryptoTools/Crypto/Curve.h"
 #include "cryptoTools/Crypto/sha1.h"
 #include "cryptoTools/Common/Log.h"
@@ -10,15 +10,15 @@
 namespace osuCrypto
 {
 
-    EcdhPsiReceiver::EcdhPsiReceiver()
+    JL10PsiReceiver::JL10PsiReceiver()
     {
     }
 
 
-    EcdhPsiReceiver::~EcdhPsiReceiver()
+    JL10PsiReceiver::~JL10PsiReceiver()
     {
     }
-    void EcdhPsiReceiver::init(u64 n, u64 secParam, block seed)
+    void JL10PsiReceiver::init(u64 n, u64 secParam, block seed)
     {
         mN = n;
         mSecParam = secParam;
@@ -27,7 +27,7 @@ namespace osuCrypto
     }
 
 
-    void EcdhPsiReceiver::sendInput_k283(
+    void JL10PsiReceiver::sendInput_k283(
         span<block> inputs,
         span<Channel> chls)
     {
@@ -271,7 +271,7 @@ namespace osuCrypto
 
     }
 
-	void EcdhPsiReceiver::sendInput_Curve25519(
+	void JL10PsiReceiver::sendInput_Curve25519(
 		span<block> inputs,
 		span<Channel> chls)
 	{
@@ -515,7 +515,7 @@ namespace osuCrypto
 
 	}
 
-	void EcdhPsiReceiver::sendInput(
+	void JL10PsiReceiver::sendInput(
 		span<block> inputs,
 		span<Channel> chls, int curveType)
 	{

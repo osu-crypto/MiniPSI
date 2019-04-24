@@ -17,6 +17,8 @@
   <ItemGroup>
     <ClCompile Include="ECDH\EcdhPsiReceiver.cpp" />
     <ClCompile Include="ECDH\EcdhPsiSender.cpp" />
+    <ClCompile Include="ECDH\JL10PsiReceiver.cpp" />
+    <ClCompile Include="ECDH\JL10PsiSender.cpp" />
     <ClCompile Include="miniPSI\MiniReceiver.cpp" />
     <ClCompile Include="miniPSI\MiniSender.cpp" />
     <ClCompile Include="Poly\polyFFT.cpp" />
@@ -30,6 +32,8 @@
   <ItemGroup>
     <ClInclude Include="ECDH\EcdhPsiReceiver.h" />
     <ClInclude Include="ECDH\EcdhPsiSender.h" />
+    <ClInclude Include="ECDH\JL10PsiReceiver.h" />
+    <ClInclude Include="ECDH\JL10PsiSender.h" />
     <ClInclude Include="miniPSI\MiniReceiver.h" />
     <ClInclude Include="miniPSI\MiniSender.h" />
     <ClInclude Include="Poly\polyFFT.h" />

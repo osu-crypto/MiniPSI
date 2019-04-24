@@ -22,6 +22,8 @@
     <ClCompile Include="Tools\BalancedIndex.cpp">
       <Filter>Tools</Filter>
     </ClCompile>
+    <ClCompile Include="ECDH\JL10PsiReceiver.cpp" />
+    <ClCompile Include="ECDH\JL10PsiSender.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ECDH\EcdhPsiReceiver.h" />
@@ -48,6 +50,8 @@
     <ClInclude Include="PsiDefines.h">
       <Filter>Tools</Filter>
     </ClInclude>
+    <ClInclude Include="ECDH\JL10PsiReceiver.h" />
+    <ClInclude Include="ECDH\JL10PsiSender.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

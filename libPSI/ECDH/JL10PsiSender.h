@@ -7,11 +7,11 @@
 
 namespace osuCrypto
 {
-    class EcdhPsiSender
+    class JL10PsiSender
     {
     public:
-        EcdhPsiSender();
-        ~EcdhPsiSender();
+        JL10PsiSender();
+        ~JL10PsiSender();
 
 		u64 stepSize = 1<<6;
 

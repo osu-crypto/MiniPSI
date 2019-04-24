@@ -7,11 +7,11 @@
 namespace osuCrypto
 {
 
-    class EcdhPsiReceiver
+    class JL10PsiReceiver
     {
     public:
-        EcdhPsiReceiver();
-        ~EcdhPsiReceiver();
+        JL10PsiReceiver();
+        ~JL10PsiReceiver();
 
 		u64 stepSize = 1<<6;
         u64 mN, mSecParam;
@@ -19,7 +19,6 @@ namespace osuCrypto
 
         std::vector<u64> mIntersection;
 
-		//traditional DH-PSI
         void init(u64 n, u64 secParam, block seed);
 		void sendInput_k283(span<block> inputs, span<Channel> chls);
 		void sendInput_Curve25519(span<block> inputs, span<Channel> chls);
