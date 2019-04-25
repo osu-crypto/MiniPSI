@@ -6,4 +6,5 @@ namespace tests_libOTe
 	void exp_test();
 	void MiniPSI_impl2();
 	void DhPSI_impl();
+	void JL10PSI_impl();
 }

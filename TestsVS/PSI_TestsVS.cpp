@@ -66,6 +66,13 @@ namespace tests_libOTe
 			DhPSI_impl();
 		}
 
+		
+
+		TEST_METHOD(JL10PSI_TestVS)
+		{
+			InitDebugPrinting();
+			JL10PSI_impl();
+		}
 
 		
 
