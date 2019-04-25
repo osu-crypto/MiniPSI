@@ -61,7 +61,7 @@ namespace osuCrypto
 
 
 		u64 n1n2MaskBits = (40 + log2(mTheirInputSize*mMyInputSize));
-		u64 n1n2MaskBytes = (n1n2MaskBits + 7) / 8;  //64 / 8;// (n1n2MaskBits + 7) / 8;
+		u64 n1n2MaskBytes = (n1n2MaskBits + 7) / 8;
 
 		
 		std::vector<std::vector<u8>> sendBuff_mask(chls.size()); //H(x)^k
@@ -114,11 +114,11 @@ namespace osuCrypto
 					xk = (point * nK); //H(x)^k
 
 #ifdef PRINT
-					if (i == 0)
-						std::cout << "yb[" << i << "] " << yb << std::endl;
+					if (i + k == 10 || i + k == 20)
+						std::cout << "s xk[" << i+k << "] " << xk << std::endl;
 #endif
 					xk.toBytes(temp);
-					memcpy(sendBuff_mask[t].data()+ idxSendMaskIter, &temp, n1n2MaskBytes);
+					memcpy(sendBuff_mask[t].data()+ idxSendMaskIter, temp, n1n2MaskBytes);
 					idxSendMaskIter += n1n2MaskBytes;
 				}
 
@@ -177,7 +177,13 @@ namespace osuCrypto
 			u64 endIdx = std::min(tempEndIdx, mTheirInputSize);
 			u64 subsetInputSize = endIdx - startIdx;
 
+
+
+			auto myMasks = sendBuff_mask[t].data();
+			std::cout << "s toBlock(sendBuff_mask): " << t << " - " << toBlock(myMasks) << std::endl;
+
 			chl.asyncSend(std::move(sendBuff_mask[t]));
+
 
 		};
 

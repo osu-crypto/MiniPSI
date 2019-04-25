@@ -78,7 +78,7 @@ namespace osuCrypto
 		u8* mG_K; chls[0].recv(mG_K);
 		EccPoint g_k(mCurve); 	g_k.fromBytes(mG_K);
 
-		//std::cout << "r g^k= " << g_k << std::endl;
+		std::cout << "r g^k= " << g_k << std::endl;
 
 		u64 numThreads(chls.size());
 		const bool isMultiThreaded = numThreads > 1;
@@ -90,7 +90,7 @@ namespace osuCrypto
 		std::mutex mtx;
 
 		u64 n1n2MaskBits = (40 + log2(mTheirInputSize*mMyInputSize));
-		u64 n1n2MaskBytes = (n1n2MaskBits + 7) / 8;
+		u64 n1n2MaskBytes =  (n1n2MaskBits + 7) / 8;
 
 #if 1	//generate all pairs from seeds
 		std::unordered_map<u64, std::pair<block, u64>> localMasks;
@@ -150,8 +150,8 @@ namespace osuCrypto
 					yi[idxYi] = (point + gri); //H(x) *g^ri
 
 #ifdef PRINT
-					if (i == 0)
-						std::cout << "yb[" << i << "] " << yb << std::endl;
+					if (i+k==10)
+						std::cout << "r yi[" << idxYi << "] " << yi[idxYi] << std::endl;
 #endif
 					yi[idxYi].toBytes(sendIter);
 					sendIter += yi[idxYi++].sizeBytes();
@@ -196,8 +196,8 @@ namespace osuCrypto
 					temp = toBlock(xk_byte); //H(x)^k
 
 #ifdef PRINT
-					if (i == 0)
-						std::cout << "xk[" << i << "] " << xk << std::endl;
+					if (i + k == 10 || i + k == 20)
+						std::cout << "xk[" << i+k << "] " << xk << std::endl;
 #endif // PRINT
 
 					if (isMultiThreaded)
@@ -255,8 +255,9 @@ namespace osuCrypto
 					{
 
 						auto& msk = *(u64*)(theirMasks);
-
-						//std::cout << "r msk: " << i+k << " - " << toBlock(msk) << std::endl;
+						
+						if (i + k == 10)
+							std::cout << "r msk: " << i+k << " - " << toBlock(msk) << std::endl;
 
 						// check 64 first bits
 						auto match = localMasks.find(msk);

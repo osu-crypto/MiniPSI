@@ -12,6 +12,7 @@ using namespace NTL;
 #define NTL_Threads_ON
 #ifdef _MSC_VER
 //#define PSI_PRINT
+#define PRINT
 #endif
 
 
