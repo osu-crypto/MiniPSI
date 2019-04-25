@@ -5,6 +5,7 @@
 #include <cryptoTools/Crypto/RandomOracle.h>
 #include <unordered_map>
 #include "cryptoTools/Common/Timer.h"
+#include "cryptoTools/Common/Defines.h"
 
 
 namespace osuCrypto
@@ -18,289 +19,86 @@ namespace osuCrypto
     JL10PsiReceiver::~JL10PsiReceiver()
     {
     }
-    void JL10PsiReceiver::init(u64 n, u64 secParam, block seed)
+    void JL10PsiReceiver::init(u64 myInputSize, u64 theirInputSize, u64 secParam, block seed)
     {
-        mN = n;
         mSecParam = secParam;
+		mMyInputSize = myInputSize;
+		mTheirInputSize = theirInputSize;
         mPrng.SetSeed(seed);
         mIntersection.clear();
+		mSetSeedsSize = myInputSize; //compute g^ri without using subset-sum
+
+		std::cout << "r mSetSeedsSize= " << mMyInputSize << " - " << mSetSeedsSize << " - " << mChoseSeedsSize << "\n";
+
+		mCurveSeed = mPrng.get<block>();
+		EllipticCurve mCurve(p256k1, OneBlock);
+		//mCurve.getMiracl().IOBASE = 10;
+		mFieldSize = mCurve.bitCount();
+
+
+		EccPoint mG(mCurve);
+		mG = mCurve.getGenerator();
+
+		std::vector<EccNumber> nSeeds;
+		std::vector<EccPoint> pG_seeds;
+
+		nSeeds.reserve(mSetSeedsSize);
+		pG_seeds.reserve(mSetSeedsSize);
+		mSeeds.resize(mSetSeedsSize);
+		mG_seeds.resize(mSetSeedsSize);
+
+
+		//compute g^ri
+		for (u64 i = 0; i < mSetSeedsSize; i++)
+		{
+			// get a random value from Z_p
+			nSeeds.emplace_back(mCurve);
+			nSeeds[i].randomize(mPrng);
+
+			mSeeds[i] = new u8[nSeeds[i].sizeBytes()];
+			nSeeds[i].toBytes(mSeeds[i]); //store mSeeds byte for futher computation H(x)*g^ri
+
+			//      pG_seeds[i] = g ^ mSeeds[i]
+			pG_seeds.emplace_back(mCurve);
+			pG_seeds[i] = mG * nSeeds[i];  //g^ri
+										   //std::cout << mG_seeds[i] << std::endl;
+
+			pG_seeds[i].toBytes(mG_seeds[i]); //store mSeeds byte for futher computation H(x)*g^ri
+		}
+		std::cout << "g^ri done" << std::endl;
+		gTimer.setTimePoint("r off g^ri done");	
     }
 
 
-    void JL10PsiReceiver::sendInput_k283(
-        span<block> inputs,
-        span<Channel> chls)
-    {
-        std::vector<PRNG> thrdPrng(chls.size());
-        for (u64 i = 0; i < thrdPrng.size(); i++)
-            thrdPrng[i].SetSeed(mPrng.get<block>());
-
-        std::mutex mtx;
-
-		std::vector<block> thrdPrngBlock(chls.size());
-		std::vector<std::vector<u64>> localIntersections(chls.size() - 1);
-
-		u64 maskSizeByte = (40 + 2*log2(inputs.size()) + 7) / 8;
-
-		auto curveParam = k283;
-        auto RcSeed = mPrng.get<block>();
-
-		std::unordered_map<u32, block> mapXab;
-		mapXab.reserve(inputs.size());
-
-        const bool isMultiThreaded = chls.size() > 1;
-
-
-		
-		
-		Timer timer;
-
-		auto start = timer.setTimePoint("start");
-
-
-		auto routine = [&](u64 t)
-		{
-			u64 inputStartIdx = inputs.size() * t / chls.size();
-			u64 inputEndIdx = inputs.size() * (t + 1) / chls.size();
-			u64 subsetInputSize = inputEndIdx - inputStartIdx;
-
-
-			auto& chl = chls[t];
-			auto& prng = thrdPrng[t];
-			u8 hashOut[SHA1::HashSize];
-
-			EllipticCurve curve(curveParam, thrdPrng[t].get<block>());
-
-			SHA1 inputHasher;
-			EccNumber b(curve);
-			EccPoint yb(curve), yba(curve), point(curve), xa(curve), xab(curve);
-			b.randomize(RcSeed);
-			
-			 for (u64 i = inputStartIdx; i < inputEndIdx; i += stepSize)
-			 {
-				 auto curStepSize = std::min(stepSize, inputEndIdx - i);
-
-				 std::vector<u8> sendBuff(yb.sizeBytes() * curStepSize);
-				 auto sendIter = sendBuff.data();
-				 //	std::cout << "send H(y)^b" << std::endl;
-
-				 //send H(y)^b
-				 for (u64 k = 0; k < curStepSize; ++k)
-				 {
-
-					 inputHasher.Reset();
-					 inputHasher.Update(inputs[i+k]);
-					 inputHasher.Final(hashOut);
-
-					 point.randomize(toBlock(hashOut));
-					 //std::cout << "sp  " << point << "  " << toBlock(hashOut) << std::endl;
-
-					 yb = (point * b);
-
-#ifdef PRINT
-					 if (i == 0)
-						 std::cout << "yb[" << i << "] " << yb << std::endl;
-#endif
-					 yb.toBytes(sendIter);
-					 sendIter += yb.sizeBytes();
-				 }
-				 chl.asyncSend(std::move(sendBuff));
-
-			 }
-
-			/* auto ybTime = timer.setTimePoint("yb");
-			 auto ybTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(ybTime - start).count();*/
-			// std::cout << "compute H(y)^b:  " << ybTimeMs << "\n";
-
-
-			 for (u64 i = inputStartIdx; i < inputEndIdx; i += stepSize)
-			 {
-				 auto curStepSize = std::min(stepSize, inputEndIdx - i);
-
-
-			 //recv H(x)^a
-			 //std::cout << "recv H(x)^a" << std::endl;
-				 
-				 std::vector<u8>temp(xab.sizeBytes());
-
-				 //compute H(x)^a^b as map
-				 //std::cout << "compute H(x)^a^b " << std::endl;
-
-				 std::vector<u8> recvBuff(xa.sizeBytes() * curStepSize);
-
-				 chl.recv(recvBuff);
-				 if (recvBuff.size() != curStepSize * xa.sizeBytes())
-				 {
-					 std::cout << recvBuff.size() << " vs " << curStepSize * xa.sizeBytes() << std::endl;
-
-					 std::cout << "error @ " << (LOCATION) << std::endl;
-					 throw std::runtime_error(LOCATION);
-				 }
-				 auto recvIter = recvBuff.data();
-
-				 for (u64 k = 0; k < curStepSize; ++k)
-				 {
-					 xa.fromBytes(recvIter); recvIter += xa.sizeBytes();
-					 xab = xa*b;
-
-					 xab.toBytes(temp.data());
-
-					 RandomOracle ro(sizeof(block));
-					 ro.Update(temp.data(), temp.size());
-					 block blk;
-					 ro.Final(blk);
-					 auto idx = *(u32*)&blk;
-
-#ifdef PRINT
-					 if (i == 0)
-					 {
-						 std::cout << "xab[" << i << "] " << xab << std::endl;
-						 std::cout << "idx[" << i << "] " << toBlock(idx) << std::endl;
-					 }
-#endif // PRINT
-
-
-					 if (isMultiThreaded)
-					 {
-						 std::lock_guard<std::mutex> lock(mtx);
-						 mapXab.insert({ idx, blk });
-					 }
-					 else
-					 {
-						 mapXab.insert({ idx, blk });
-					 }
-				 }
-			 }
-		
-		/*	 auto xabTime = timer.setTimePoint("xab");
-			 auto xabTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(xabTime - ybTime).count();*/
-		//	 std::cout << "compute H(x)^ab:  " << xabTimeMs << "\n";
-
-
-};
-
-		
-        std::vector<std::thread> thrds(chls.size());
-        for (u64 i = 0; i < u64(chls.size()); ++i)
-        {
-            thrds[i] = std::thread([=] {
-                routine(i);
-            });
-        }
-
-
-		for (auto& thrd : thrds)
-			thrd.join();
-
-#if 1
-		auto routine2 = [&](u64 t)
-		{
-			u64 inputStartIdx = inputs.size() * t / chls.size();
-			u64 inputEndIdx = inputs.size() * (t + 1) / chls.size();
-			u64 subsetInputSize = inputEndIdx - inputStartIdx;
-
-
-			auto& chl = chls[t];
-
-
-			std::vector<u8> recvBuff2(maskSizeByte * subsetInputSize);
-
-			//recv H(y)^b^a
-			chl.recv(recvBuff2);
-			if (recvBuff2.size() != subsetInputSize * maskSizeByte)
-			{
-				std::cout << "error @ " << (LOCATION) << std::endl;
-				throw std::runtime_error(LOCATION);
-			}
-			auto recvIter2 = recvBuff2.data();
-
-			for (u64 i = inputStartIdx; i < inputEndIdx; i++)
-			{
-
-				auto& idx_yba = *(u32*)(recvIter2);
-
-#ifdef PRINT
-				if (i == 0)
-					std::cout << "idx_yba[" << i << "] " << toBlock(idx_yba) << std::endl;
-#endif // PRINT
-
-				auto id = mapXab.find(idx_yba);
-				if (id != mapXab.end()) {
-
-					//std::cout << "id->first[" << i << "] " << toBlock(id->first) << std::endl;
-
-					if (memcmp(recvIter2, &id->second, maskSizeByte) == 0)
-					{
-						//std::cout << "intersection item----------" << i << std::endl;
-						if (t == 0)
-							mIntersection.emplace_back(i);
-						else
-							localIntersections[t - 1].emplace_back(i);
-					}
-				}
-				recvIter2 += maskSizeByte;
-
-			}
-			//std::cout << "done" << std::endl;
-
-		};
-
-
-		for (u64 i = 0; i < u64(chls.size()); ++i)
-		{
-			thrds[i] = std::thread([=] {
-				routine2(i);
-			});
-		}
-
-		for (auto& thrd : thrds)
-			thrd.join();
-
-		u64 extraSize = 0;
-
-		for (u64 i = 0; i < thrds.size()-1; ++i)
-			extraSize += localIntersections[i].size();
-
-		mIntersection.reserve(mIntersection.size() + extraSize);
-		for (u64 i = 0; i < thrds.size()-1; ++i)
-		{
-			mIntersection.insert(mIntersection.end(), localIntersections[i].begin(), localIntersections[i].end());
-		}
-#endif
-
-
-    }
-
-	void JL10PsiReceiver::sendInput_Curve25519(
-		span<block> inputs,
-		span<Channel> chls)
+    void JL10PsiReceiver::sendInput_k283(span<block> inputs, span<Channel> chls)
 	{
+
+		EllipticCurve mCurve(p256k1, OneBlock);
+		u8* mG_K; chls[0].recv(mG_K);
+		EccPoint g_k(mCurve); 	g_k.fromBytes(mG_K);
+
+		//std::cout << "r g^k= " << g_k << std::endl;
+
+		u64 numThreads(chls.size());
+		const bool isMultiThreaded = numThreads > 1;
+		std::vector<std::thread> thrds(numThreads);
 		std::vector<PRNG> thrdPrng(chls.size());
 		for (u64 i = 0; i < thrdPrng.size(); i++)
 			thrdPrng[i].SetSeed(mPrng.get<block>());
 
 		std::mutex mtx;
 
-		std::vector<block> thrdPrngBlock(chls.size());
-		std::vector<std::vector<u64>> localIntersections(chls.size() - 1);
+		u64 n1n2MaskBits = (40 + log2(mTheirInputSize*mMyInputSize));
+		u64 n1n2MaskBytes = (n1n2MaskBits + 7) / 8;
 
-		u64 maskSizeByte = (40 + 2 * log2(inputs.size()) + 7) / 8;
+		//generate all pairs from seeds
+		std::unordered_map<u64, std::pair<block, u64>> localMasks;
+		localMasks.reserve(inputs.size());
 
-		auto curveParam = Curve25519;
-		auto RcSeed = mPrng.get<block>();
-
-		std::unordered_map<u32, block> mapXab;
-		mapXab.reserve(inputs.size());
-
-		const bool isMultiThreaded = chls.size() > 1;
+		//##################### compute/send yi=H(x)*(g^ri). recv yi^k, comp. H(x)^k  #####################
 
 
-
-
-		Timer timer;
-
-		auto start = timer.setTimePoint("start");
-
+		gTimer.setTimePoint("start");
 
 		auto routine = [&](u64 t)
 		{
@@ -313,20 +111,24 @@ namespace osuCrypto
 			auto& prng = thrdPrng[t];
 			u8 hashOut[SHA1::HashSize];
 
-			EllipticCurve curve(curveParam, thrdPrng[t].get<block>());
+			//EllipticCurve curve(p256k1, thrdPrng[t].get<block>());
 
 			SHA1 inputHasher;
-			EccNumber b(curve);
-			EccPoint yb(curve), yba(curve), point(curve), xa(curve), xab(curve);
-			b.randomize(RcSeed);
+			EccPoint point(mCurve), yik(mCurve), xk(mCurve), gri(mCurve), xab(mCurve);
 
-			for (u64 i = inputStartIdx; i < inputEndIdx; i += stepSize)
+			std::vector<EccPoint> yi; //yi=H(xi)*g^ri
+			yi.reserve(subsetInputSize);
+
+
+			for (u64 i = inputStartIdx; i < inputEndIdx; i += stepSize)  //yi=H(xi)*g^ri
 			{
 				auto curStepSize = std::min(stepSize, inputEndIdx - i);
-
-				std::vector<u8> sendBuff(yb.sizeBytes() * curStepSize);
+#if 1
+				std::vector<u8> sendBuff(yi[0].sizeBytes() * curStepSize);
 				auto sendIter = sendBuff.data();
 				//	std::cout << "send H(y)^b" << std::endl;
+
+			
 
 				//send H(y)^b
 				for (u64 k = 0; k < curStepSize; ++k)
@@ -336,47 +138,53 @@ namespace osuCrypto
 					inputHasher.Update(inputs[i + k]);
 					inputHasher.Final(hashOut);
 
-					point.randomize(toBlock(hashOut));
+					point.randomize(toBlock(hashOut)); //H(x)
 					//std::cout << "sp  " << point << "  " << toBlock(hashOut) << std::endl;
 
-					yb = (point * b);
+					yi.emplace_back(mCurve);
+
+					gri.fromBytes(mG_seeds[i + k]);
+					yi[i- inputStartIdx] = (point + gri); //H(x) *g^ri
 
 #ifdef PRINT
 					if (i == 0)
 						std::cout << "yb[" << i << "] " << yb << std::endl;
 #endif
-					yb.toBytes(sendIter);
-					sendIter += yb.sizeBytes();
+					yi[i - inputStartIdx].toBytes(sendIter);
+					sendIter += yi[i - inputStartIdx].sizeBytes();
 				}
-				chl.asyncSend(std::move(sendBuff));
 
-			}
-
-			/* auto ybTime = timer.setTimePoint("yb");
-			auto ybTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(ybTime - start).count();*/
-			// std::cout << "compute H(y)^b:  " << ybTimeMs << "\n";
+				chl.asyncSend(std::move(sendBuff));  //sending yi=H(xi)*g^ri
 
 
-			for (u64 i = inputStartIdx; i < inputEndIdx; i += stepSize)
-			{
-				auto curStepSize = std::min(stepSize, inputEndIdx - i);
 
 
-				//recv H(x)^a
-				//std::cout << "recv H(x)^a" << std::endl;
 
-				std::vector<u8>temp(xab.sizeBytes());
+				//compute  (g^K)^ri
+				EccNumber nSeed(mCurve);
+				std::vector<EccPoint> pgK_seeds;
 
-				//compute H(x)^a^b as map
-				//std::cout << "compute H(x)^a^b " << std::endl;
+				pgK_seeds.reserve(curStepSize);
 
-				std::vector<u8> recvBuff(xa.sizeBytes() * curStepSize);
-
-				chl.recv(recvBuff);
-				if (recvBuff.size() != curStepSize * xa.sizeBytes())
+				
+				for (u64 k = 0; k < curStepSize; k++)
 				{
-					std::cout << recvBuff.size() << " vs " << curStepSize * xa.sizeBytes() << std::endl;
+					nSeed.fromBytes(mSeeds[i+k]); //restore mSeeds byte for computing (g^k)^(subsum ri) later
+					pgK_seeds.emplace_back(mCurve);
+					pgK_seeds[k] = g_k * nSeed;  //(g^k)^ri
+													 //std::cout << mG_seeds[i] << std::endl;		
+				}
 
+
+
+				std::vector<u8> recvBuff(yi[0].sizeBytes() * curStepSize); //receiving yi^k = H(x)^k *g^ri^k
+				u8* xk_byte = new u8[yi[0].sizeBytes()];
+				block temp;
+				
+				chl.recv(recvBuff); //recv yi^k
+
+				if (recvBuff.size() != curStepSize * yi[0].sizeBytes())
+				{
 					std::cout << "error @ " << (LOCATION) << std::endl;
 					throw std::runtime_error(LOCATION);
 				}
@@ -384,47 +192,33 @@ namespace osuCrypto
 
 				for (u64 k = 0; k < curStepSize; ++k)
 				{
-					xa.fromBytes(recvIter); recvIter += xa.sizeBytes();
-					xab = xa * b;
-
-					xab.toBytes(temp.data());
-
-					RandomOracle ro(sizeof(block));
-					ro.Update(temp.data(), temp.size());
-					block blk;
-					ro.Final(blk);
-					auto idx = *(u32*)&blk;
+					yik.fromBytes(recvIter); recvIter += yik.sizeBytes();
+					xk = yik - pgK_seeds[k]; //H(x)^k
+					xk.toBytes(xk_byte);
+					temp = toBlock(xk_byte); //H(x)^k
 
 #ifdef PRINT
 					if (i == 0)
-					{
-						std::cout << "xab[" << i << "] " << xab << std::endl;
-						std::cout << "idx[" << i << "] " << toBlock(idx) << std::endl;
-					}
+						std::cout << "xk[" << i << "] " << xk << std::endl;
 #endif // PRINT
-
 
 					if (isMultiThreaded)
 					{
 						std::lock_guard<std::mutex> lock(mtx);
-						mapXab.insert({ idx, blk });
+						localMasks.emplace(*(u64*)&temp, std::pair<block, u64>(temp, i+k));
 					}
 					else
 					{
-						mapXab.insert({ idx, blk });
+						localMasks.emplace(*(u64*)&temp, std::pair<block, u64>(temp, i + k));
 					}
 				}
+
+#endif
 			}
-
-			/*	 auto xabTime = timer.setTimePoint("xab");
-			auto xabTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(xabTime - ybTime).count();*/
-			//	 std::cout << "compute H(x)^ab:  " << xabTimeMs << "\n";
-
 
 		};
 
 
-		std::vector<std::thread> thrds(chls.size());
 		for (u64 i = 0; i < u64(chls.size()); ++i)
 		{
 			thrds[i] = std::thread([=] {
@@ -433,97 +227,100 @@ namespace osuCrypto
 		}
 
 
-		for (auto& thrd : thrds)
-			thrd.join();
 
 #if 1
-		auto routine2 = [&](u64 t)
+		//#####################Receive Mask #####################
+
+
+		auto receiveMask = [&](u64 t)
 		{
-			u64 inputStartIdx = inputs.size() * t / chls.size();
-			u64 inputEndIdx = inputs.size() * (t + 1) / chls.size();
-			u64 subsetInputSize = inputEndIdx - inputStartIdx;
+			auto& chl = chls[t]; //parallel along with inputs
+			u64 startIdx = mTheirInputSize * t / numThreads;
+			u64 tempEndIdx = mTheirInputSize* (t + 1) / numThreads;
+			u64 endIdx = std::min(tempEndIdx, mTheirInputSize);
+
+			std::vector<u8> recvBuffs;
+			chl.recv(recvBuffs); //receive Hash
+			auto theirMasks = recvBuffs.data();
+			std::cout << "r toBlock(recvBuffs): " << t << " - " << toBlock(theirMasks) << std::endl;
 
 
-			auto& chl = chls[t];
-
-
-			std::vector<u8> recvBuff2(maskSizeByte * subsetInputSize);
-
-			//recv H(y)^b^a
-			chl.recv(recvBuff2);
-			if (recvBuff2.size() != subsetInputSize * maskSizeByte)
+			for (u64 i = startIdx; i < endIdx; i += stepSizeMaskSent)
 			{
-				std::cout << "error @ " << (LOCATION) << std::endl;
-				throw std::runtime_error(LOCATION);
-			}
-			auto recvIter2 = recvBuff2.data();
-
-			for (u64 i = inputStartIdx; i < inputEndIdx; i++)
-			{
-
-				auto& idx_yba = *(u32*)(recvIter2);
-
-#ifdef PRINT
-				if (i == 0)
-					std::cout << "idx_yba[" << i << "] " << toBlock(idx_yba) << std::endl;
-#endif // PRINT
-
-				auto id = mapXab.find(idx_yba);
-				if (id != mapXab.end()) {
-
-					//std::cout << "id->first[" << i << "] " << toBlock(id->first) << std::endl;
-
-					if (memcmp(recvIter2, &id->second, maskSizeByte) == 0)
+				auto curStepSize = std::min(stepSizeMaskSent, endIdx - i);
+				
+				if (n1n2MaskBytes >= sizeof(u64)) //unordered_map only work for key >= 64 bits. i.e. setsize >=2^12
+				{
+					for (u64 k = 0; k < curStepSize; ++k)
 					{
-						//std::cout << "intersection item----------" << i << std::endl;
-						if (t == 0)
-							mIntersection.emplace_back(i);
-						else
-							localIntersections[t - 1].emplace_back(i);
+
+						auto& msk = *(u64*)(theirMasks);
+
+						//std::cout << "r msk: " << i+k << " - " << toBlock(msk) << std::endl;
+
+						// check 64 first bits
+						auto match = localMasks.find(msk);
+
+						//if match, check for whole bits
+						if (match != localMasks.end())
+						{
+							//std::cout << "match != localMasks.end()" << std::endl;
+
+							if (memcmp(theirMasks, &match->second.first, n1n2MaskBytes) == 0) // check full mask
+							{
+								if (isMultiThreaded)
+								{
+									std::lock_guard<std::mutex> lock(mtx);
+									mIntersection.push_back(match->second.second);
+								}
+								else
+								{
+									mIntersection.push_back(match->second.second);
+								}
+							}
+						}
+						theirMasks += n1n2MaskBytes;
 					}
 				}
-				recvIter2 += maskSizeByte;
+				else //for small set, do O(n^2) check
+				{
+					for (u64 k = 0; k < curStepSize; ++k)
+					{
+						//std::cout << "r theirMasks: " << i + k << " - " << toBlock(theirMasks) << std::endl;
+						for (auto match = localMasks.begin(); match != localMasks.end(); ++match)
+						{
+							//std::cout << "r myMasks: " << i + k << " - " << match->second.first << std::endl;
+
+							if (memcmp(theirMasks, &match->second.first, n1n2MaskBytes) == 0) // check full mask
+								mIntersection.push_back(match->second.second);
+						}
+						theirMasks += n1n2MaskBytes;
+
+					}
+				}
 
 			}
-			//std::cout << "done" << std::endl;
 
 		};
 
-
-		for (u64 i = 0; i < u64(chls.size()); ++i)
+		for (u64 i = 0; i < thrds.size(); ++i)//thrds.size()
 		{
 			thrds[i] = std::thread([=] {
-				routine2(i);
+				receiveMask(i);
 			});
 		}
 
 		for (auto& thrd : thrds)
 			thrd.join();
 
-		u64 extraSize = 0;
+		gTimer.setTimePoint("r on masks done");
+		std::cout << "r gkr done\n";
 
-		for (u64 i = 0; i < thrds.size() - 1; ++i)
-			extraSize += localIntersections[i].size();
-
-		mIntersection.reserve(mIntersection.size() + extraSize);
-		for (u64 i = 0; i < thrds.size() - 1; ++i)
-		{
-			mIntersection.insert(mIntersection.end(), localIntersections[i].begin(), localIntersections[i].end());
-		}
 #endif
 
-
 	}
 
-	void JL10PsiReceiver::sendInput(
-		span<block> inputs,
-		span<Channel> chls, int curveType)
-	{
-		if (curveType == 0)
-			sendInput_k283(inputs, chls);
-		else
-			sendInput_Curve25519(inputs, chls);
 
 
-	}
+
 }

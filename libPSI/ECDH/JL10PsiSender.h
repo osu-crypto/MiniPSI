@@ -4,6 +4,8 @@
 
 #include "cryptoTools/Network/Channel.h"
 #include "cryptoTools/Crypto/PRNG.h"
+#include "PsiDefines.h"
+#include "cryptoTools/Common/Timer.h"
 
 namespace osuCrypto
 {
@@ -14,17 +16,17 @@ namespace osuCrypto
         ~JL10PsiSender();
 
 		u64 stepSize = 1<<6;
+		Timer timer;
 
-        u64 mN, mSecParam;
+		u8* mK;
+		u8* mG_K;
+        u64 mSecParam;
         PRNG mPrng;
 
-        void init(u64 n, u64 secParam, block seed);
-        //void init(u64 n, u64 statSecParam);
-		
-		void sendInput_k283(std::vector<block>& inputs, span<Channel> chl);
-		void sendInput_Curve25519(std::vector<block>& inputs, span<Channel> chl);
-		void sendInput(std::vector<block>& inputs, span<Channel> chl, int curveType);
-		//void sendInput(std::vector<block>& inputs, std::vector<Channel*>& chl);
+		u64 mMyInputSize, mTheirInputSize,  mStepSize, mPsiSecParam, mFieldSize;
+
+        void init(u64 myInputSize, u64 theirInputSize, u64 secParam, block seed);
+		void sendInput_k283(span<block> inputs, span<Channel> chls);
 
 
 
