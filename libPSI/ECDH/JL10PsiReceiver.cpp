@@ -63,6 +63,7 @@ namespace osuCrypto
 			pG_seeds[i] = mG * nSeeds[i];  //g^ri
 										   //std::cout << mG_seeds[i] << std::endl;
 
+			mG_seeds[i] = new u8[pG_seeds[i].sizeBytes()];
 			pG_seeds[i].toBytes(mG_seeds[i]); //store mSeeds byte for futher computation H(x)*g^ri
 		}
 		std::cout << "g^ri done" << std::endl;
@@ -91,7 +92,7 @@ namespace osuCrypto
 		u64 n1n2MaskBits = (40 + log2(mTheirInputSize*mMyInputSize));
 		u64 n1n2MaskBytes = (n1n2MaskBits + 7) / 8;
 
-		//generate all pairs from seeds
+#if 1	//generate all pairs from seeds
 		std::unordered_map<u64, std::pair<block, u64>> localMasks;
 		localMasks.reserve(inputs.size());
 
@@ -102,6 +103,7 @@ namespace osuCrypto
 
 		auto routine = [&](u64 t)
 		{
+
 			u64 inputStartIdx = inputs.size() * t / chls.size();
 			u64 inputEndIdx = inputs.size() * (t + 1) / chls.size();
 			u64 subsetInputSize = inputEndIdx - inputStartIdx;
@@ -118,13 +120,14 @@ namespace osuCrypto
 
 			std::vector<EccPoint> yi; //yi=H(xi)*g^ri
 			yi.reserve(subsetInputSize);
-
+			int idxYi = 0;
 
 			for (u64 i = inputStartIdx; i < inputEndIdx; i += stepSize)  //yi=H(xi)*g^ri
 			{
+
 				auto curStepSize = std::min(stepSize, inputEndIdx - i);
-#if 1
-				std::vector<u8> sendBuff(yi[0].sizeBytes() * curStepSize);
+
+				std::vector<u8> sendBuff(yik.sizeBytes() * curStepSize);
 				auto sendIter = sendBuff.data();
 				//	std::cout << "send H(y)^b" << std::endl;
 
@@ -144,28 +147,23 @@ namespace osuCrypto
 					yi.emplace_back(mCurve);
 
 					gri.fromBytes(mG_seeds[i + k]);
-					yi[i- inputStartIdx] = (point + gri); //H(x) *g^ri
+					yi[idxYi] = (point + gri); //H(x) *g^ri
 
 #ifdef PRINT
 					if (i == 0)
 						std::cout << "yb[" << i << "] " << yb << std::endl;
 #endif
-					yi[i - inputStartIdx].toBytes(sendIter);
-					sendIter += yi[i - inputStartIdx].sizeBytes();
+					yi[idxYi].toBytes(sendIter);
+					sendIter += yi[idxYi++].sizeBytes();
 				}
 
 				chl.asyncSend(std::move(sendBuff));  //sending yi=H(xi)*g^ri
 
-
-
-
-
+				
 				//compute  (g^K)^ri
 				EccNumber nSeed(mCurve);
 				std::vector<EccPoint> pgK_seeds;
-
 				pgK_seeds.reserve(curStepSize);
-
 				
 				for (u64 k = 0; k < curStepSize; k++)
 				{
@@ -180,7 +178,7 @@ namespace osuCrypto
 				std::vector<u8> recvBuff(yi[0].sizeBytes() * curStepSize); //receiving yi^k = H(x)^k *g^ri^k
 				u8* xk_byte = new u8[yi[0].sizeBytes()];
 				block temp;
-				
+#if 1				
 				chl.recv(recvBuff); //recv yi^k
 
 				if (recvBuff.size() != curStepSize * yi[0].sizeBytes())
@@ -226,6 +224,8 @@ namespace osuCrypto
 			});
 		}
 
+		for (auto& thrd : thrds)
+			thrd.join();
 
 
 #if 1
@@ -317,7 +317,7 @@ namespace osuCrypto
 		std::cout << "r gkr done\n";
 
 #endif
-
+#endif
 	}
 
 

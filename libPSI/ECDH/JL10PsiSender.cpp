@@ -73,13 +73,14 @@ namespace osuCrypto
 
 		auto routine = [&](u64 t)
 		{
+
 			u64 inputStartIdx = inputs.size() * t / chls.size();
 			u64 inputEndIdx = inputs.size() * (t + 1) / chls.size();
 			u64 subsetInputSize = inputEndIdx - inputStartIdx;
 
 
 			sendBuff_mask[t].resize(n1n2MaskBytes*subsetInputSize);
-			auto sendMaskIter = sendBuff_mask[t].data();
+			int idxSendMaskIter = 0;
 
 
 			auto& chl = chls[t];
@@ -88,8 +89,10 @@ namespace osuCrypto
 			//EllipticCurve curve(p256k1, thrdPrng[t].get<block>());
 
 			SHA1 inputHasher;
-			EllipticCurve mCurve(p256k1, OneBlock);
+			//EllipticCurve mCurve(p256k1, OneBlock);
 			EccPoint point(mCurve), yik(mCurve), yi(mCurve), xk(mCurve);
+
+			u8* temp= new u8[xk.sizeBytes()];
 
 
 			for (u64 i = inputStartIdx; i < inputEndIdx; i += stepSize)  //yi=H(xi)*g^ri
@@ -98,7 +101,7 @@ namespace osuCrypto
 
 				//	std::cout << "send H(y)^b" << std::endl;
 
-				//send H(y)^b
+		//compute H(x)^k
 				for (u64 k = 0; k < curStepSize; ++k)
 				{
 
@@ -114,11 +117,12 @@ namespace osuCrypto
 					if (i == 0)
 						std::cout << "yb[" << i << "] " << yb << std::endl;
 #endif
-					xk.toBytes(sendMaskIter);
-					sendMaskIter += n1n2MaskBytes;
+					xk.toBytes(temp);
+					memcpy(sendBuff_mask[t].data()+ idxSendMaskIter, &temp, n1n2MaskBytes);
+					idxSendMaskIter += n1n2MaskBytes;
 				}
 
-				
+#if 1
 				//receive yi=H(.)*g^ri
 				std::vector<u8> recvBuff(xk.sizeBytes() * curStepSize); //receiving yi^k = H(.)*g^ri
 
@@ -144,21 +148,27 @@ namespace osuCrypto
 				}
 
 				chl.asyncSend(std::move(sendBuff_yik));  //sending yi^k
+#endif
 			}
+		
+
 		};
 
 
-		for (u64 i = 0; i < u64(chls.size()); ++i)
+		for (u64 i = 0; i < numThreads; ++i)
 		{
 			thrds[i] = std::thread([=] {
 				routine(i);
 			});
 		}
 
+		for (auto& thrd : thrds)
+			thrd.join();
+
 
 		//#####################Send Mask #####################
 
-
+#if 1
 		auto receiveMask = [&](u64 t)
 		{
 			auto& chl = chls[t]; //parallel along with inputs
@@ -180,7 +190,7 @@ namespace osuCrypto
 
 		for (auto& thrd : thrds)
 			thrd.join();
-
+#endif
 		gTimer.setTimePoint("r on masks done");
 		std::cout << "r gkr done\n";
 
