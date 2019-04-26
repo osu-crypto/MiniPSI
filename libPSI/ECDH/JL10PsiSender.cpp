@@ -15,8 +15,11 @@ namespace osuCrypto
     JL10PsiSender::~JL10PsiSender()
     {
     }
-    void JL10PsiSender::init(u64 myInputSize, u64 theirInputSize, u64 secParam, block seed)
+    void JL10PsiSender::startPsi(u64 myInputSize, u64 theirInputSize, u64 secParam, block seed, span<block> inputs, span<Channel> chls)
     {
+		//####################### offline #########################
+		gTimer.setTimePoint("s offline start ");
+
         mSecParam = secParam;
         mPrng.SetSeed(seed);
 
@@ -36,23 +39,14 @@ namespace osuCrypto
 
 		auto g_k = pG*nK;
 
-		mG_K = new u8[g_k.sizeBytes()];
-		mK = new u8[nK.sizeBytes()];
-
+		u8* mG_K = new u8[g_k.sizeBytes()];
 		g_k.toBytes(mG_K); //g^k
-		nK.toBytes(mK);  //k
 
-    }
+    
+		//####################### online #########################
+		gTimer.setTimePoint("s online start ");
 
-
-    void JL10PsiSender::sendInput_k283(span<block> inputs, span<Channel> chls)
-	{
-		chls[0].asyncSend(mG_K);
-
-		EllipticCurve mCurve(p256k1, OneBlock);
-		EccNumber nK(mCurve);
-		nK.fromBytes(mK);
-
+		chls[0].asyncSend(mG_K); //send g^k
 
 		u64 numThreads(chls.size());
 		const bool isMultiThreaded = numThreads > 1;
@@ -197,8 +191,8 @@ namespace osuCrypto
 		for (auto& thrd : thrds)
 			thrd.join();
 #endif
-		gTimer.setTimePoint("r on masks done");
-		std::cout << "r gkr done\n";
+		gTimer.setTimePoint("s Psi done");
+		std::cout << "s gkr done\n";
 
 
 	}

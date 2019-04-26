@@ -20,16 +20,15 @@ namespace osuCrypto
 
 		u64 mSetSeedsSize, mChoseSeedsSize, mMyInputSize, mTheirInputSize, mFieldSize;
 		block mCurveSeed;
-		std::vector<u8*> mSeeds; //all ri in bytes for computing (g^k)^(ri) later
-		std::vector<u8*> mG_seeds;
+		//std::vector<u8*> mSeeds; //all ri in bytes for computing (g^k)^(ri) later
+		//std::vector<u8*> mG_seeds;
 
         std::vector<u64> mIntersection;
 
 		//Timer timer;
 
 
-        void init(u64 myInputSize, u64 theirInputSize, u64 secParam, block seed);
-		void sendInput_k283(span<block> inputs, span<Channel> chls);
+        void startPsi(u64 myInputSize, u64 theirInputSize, u64 secParam, block seed,span<block> inputs, span<Channel> chls);
 
     };
 

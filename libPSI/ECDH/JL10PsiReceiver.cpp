@@ -19,8 +19,11 @@ namespace osuCrypto
     JL10PsiReceiver::~JL10PsiReceiver()
     {
     }
-    void JL10PsiReceiver::init(u64 myInputSize, u64 theirInputSize, u64 secParam, block seed)
+    void JL10PsiReceiver::startPsi(u64 myInputSize, u64 theirInputSize, u64 secParam, block seed,span<block> inputs, span<Channel> chls)
     {
+		//####################### offline #########################
+		gTimer.setTimePoint("r offline start ");
+
         mSecParam = secParam;
 		mMyInputSize = myInputSize;
 		mTheirInputSize = theirInputSize;
@@ -44,9 +47,6 @@ namespace osuCrypto
 
 		nSeeds.reserve(mSetSeedsSize);
 		pG_seeds.reserve(mSetSeedsSize);
-		mSeeds.resize(mSetSeedsSize);
-		mG_seeds.resize(mSetSeedsSize);
-
 
 		//compute g^ri
 		for (u64 i = 0; i < mSetSeedsSize; i++)
@@ -55,38 +55,23 @@ namespace osuCrypto
 			nSeeds.emplace_back(mCurve);
 			nSeeds[i].randomize(mPrng);
 
-			mSeeds[i] = new u8[nSeeds[i].sizeBytes()];
-			nSeeds[i].toBytes(mSeeds[i]); //store mSeeds byte for futher computation H(x)*g^ri
-
-			//      pG_seeds[i] = g ^ mSeeds[i]
 			pG_seeds.emplace_back(mCurve);
 			pG_seeds[i] = mG * nSeeds[i];  //g^ri
-										   //std::cout << mG_seeds[i] << std::endl;
-
-			mG_seeds[i] = new u8[pG_seeds[i].sizeBytes()];
-			pG_seeds[i].toBytes(mG_seeds[i]); //store mSeeds byte for futher computation H(x)*g^ri
 		}
 		std::cout << "g^ri done" << std::endl;
-		gTimer.setTimePoint("r off g^ri done");	
-    }
 
 
-    void JL10PsiReceiver::sendInput_k283(span<block> inputs, span<Channel> chls)
-	{
+		//####################### online #########################
+		gTimer.setTimePoint("r online start ");
 
-		EllipticCurve mCurve(p256k1, OneBlock);
 		u8* mG_K; chls[0].recv(mG_K);
-		EccPoint g_k(mCurve); 	g_k.fromBytes(mG_K);
+		EccPoint g_k(mCurve); 	g_k.fromBytes(mG_K); //receiving g^k
 
 		std::cout << "r g^k= " << g_k << std::endl;
 
 		u64 numThreads(chls.size());
 		const bool isMultiThreaded = numThreads > 1;
 		std::vector<std::thread> thrds(numThreads);
-		std::vector<PRNG> thrdPrng(chls.size());
-		for (u64 i = 0; i < thrdPrng.size(); i++)
-			thrdPrng[i].SetSeed(mPrng.get<block>());
-
 		std::mutex mtx;
 
 		u64 n1n2MaskBits = (40 + log2(mTheirInputSize*mMyInputSize));
@@ -99,8 +84,6 @@ namespace osuCrypto
 		//##################### compute/send yi=H(x)*(g^ri). recv yi^k, comp. H(x)^k  #####################
 
 
-		gTimer.setTimePoint("start");
-
 		auto routine = [&](u64 t)
 		{
 
@@ -108,9 +91,7 @@ namespace osuCrypto
 			u64 inputEndIdx = inputs.size() * (t + 1) / chls.size();
 			u64 subsetInputSize = inputEndIdx - inputStartIdx;
 
-
 			auto& chl = chls[t];
-			auto& prng = thrdPrng[t];
 			u8 hashOut[SHA1::HashSize];
 
 			//EllipticCurve curve(p256k1, thrdPrng[t].get<block>());
@@ -130,7 +111,6 @@ namespace osuCrypto
 				std::vector<u8> sendBuff(yik.sizeBytes() * curStepSize);
 				auto sendIter = sendBuff.data();
 				//	std::cout << "send H(y)^b" << std::endl;
-
 			
 
 				//send H(y)^b
@@ -145,9 +125,7 @@ namespace osuCrypto
 					//std::cout << "sp  " << point << "  " << toBlock(hashOut) << std::endl;
 
 					yi.emplace_back(mCurve);
-
-					gri.fromBytes(mG_seeds[i + k]);
-					yi[idxYi] = (point + gri); //H(x) *g^ri
+					yi[idxYi] = (point + pG_seeds[i+k]); //H(x) *g^ri
 
 #ifdef PRINT
 					if (i+k==10)
@@ -167,9 +145,8 @@ namespace osuCrypto
 				
 				for (u64 k = 0; k < curStepSize; k++)
 				{
-					nSeed.fromBytes(mSeeds[i+k]); //restore mSeeds byte for computing (g^k)^(subsum ri) later
 					pgK_seeds.emplace_back(mCurve);
-					pgK_seeds[k] = g_k * nSeed;  //(g^k)^ri
+					pgK_seeds[k] = g_k * nSeeds[i + k];  //(g^k)^ri
 													 //std::cout << mG_seeds[i] << std::endl;		
 				}
 
@@ -314,7 +291,7 @@ namespace osuCrypto
 		for (auto& thrd : thrds)
 			thrd.join();
 
-		gTimer.setTimePoint("r on masks done");
+		gTimer.setTimePoint("r psi done");
 		std::cout << "r gkr done\n";
 
 #endif

@@ -255,13 +255,11 @@ namespace tests_libOTe
 
 		auto thrd = std::thread([&]() {
 			gTimer.setTimePoint("r start ");
-			recv.init(recvSet.size(), sendSet.size(), 40, prng1.get<block>());
-			recv.sendInput_k283(recvSet, recvChls);
+			recv.startPsi(recvSet.size(), sendSet.size(), 40, prng1.get<block>(),recvSet, recvChls);
 
 		});
 
-		sender.init(sendSet.size(), recvSet.size(), 40, prng1.get<block>());
-		sender.sendInput_k283(sendSet, sendChls);
+		sender.startPsi(sendSet.size(), recvSet.size(), 40, prng1.get<block>(), sendSet, sendChls);
 
 		thrd.join();
 
