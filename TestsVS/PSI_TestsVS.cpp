@@ -66,7 +66,12 @@ namespace tests_libOTe
 			DhPSI_impl();
 		}
 
-		
+		TEST_METHOD(subsetSum_TestVS)
+		{
+			InitDebugPrinting();
+			subsetSum_test();
+		}
+
 
 		TEST_METHOD(JL10PSI_TestVS)
 		{

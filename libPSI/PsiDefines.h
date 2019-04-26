@@ -80,7 +80,7 @@ namespace osuCrypto
 		else if (setSize <= (1 << 20))
 		{
 			numSeeds = 2048;
-			numChosen = 16;
+			numChosen = 15;
 		}
 		else if (setSize <= (1 << 22))
 		{

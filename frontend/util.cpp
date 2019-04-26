@@ -6,6 +6,9 @@ using namespace osuCrypto;
 #include <chrono>
 #define tryCount 2
 
+
+
+
 void senderGetLatency(Channel& chl)
 {
 

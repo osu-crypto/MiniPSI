@@ -344,4 +344,78 @@ namespace tests_libOTe
 
 	}
 
+
+	inline std::string arrU8toString(u8* Z, int size)
+	{
+		std::string sss;
+		for (int j = 0; j < size; j++)
+			sss.append(ToString(static_cast<unsigned int>(Z[j])));
+
+		return sss;
+	}
+
+	void subsetSum_test() {
+		
+		PRNG prng(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
+
+		EllipticCurve mCurve(p256k1, OneBlock);
+		EccPoint mG(mCurve);
+		mG = mCurve.getGenerator();
+
+		u64 mMyInputSize = 1 << 20, mSetSeedsSize, mChoseSeedsSize;
+		getExpParams(mMyInputSize, mSetSeedsSize, mChoseSeedsSize);
+
+		std::vector<EccNumber> nSeeds;
+		std::vector<EccPoint> pG_seeds;
+		nSeeds.reserve(mSetSeedsSize);
+		pG_seeds.reserve(mSetSeedsSize);
+
+		//seeds
+		for (u64 i = 0; i < mSetSeedsSize; i++)
+		{
+			// get a random value from Z_p
+			nSeeds.emplace_back(mCurve);
+			nSeeds[i].randomize(prng);
+
+			pG_seeds.emplace_back(mCurve);
+			pG_seeds[i] = mG * nSeeds[i];  //g^ri
+		}
+
+		std::vector<string> checkUnique;
+
+		std::vector<u64> indices(mSetSeedsSize);
+		int cnt = 0;
+
+		for (u64 i = 0; i < mMyInputSize; i++)
+		{
+			std::iota(indices.begin(), indices.end(), 0);
+			std::random_shuffle(indices.begin(), indices.end()); //random permutation and get 1st K indices
+
+			EccPoint g_sum(mCurve);
+
+			for (u64 j = 0; j < mChoseSeedsSize; j++)
+				g_sum = g_sum + pG_seeds[indices[j]]; //g^sum
+
+			u8* temp = new u8[g_sum.sizeBytes()];
+			g_sum.toBytes(temp);
+
+			string str_sum = arrU8toString(temp, g_sum.sizeBytes());
+
+			if (std::find(checkUnique.begin(), checkUnique.end(), str_sum) == checkUnique.end())
+				checkUnique.push_back(str_sum);
+			else
+			{
+				std::cout << "dupl. : " << str_sum <<"\n";
+				cnt++;
+			}
+
+		}
+		std::cout << "cnt= " << cnt<<"\t checkUnique.size()= " << checkUnique.size()<<"\n";
+
+		for (int i = 0; i < checkUnique.size(); i++)
+		{
+			std::cout << "checkUnique. : " << checkUnique[i] << "\n";
+
+		}
+	}
 }
