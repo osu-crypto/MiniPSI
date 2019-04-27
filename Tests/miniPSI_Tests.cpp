@@ -298,6 +298,92 @@ namespace tests_libOTe
 	}
 
 
+
+	void JL10PSI_subsetsum_impl()
+	{
+		setThreadName("Sender");
+		u64 setSenderSize = 1 << 6, setRecvSize = 1 << 6, psiSecParam = 40, numThreads(1);
+
+		PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
+		PRNG prng1(_mm_set_epi32(4253465, 3434565, 234435, 23987025));
+
+
+		std::vector<block> sendSet(setSenderSize), recvSet(setRecvSize);
+		for (u64 i = 0; i < setSenderSize; ++i)
+			sendSet[i] = prng0.get<block>();
+
+		for (u64 i = 0; i < setRecvSize; ++i)
+			recvSet[i] = prng0.get<block>();
+
+
+		for (u64 i = 0; i < setSenderSize; ++i)
+		{
+			sendSet[i] = recvSet[i];
+			//std::cout << "intersection: " <<sendSet[i] << "\n";
+		}
+
+		// set up networking
+		std::string name = "n";
+		IOService ios;
+		Endpoint ep0(ios, "localhost", 1212, EpMode::Client, name);
+		Endpoint ep1(ios, "localhost", 1212, EpMode::Server, name);
+
+		std::vector<Channel> sendChls(numThreads), recvChls(numThreads);
+		for (u64 i = 0; i < numThreads; ++i)
+		{
+			sendChls[i] = ep1.addChannel("chl" + std::to_string(i), "chl" + std::to_string(i));
+			recvChls[i] = ep0.addChannel("chl" + std::to_string(i), "chl" + std::to_string(i));
+		}
+
+
+		JL10PsiSender sender;
+		JL10PsiReceiver recv;
+
+		auto thrd = std::thread([&]() {
+			gTimer.setTimePoint("r start ");
+			recv.startPsi_subsetsum(recvSet.size(), sendSet.size(), 40, prng1.get<block>(), recvSet, recvChls);
+
+		});
+
+		sender.startPsi_subsetsum(sendSet.size(), recvSet.size(), 40, prng1.get<block>(), sendSet, sendChls);
+
+		thrd.join();
+
+		std::cout << gTimer << std::endl;
+
+
+		std::cout << "recv.mIntersection.size(): " << recv.mIntersection.size() << std::endl;
+		for (u64 i = 0; i < recv.mIntersection.size(); ++i)//thrds.size()
+		{
+			std::cout << "#id: " << recv.mIntersection[i] <<
+				"\t" << recvSet[recv.mIntersection[i]] << std::endl;
+		}
+
+		u64 dataSent = 0, dataRecv(0);
+		for (u64 g = 0; g < recvChls.size(); ++g)
+		{
+			dataSent += recvChls[g].getTotalDataSent();
+			dataRecv += recvChls[g].getTotalDataRecv();
+			recvChls[g].resetStats();
+		}
+
+		//		std::cout << "      Total Comm = " << string_format("%5.2f", (dataRecv + dataSent) / std::pow(2.0, 20)) << " MB\n";
+
+
+
+
+		for (u64 i = 0; i < numThreads; ++i)
+		{
+			sendChls[i].close();
+			recvChls[i].close();
+		}
+
+		ep0.stop(); ep1.stop();	ios.stop();
+
+
+	}
+
+
 	void exp_test()
 	{
 		std::cout << "curveParam = k283\n";
@@ -418,4 +504,82 @@ namespace tests_libOTe
 
 		}
 	}
+
+	
+
+	void subsetSum(vector<EccPoint>& g_sum) { //fail
+
+		PRNG prng(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
+
+		EllipticCurve mCurve(p256k1, OneBlock);
+		EccPoint mG(mCurve);
+		mG = mCurve.getGenerator();
+
+		u64 mMyInputSize = 1 << 6, mSetSeedsSize, mChoseSeedsSize;
+		getExpParams(mMyInputSize, mSetSeedsSize, mChoseSeedsSize);
+
+		std::vector<EccNumber> nSeeds;
+		std::vector<EccPoint> pG_seeds;
+		nSeeds.reserve(mSetSeedsSize);
+		pG_seeds.reserve(mSetSeedsSize);
+
+		//seeds
+		for (u64 i = 0; i < mSetSeedsSize; i++)
+		{
+			// get a random value from Z_p
+			nSeeds.emplace_back(mCurve);
+			nSeeds[i].randomize(prng);
+
+			pG_seeds.emplace_back(mCurve);
+			pG_seeds[i] = mG * nSeeds[i];  //g^ri
+		}
+
+		std::vector<string> checkUnique;
+
+		std::vector<u64> indices(mSetSeedsSize);
+		int cnt = 0;
+
+		g_sum.reserve(mMyInputSize);
+
+		for (u64 i = 0; i < mMyInputSize; i++)
+		{
+			std::iota(indices.begin(), indices.end(), 0);
+			std::random_shuffle(indices.begin(), indices.end()); //random permutation and get 1st K indices
+
+			g_sum.emplace_back(mCurve);
+
+			for (u64 j = 0; j < mChoseSeedsSize; j++)
+				g_sum[i] = g_sum[i] + pG_seeds[indices[j]]; //g^sum
+
+			u8* temp = new u8[g_sum[i].sizeBytes()];
+			g_sum[i].toBytes(temp);
+
+			string str_sum = arrU8toString(temp, g_sum[i].sizeBytes());
+
+			if (std::find(checkUnique.begin(), checkUnique.end(), str_sum) == checkUnique.end())
+				checkUnique.push_back(str_sum);
+			else
+			{
+				std::cout << "dupl. : " << str_sum << "\n";
+				cnt++;
+			}
+
+		}
+		std::cout << "cnt= " << cnt << "\t checkUnique.size()= " << checkUnique.size() << "\n";
+
+		for (int i = 0; i < checkUnique.size(); i++)
+		{
+			//std::cout << "checkUnique. : " << checkUnique[i] << "\n";
+
+		}
+		
+	}
+
+	/*void subsetSum_test() {
+		
+		vector<EccPoint> points;
+		subsetSum(points);
+		std::cout << "points: " << points.size() << "\n";
+
+	}*/
 }

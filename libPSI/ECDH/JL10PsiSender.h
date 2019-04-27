@@ -25,8 +25,8 @@ namespace osuCrypto
 
 		u64 mMyInputSize, mTheirInputSize,  mStepSize, mPsiSecParam, mFieldSize;
 
-        void startPsi(u64 myInputSize, u64 theirInputSize, u64 secParam, block seed, span<block> inputs, span<Channel> chls);
-		//void sendInput_k283(span<block> inputs, span<Channel> chls);
+		void startPsi(u64 myInputSize, u64 theirInputSize, u64 secParam, block seed, span<block> inputs, span<Channel> chls);
+		void startPsi_subsetsum(u64 myInputSize, u64 theirInputSize, u64 secParam, block seed, span<block> inputs, span<Channel> chls);
 
 
 
