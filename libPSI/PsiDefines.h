@@ -23,7 +23,10 @@ namespace osuCrypto
 
 	static const u64 stepSize(1 << 8);
 	static const u64 stepSizeMaskSent(1<<11);
-	static const u8 numSuperBlocks(4); //wide of T (or field size)
+//	static const u8 numSuperBlocks(4); //wide of T (or field size) 
+	static const u8 numSuperBlocks(3); //wide of T (or field size)  =3 for HD-PSI
+
+
 	static const u8 first2Slices(2); //2*128 + (436-2*128)
 	static const u64 recvNumDummies(1);
 	static const u64 recvMaxBinSize(40);
@@ -249,4 +252,11 @@ namespace osuCrypto
 
 	}
 
+	inline void printArrU8(u8* Z, int size) {
+
+		for (int i = 0; i < size; i++)
+			std::cout << static_cast<unsigned int>(Z[i]);
+
+		std::cout << std::endl;
+	}
 }

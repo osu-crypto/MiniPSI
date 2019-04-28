@@ -55,7 +55,7 @@ namespace osuCrypto
 						
 
 			mBins[b1].blks.push_back(items[idxItem]);
-			mBins[b2].blks.push_back(items[idxItem]^OneBlock);
+			mBins[b2].blks.push_back(items[idxItem]);
 
 			mBins[b1].hashIdxs.push_back(0);
 			mBins[b2].hashIdxs.push_back(1);

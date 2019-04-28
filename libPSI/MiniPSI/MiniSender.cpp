@@ -50,11 +50,6 @@ namespace osuCrypto
 		//std::cout << "s g^k= " << pGtest << std::endl;
 		//std::cout << "s k= " << nK << std::endl;
 		//std::cout << "s k= " << nKTest << std::endl;
-	
-
-		//####################### online #########################
-		gTimer.setTimePoint("r online start ");
-		chls[0].asyncSend(mG_K);
 
 
 		u64 numThreads(chls.size());
@@ -64,7 +59,11 @@ namespace osuCrypto
 
 
 		u64 n1n2MaskBits = (40 + log2(mTheirInputSize*mMyInputSize));
-		u64 n1n2MaskBytes =  (n1n2MaskBits + 7) / 8;
+		u64 n1n2MaskBytes = (n1n2MaskBits + 7) / 8;
+
+		//####################### online #########################
+		gTimer.setTimePoint("r online start ");
+		chls[0].asyncSend(mG_K);
 
 
 		//=====================Poly=====================
@@ -185,92 +184,223 @@ namespace osuCrypto
 		std::cout << "s mask done\n";
 
 
-#if 0
-		//=====================Sort=====================
+		
 
 
+	}
 
-		//std::cout << globalHash.size() << " globalHash.size()\n";
 
-		auto compareBlockFunction = [](const block& lhs, const block& rhs) -> bool {
-			return memcmp(&lhs, &rhs, sizeof(block)) < 0;
-		};
+	void MiniSender::outputHashing(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG & prng, span<block> inputs, span<Channel> chls)
+	{
+		//####################### offline #########################
+#pragma region Offline
+		gTimer.setTimePoint("r offline start ");
 
-		std::sort(globalHash.begin(), globalHash.end(), compareBlockFunction);
-		gTimer.setTimePoint("s_sort");
+		mPsiSecParam = psiSecParam;
+		mMyInputSize = myInputSize;
+		mTheirInputSize = theirInputSize;
 
-		//block 
-		block boundMaskDiff = ZeroBlock;
-		for (u64 i = 0; i < hashMaskBytes * 8; i++)
-			boundMaskDiff = boundMaskDiff^mOneBlocks[i];
-		//std::cout << boundMaskDiff << "  boundMaskDiff\n";
+		mPrng.SetSeed(prng.get<block>());
+		mCurveSeed = mPrng.get<block>();
 
-		auto sendingMask = [&](u64 t)
+		simple.init(mTheirInputSize, recvMaxBinSize, recvNumDummies);
+
+		EllipticCurve mCurve(p256k1, OneBlock);
+		mFieldSize = mCurve.bitCount();
+
+		//std::cout << "s mFieldSize= " << mFieldSize << "\n";
+
+
+		EccNumber nK(mCurve);
+		EccPoint pG(mCurve);
+		nK.randomize(mPrng);
+		pG = mCurve.getGenerator();
+		mPolyBytes = pG.sizeBytes();
+		//std::cout << "s mPolyBytes= " << mPolyBytes << "\n";
+
+		auto g_k = pG*nK;
+		mG_K = new u8[g_k.sizeBytes()];
+		g_k.toBytes(mG_K); //g^k
+
+		u64 numThreads(chls.size());
+		const bool isMultiThreaded = numThreads > 1;
+		std::vector<std::thread> thrds(numThreads);
+		std::mutex mtx;
+
+
+		u64 n1n2MaskBits = (40 + log2(mTheirInputSize*mMyInputSize));
+		u64 n1n2MaskBytes = (n1n2MaskBits + 7) / 8;
+		simple.init(mTheirInputSize, recvMaxBinSize, recvNumDummies);
+
+#pragma endregion
+
+		//####################### online #########################
+		gTimer.setTimePoint("r online start ");
+		simple.insertItems(inputs);
+		gTimer.setTimePoint("s_binning");
+
+		chls[0].asyncSend(mG_K);
+
+		std::vector<std::vector<u8>> sendBuff_mask(chls.size()); //H(x)^k
+		std::array<std::vector<u8>, 2> globalHash;
+		globalHash[0].resize(inputs.size()*n1n2MaskBytes);
+		globalHash[1].resize(inputs.size()*n1n2MaskBytes);
+		std::array<std::vector<u64>, 2>permute;
+		int idxPermuteDone[2];
+		for (u64 j = 0; j < 2; j++)
+		{
+			permute[j].resize(inputs.size());
+			for (u64 i = 0; i < inputs.size(); i++)
+				permute[j][i] = i;
+
+			//permute position
+			//std::shuffle(permute[j].begin(), permute[j].end(), mPrng);
+			idxPermuteDone[j] = 0; //count the number of permutation that is done.
+		}
+
+
+		//=====================compute P(x)^k=====================
+		auto routine = [&](u64 t)
 		{
 			auto& chl = chls[t];
-
-			u64 startIdx = mMyInputSize * t / numThreads;
-			u64 tempEndIdx = mMyInputSize* (t + 1) / numThreads;
-			u64 endIdx = std::min(tempEndIdx, mMyInputSize);
-
+			u64 binStartIdx = simple.mNumBins * t / numThreads;
+			u64 tempBinEndIdx = (simple.mNumBins * (t + 1) / numThreads);
+			u64 binEndIdx = std::min(tempBinEndIdx, simple.mNumBins);
 			
-			/*block aaa = ZeroBlock;
-			memcpy((u8*)&aaa, sendBuff.data(), n1n2MaskBytes);
-			std::cout << aaa << " sendBuff[0] \t" << globalHash[0] << "\n";*/
+			polyNTL poly;
+			poly.NtlPolyInit(mPolyBytes);
 
-
-			block diff;
-			for (u64 i = startIdx; i < endIdx - 1; i += stepSizeMaskSent)
+			for (u64 i = binStartIdx; i < binEndIdx; i += stepSize)
 			{
-				auto curStepSize = std::min(stepSizeMaskSent, endIdx-1 - i);
+				auto curStepSize = std::min(stepSize, binEndIdx - i);
+				
+				
+				//=====================receive Poly=====================
+				std::vector<u8> recvBuff;
+				chl.recv(recvBuff); 
+				u64 iterSend = 0, iterRecv = 0;
 
+				if (recvBuff.size() != curStepSize * simple.mTheirMaxBinSize*mPolyBytes)
+				{
+					std::cout << "error @ recvBuff.size() != curStepSize * simple.mTheirMaxBinSize*mPolyBytes " << (LOCATION) << std::endl;
+					throw std::runtime_error(LOCATION);
+				}
 
-				std::vector<u8> sendBuff(1.02*curStepSize*(hashMaskBytes));
-
-				u64 iterSendDiff = 0;
-
-				memcpy(sendBuff.data(), (u8*)&globalHash[i], n1n2MaskBytes);
-				iterSendDiff += n1n2MaskBytes;
 
 				for (u64 k = 0; k < curStepSize; ++k)
 				{
-					u64 idx = i + k;
+					u64 bIdx = i + k;
+					//std::cout << "bIdx= " << bIdx << std::endl;
 
-					diff = globalHash[idx + 1] - globalHash[idx];
+					u64 realNumItem = simple.mBins[bIdx].blks.size();
 
-					if (memcmp(&diff, &boundMaskDiff, hashMaskBytes) < 0)
+					u64 degree = simple.mTheirMaxBinSize - 1;
+					std::vector<std::array<block, numSuperBlocks>> YRi_bytes(realNumItem), coeffs(degree + 1); //
+					block rcvBlk;
+
+
+					for (int c = 0; c < coeffs.size(); c++)
 					{
-						//std::cout << diff << "  " << idx << "\t ==diff==\t" << globalHash[idx + 1] << "\t" << globalHash[idx] << "\n";
-						memcpy(sendBuff.data() + iterSendDiff, (u8*)&diff, hashMaskBytes);
-						iterSendDiff += hashMaskBytes;
-					}
-					else
-					{
-						//std::cout << diff << "  " << idx << "\t ==dddddiff==\t" << globalHash[idx + 1] << "\t" << globalHash[idx] << "\n";
+						memcpy((u8*)&coeffs[c], recvBuff.data() + iterRecv, mPolyBytes);
+						iterRecv += mPolyBytes;
 
-						memcpy(sendBuff.data() + iterSendDiff, (u8*)&ZeroBlock, hashMaskBytes);
-						iterSendDiff += hashMaskBytes;
-
-						memcpy(sendBuff.data() + iterSendDiff, (u8*)& globalHash[idx + 1], n1n2MaskBytes);
-						iterSendDiff += n1n2MaskBytes;
-					}
-					if (iterSendDiff > sendBuff.size())
-					{
-						std::cout << "iterSendDiff > sendBuff.size(): " << iterSendDiff << "\t" << sendBuff.size() << "\n";
-						sendBuff.resize(sendBuff.size() + (inputs.size() - iterSendDiff)*hashMaskBytes);
+						//for (int iii = 0; iii < numSuperBlocks; iii++)
+							//std::cout << coeffs[c][iii] << "  s coeff bin#" << bIdx<<"\n";
 					}
 
-					//std::cout << "s mask: " << idx << "  " << globalHash[idx+1] << " - " <<globalHash[idx] << " ===diff:===" << diff << "\n";
 
+					poly.evalSuperPolynomial(coeffs, simple.mBins[bIdx].blks, YRi_bytes); //P(x)
+					//std::cout << "poly.evalSuperPolynomial done YRi_bytes.size()=" << YRi_bytes.size() << std::endl;
+
+					
+					/*for (u64 idx = 0; idx < YRi_bytes.size(); ++idx)
+					{
+						std::cout << simple.mBins[bIdx].blks[idx] << "\n";
+						for (int iii = 0; iii < numSuperBlocks; iii++)
+							std::cout << YRi_bytes[idx][iii] << " s P(x)\n";
+						
+						std::cout << "\n";
+					}*/
+
+
+					
+
+
+					for (u64 idx = 0; idx < YRi_bytes.size(); ++idx)
+					{
+						
+						EccPoint point_ri(mCurve);
+
+						u8* yri = new u8[mPolyBytes];
+						memcpy(yri, (u8*)&YRi_bytes[idx], mPolyBytes);
+						
+						//std::cout << simple.mBins[bIdx].blks[idx] << "  s x bin#" << bIdx << "\n";
+						//std::cout << toBlock(yri) << "\n";
+						//std::cout << toBlock(yri + sizeof(block)) << "\n";
+						//std::cout << toBlock(yri+2*sizeof(block)) << "\n";
+						//for (int iii = 0; iii < numSuperBlocks; iii++)
+						//	std::cout << YRi_bytes[idx][iii] << " s evalP(x) bin#" << bIdx << "\n";
+
+
+						
+						point_ri.fromBytes(yri);
+						//std::cout << "s point_ri= " << point_ri << std::endl;
+
+						auto yri_K = point_ri*nK; //P(x)^k
+						//std::cout << "s yri_K[" << idx << "]= " << yri_K << std::endl;
+						u8* temp = new u8[mPolyBytes];
+						yri_K.toBytes(temp);
+
+						u64 hashIdx = simple.mBins[bIdx].hashIdxs[idx];
+						memcpy(globalHash[hashIdx].data() + permute[hashIdx][idxPermuteDone[hashIdx]++] * n1n2MaskBytes
+							, temp, n1n2MaskBytes);
+
+						//std::cout << "s sendIter= " << idxItem << " - " << toBlock(temp) << std::endl;
+					}
 				}
-				//memcpy(sendBuff.data() + iterSendDiff, (u8*)& ZeroBlock, sendBuff.size()- iterSendDiff);
-
-
-				chl.asyncSend(std::move(sendBuff));
 			}
 		};
 
-	
+
+		for (u64 i = 0; i < thrds.size(); ++i)
+		{
+			thrds[i] = std::thread([=] {
+				routine(i);
+			});
+		}
+		for (auto& thrd : thrds)
+			thrd.join();
+
+		gTimer.setTimePoint("s P(x)^k done");
+
+		std::cout << "s P(x)^k done\n";
+
+
+		//#####################Send Mask #####################
+
+#if 1
+		auto sendingMask = [&](u64 t)
+		{
+			auto& chl = chls[t]; //parallel along with inputs
+			u64 startIdx = inputs.size() * t / numThreads;
+			u64 tempEndIdx = (inputs.size() * (t + 1) / numThreads);
+			u64 endIdx = std::min(tempEndIdx, (u64)inputs.size());
+
+
+			for (u64 i = startIdx; i < endIdx; i += stepSizeMaskSent)
+			{
+				auto curStepSize = std::min(stepSizeMaskSent, endIdx - i);
+
+				for (u64 hIdx = 0; hIdx < 2; hIdx++)
+				{
+					std::vector<u8> sendBuff(curStepSize*n1n2MaskBytes);
+					memcpy(sendBuff.data(), globalHash[hIdx].data() + i*n1n2MaskBytes, curStepSize*n1n2MaskBytes);
+					chl.asyncSend(std::move(sendBuff));
+				}
+
+			}
+		};
+
 		for (u64 i = 0; i < thrds.size(); ++i)//thrds.size()
 		{
 			thrds[i] = std::thread([=] {
@@ -280,11 +410,11 @@ namespace osuCrypto
 
 		for (auto& thrd : thrds)
 			thrd.join();
-
-
 #endif
-	}
+		gTimer.setTimePoint("r Psi done");
+		std::cout << "s gkr done\n";
 
+	}
 
 }
 

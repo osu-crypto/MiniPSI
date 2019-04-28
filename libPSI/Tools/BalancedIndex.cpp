@@ -201,7 +201,7 @@ namespace osuCrypto
 					if(it->second[idx].mHashIdx==0)
 						mBins[idxBin].blks.push_back(items[it->second[idx].mIdx]);
 					else
-						mBins[idxBin].blks.push_back(items[it->second[idx].mIdx]^OneBlock);
+						mBins[idxBin].blks.push_back(items[it->second[idx].mIdx]);
 				
 					mBins[idxBin].idxs.push_back(it->second[idx].mIdx);
 					mBins[idxBin].hashIdxs.push_back(it->second[idx].mHashIdx);

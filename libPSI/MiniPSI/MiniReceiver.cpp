@@ -326,6 +326,353 @@ namespace osuCrypto
 				thrd.join();
 
 			gTimer.setTimePoint("r on masks done");
+			std::cout << "psi done\n";
+
+		}
+
+	void MiniReceiver::outputHashing(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG & prng, span<block> inputs, span<Channel> chls)
+		{
+			//####################### offline #########################
+#pragma region Offline
+			gTimer.setTimePoint("r offline start ");
+
+			mPsiSecParam = psiSecParam;
+			mMyInputSize = myInputSize;
+			mTheirInputSize = theirInputSize;
+			mPrng.SetSeed(prng.get<block>());
+			getExpParams(mMyInputSize, mSetSeedsSize, mChoseSeedsSize);
+
+			std::cout << "r mSetSeedsSize= " << mMyInputSize << " - " << mSetSeedsSize << " - " << mChoseSeedsSize << "\n";
+
+			//seed for subset-sum exp
+			mCurveSeed = mPrng.get<block>();
+			EllipticCurve mCurve(p256k1, OneBlock);
+			//mCurve.getMiracl().IOBASE = 10;
+			mFieldSize = mCurve.bitCount();
+			//std::cout << "r mFieldSize= " << mFieldSize << "\n";
+
+
+			EccPoint mG(mCurve);
+			mG = mCurve.getGenerator();
+			//std::cout << mG << std::endl;
+			mPolyBytes = mG.sizeBytes();
+			//std::cout << "r mPolyBytes= " << mPolyBytes << "\n";
+
+
+			std::vector<EccNumber> nSeeds;
+			std::vector<EccPoint> pG_seeds;
+
+			nSeeds.reserve(mSetSeedsSize);
+			pG_seeds.reserve(mSetSeedsSize);
+
+			//seeds
+			for (u64 i = 0; i < mSetSeedsSize; i++)
+			{
+				// get a random value from Z_p
+				nSeeds.emplace_back(mCurve);
+				nSeeds[i].randomize(prng);
+
+				//      pG_seeds[i] = g ^ mSeeds[i]
+				pG_seeds.emplace_back(mCurve);
+				pG_seeds[i] = mG * nSeeds[i];  //g^ri
+											   //std::cout << mG_seeds[i] << std::endl;
+			}
+			std::cout << "pG_seeds done" << std::endl;
+			gTimer.setTimePoint("r off pG_seeds done");
+
+			//generate all pairs from seeds
+			std::vector<std::pair<std::vector<u64>, EccPoint>> mG_pairs; //{index of sub ri}, g^(subsum ri)
+			mG_pairs.reserve(myInputSize);
+
+			std::vector<u64> indices(mSetSeedsSize);
+
+			for (u64 i = 0; i < myInputSize; i++)
+			{
+				std::iota(indices.begin(), indices.end(), 0);
+				std::random_shuffle(indices.begin(), indices.end()); //random permutation and get 1st K indices
+
+				EccPoint g_sum(mCurve);
+
+				for (u64 j = 0; j < mChoseSeedsSize; j++)
+					g_sum = g_sum + pG_seeds[indices[j]]; //g^sum
+
+				std::vector<u64> subIdx(indices.begin(), indices.begin() + mChoseSeedsSize);
+				mG_pairs.push_back(std::make_pair(subIdx, g_sum));
+
+
+				//std::cout << "r sum= " << mG_pairs[i].first[0]
+				//	<< " - " << g_sum.sizeBytes()
+				//	<< " - " << toBlock(mG_pairs[i].second)
+				//	<< " - " << toBlock(mG_pairs[i].second + sizeof(block))
+				//	<< " - " << toBlock(mG_pairs[i].second + g_sum.sizeBytes() - 2 * sizeof(block)) << std::endl;
+
+				//EccPoint g_sumTest(mCurve);
+				//g_sumTest.fromBytes(mG_pairs[i].second);
+				//std::cout << g_sum << "\n";
+				//std::cout << g_sumTest << "\n";
+
+				//u8* tempBlk = new u8[g_sum.sizeBytes()];
+				//tempBlk = mG_pairs[i].second;
+				//g_sumTest.fromBytes(tempBlk);
+				//std::cout << g_sumTest << "\n";
+
+			}
+			mBalance.init(mMyInputSize, recvMaxBinSize, recvNumDummies);
+
+			u64 numThreads(chls.size());
+			const bool isMultiThreaded = numThreads > 1;
+			std::vector<std::thread> thrds(numThreads);
+			std::mutex mtx;
+
+			u64 n1n2MaskBits = (40 + log2(mTheirInputSize*mMyInputSize));
+			u64 n1n2MaskBytes = (n1n2MaskBits + 7) / 8;
+			u8* mG_K;
+			EccPoint g_k(mCurve);
+			std::vector<EccPoint> pgK_seeds;
+			pgK_seeds.reserve(mSetSeedsSize);
+			for (u64 i = 0; i < mSetSeedsSize; i++)
+				pgK_seeds.emplace_back(mCurve);
+
+			std::array<std::unordered_map<u64, std::pair<block, u64>>, 2> localMasks; //for hash 0 and 1
+			localMasks[0].reserve(inputs.size());//for hash 0
+			localMasks[1].reserve(inputs.size());//for hash 1
+
+			std::cout << "mG_pairs done" << std::endl;
+
+#pragma endregion 
+
+			//####################### online #########################
+			gTimer.setTimePoint("r online start ");
+
+			mBalance.insertItems(inputs);//Balaced Allocation=====================
+			gTimer.setTimePoint("r_binning");
+			
+			chls[0].recv(mG_K);
+			g_k.fromBytes(mG_K);
+			//std::cout << "r g^k= " << g_k << std::endl;
+
+			//#####################(g^K)^ (subsum ri) #####################
+
+			//computing (g^k)^seeds
+			for (u64 i = 0; i < mSetSeedsSize; i++)
+			{
+				pgK_seeds[i] = g_k * nSeeds[i];  //(g^k)^ri
+												 //std::cout << mG_seeds[i] << std::endl;		
+			}
+
+
+			//=====================Poly=====================
+			auto routine = [&](u64 t)
+			{
+				auto& chl = chls[t];
+				u64 binStartIdx = mBalance.mNumBins * t / numThreads;
+				u64 tempBinEndIdx = (mBalance.mNumBins * (t + 1) / numThreads);
+				u64 binEndIdx = std::min(tempBinEndIdx, mBalance.mNumBins);
+
+				polyNTL poly;
+				poly.NtlPolyInit(mPolyBytes);
+
+
+				for (u64 i = binStartIdx; i < binEndIdx; i += stepSize)
+				{
+					auto curStepSize = std::min(stepSize, binEndIdx - i);
+					std::vector<u8> sendBuff(curStepSize*mBalance.mMaxBinSize*mPolyBytes);
+
+					u64 iterSend = 0;
+					for (u64 k = 0; k < curStepSize; ++k)
+					{
+						u64 bIdx = i + k;
+						std::vector<std::array<block, numSuperBlocks>> listGRi(mBalance.mBins[bIdx].cnt);
+
+						//get list of g^ri for xi in bin
+						for (u64 idx = 0; idx < mBalance.mBins[bIdx].cnt; ++idx)
+						{
+							for (u64 j = 0; j < numSuperBlocks; ++j)
+								listGRi[idx][j] = ZeroBlock; //init
+
+							u8* temp = new u8[mPolyBytes];
+							mG_pairs[mBalance.mBins[bIdx].idxs[idx]].second.toBytes(temp);
+							memcpy((u8*)&listGRi[idx], temp, mPolyBytes);
+						}
+													
+
+						//=====================Pack=====================
+						u64 degree = mBalance.mMaxBinSize - 1;
+						std::vector<std::array<block, numSuperBlocks>> coeffs;
+
+						poly.getSuperBlksCoefficients(degree, mBalance.mBins[bIdx].blks, listGRi, coeffs);
+						for (int c = 0; c < coeffs.size(); c++) {
+
+							//for (int iii = 0; iii < numSuperBlocks; iii++)
+							//	std::cout << coeffs[c][iii] << "  r coeff\n bin#" << bIdx << "\n";
+
+							memcpy(sendBuff.data() + iterSend, (u8*)&coeffs[c], mPolyBytes);
+							iterSend += mPolyBytes;
+						}
+
+						//std::vector<std::array<block, numSuperBlocks>> YRi_bytes(mBalance.mBins[bIdx].blks.size());
+						//poly.evalSuperPolynomial(coeffs, mBalance.mBins[bIdx].blks, YRi_bytes); //P(x)
+
+
+						//for (u64 idx = 0; idx < YRi_bytes.size(); ++idx)
+						//{
+						//	std::cout << mBalance.mBins[bIdx].blks[idx] << " r x bin#" << bIdx << "\n";
+						//	for (int iii = 0; iii < numSuperBlocks; iii++)
+						//		std::cout << listGRi[idx][iii] << "  r P(x)\n";
+
+						//	for (int iii = 0; iii < numSuperBlocks; iii++)
+						//		std::cout << YRi_bytes[idx][iii] << "  r evalP(x) bin#" << bIdx << "\n";
+
+						//	EccPoint point_ri(mCurve);
+						//	u8* yri = new u8[point_ri.sizeBytes()];
+						//	memcpy(yri, (u8*)&YRi_bytes[idx], mPolyBytes);
+						//	point_ri.fromBytes(yri);
+						//	std::cout << "r point_ri= " << point_ri << std::endl;
+						//	std::cout << "\n";
+						//}
+
+
+
+					}
+					//std::cout << sendBuff.size() << "  sendBuff.size()\n";
+					chl.asyncSend(std::move(sendBuff)); //send poly P(x)=g^ri
+
+
+					//compute (g^k)^sum ri
+					for (u64 k = 0; k < curStepSize; ++k)
+					{
+						u64 bIdx = i + k;
+					
+						for (u64 idx = 0; idx < mBalance.mBins[bIdx].cnt; ++idx)
+						{
+							EccPoint gk_sum(mCurve);
+							int idxItem = mBalance.mBins[bIdx].idxs[idx];
+							int idxItemHash = mBalance.mBins[bIdx].hashIdxs[idx];
+
+							for (u64 j = 0; j < mG_pairs[idxItem].first.size(); j++) //for all subset ri
+								gk_sum = gk_sum + pgK_seeds[mG_pairs[idxItem].first[j]]; //(g^k)^(subsum ri)
+
+							u8* gk_sum_byte = new u8[gk_sum.sizeBytes()];
+							gk_sum.toBytes(gk_sum_byte);
+
+							//std::cout << "r gk_sum: " << i << " - " << gk_sum << std::endl;
+							//std::cout << "r toBlock(gk_sum_byte): " << i << " - " << toBlock(gk_sum_byte) << std::endl;
+							block temp = toBlock(gk_sum_byte);
+							localMasks[idxItemHash].emplace(*(u64*)&temp, std::pair<block, u64>(temp, idxItem));
+						}
+					}
+				}
+
+			};
+
+			for (u64 i = 0; i < thrds.size(); ++i)
+			{
+				thrds[i] = std::thread([=] {
+					routine(i);
+				});
+			}
+
+			for (auto& thrd : thrds)
+				thrd.join();
+
+			gTimer.setTimePoint("send poly + g^ri^k done");
+
+
+
+			//#####################Receive Mask #####################
+#if 1
+			auto receiveMask = [&](u64 t)
+			{
+				auto& chl = chls[t]; //parallel along with inputs
+				u64 startIdx = mTheirInputSize * t / numThreads;
+				u64 tempEndIdx = mTheirInputSize* (t + 1) / numThreads;
+				u64 endIdx = std::min(tempEndIdx, mTheirInputSize);
+
+
+				for (u64 i = startIdx; i < endIdx; i += stepSizeMaskSent)
+				{
+					auto curStepSize = std::min(stepSizeMaskSent, endIdx - i);
+					std::vector<u8> recvBuffs;
+
+					//receive the sender's marks, we have 2 buffs that corresponding to the mask of elements used hash index 0,1
+					for (u64 hIdx = 0; hIdx < 2; hIdx++)
+					{
+						chl.recv(recvBuffs); //receive Hash
+
+						auto theirMasks = recvBuffs.data();
+#if 1
+						if (n1n2MaskBytes >= sizeof(u64)) //unordered_map only work for key >= 64 bits. i.e. setsize >=2^12
+						{
+							for (u64 k = 0; k < curStepSize; ++k)
+							{
+
+								auto& msk = *(u64*)(theirMasks);
+								// check 64 first bits
+								auto match = localMasks[hIdx].find(msk);
+
+								//if match, check for whole bits
+								if (match != localMasks[hIdx].end())
+								{
+									if (memcmp(theirMasks, &match->second.first, n1n2MaskBytes) == 0) // check full mask
+									{
+										if (isMultiThreaded)
+										{
+											std::lock_guard<std::mutex> lock(mtx);
+											mIntersection.push_back(match->second.second);
+										}
+										else
+										{
+											mIntersection.push_back(match->second.second);
+										}
+									}
+								}
+								theirMasks += n1n2MaskBytes;
+							}
+						}
+						else //for small set, do O(n^2) check
+						{
+							for (u64 k = 0; k < curStepSize; ++k)
+							{
+
+								for (auto match = localMasks[hIdx].begin(); match != localMasks[hIdx].end(); ++match)
+								{
+									if (memcmp(theirMasks, &match->second.first, n1n2MaskBytes) == 0) // check full mask
+									{
+										if (isMultiThreaded)
+										{
+											std::lock_guard<std::mutex> lock(mtx);
+											mIntersection.push_back(match->second.second);
+										}
+										else
+										{
+											mIntersection.push_back(match->second.second);
+										}
+									}
+								}
+								theirMasks += n1n2MaskBytes;
+
+							}
+						}
+					
+#endif				
+					
+					}
+				}
+			};
+
+
+			for (u64 i = 0; i < thrds.size(); ++i)//thrds.size()
+			{
+				thrds[i] = std::thread([=] {
+					receiveMask(i);
+				});
+			}
+
+			for (auto& thrd : thrds)
+				thrd.join();
+
+#endif
+			gTimer.setTimePoint("r on masks done");
 			std::cout << "r gkr done\n";
 
 		}

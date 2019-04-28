@@ -60,6 +60,12 @@ namespace tests_libOTe
 			MiniPSI_impl2();
 		}
 
+		TEST_METHOD(MiniPSI_hasing_TestVS)
+		{
+			InitDebugPrinting();
+			MiniPSI_hasing_impl();
+		}
+
 		TEST_METHOD(DhPSI_TestVS)
 		{
 			InitDebugPrinting();
@@ -86,7 +92,6 @@ namespace tests_libOTe
 		}
 
 
-		
 
 	};
 }

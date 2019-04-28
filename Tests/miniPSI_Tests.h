@@ -9,4 +9,6 @@ namespace tests_libOTe
 	void JL10PSI_impl();
 	void JL10PSI_subsetsum_impl();
 	void subsetSum_test();
+
+	void MiniPSI_hasing_impl();
 }

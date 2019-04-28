@@ -21,6 +21,7 @@ namespace osuCrypto {
 	class MiniSender :public TimerAdapter
 	{
 	public:
+		SimpleIndex simple;
 
 		Ecc2mParams mCurveParam;
 		block mCurveSeed;
@@ -28,14 +29,14 @@ namespace osuCrypto {
 		u8* mK; 
 		u8* mG_K;
 
-		SimpleIndex simple;
-
 		//bool mHasBase;
 		u64 mMyInputSize, mTheirInputSize, mPolyBytes, mPolyDegree, mStepSize, mPsiSecParam, mFieldSize;
 		PRNG mPrng;
 		ZZ mPrime;
 
 		void outputBigPoly(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG& prng, span<block> inputs, span<Channel> chls);
+		void outputHashing(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG& prng, span<block> inputs, span<Channel> chls);
+		
 		/////*void output(span<block> inputs, span<Channel> chls);
 		////void outputBestComm(span<block> inputs, span<Channel> chls);*/
 		//void outputBigPoly(span<block> inputs, span<Channel> chls);
