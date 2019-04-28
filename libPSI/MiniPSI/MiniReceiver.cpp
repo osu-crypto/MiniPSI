@@ -14,18 +14,16 @@ using namespace NTL;
 
 namespace osuCrypto
 {
-	void MiniReceiver::init(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG & prng, span<Channel> chls)
+	void MiniReceiver::outputBigPoly(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG & prng, span<block> inputs, span<Channel> chls)
 	{
+		//####################### offline #########################
+		gTimer.setTimePoint("r offline start ");
 
 		mPsiSecParam = psiSecParam;
 		mMyInputSize = myInputSize;
 		mTheirInputSize = theirInputSize;
 		mPrng.SetSeed(prng.get<block>());
-
-		mBalance.init(mMyInputSize, recvMaxBinSize, recvNumDummies);
 		getExpParams(mMyInputSize, mSetSeedsSize, mChoseSeedsSize);
-
-
 
 		std::cout << "r mSetSeedsSize= " << mMyInputSize << " - " << mSetSeedsSize << " - " << mChoseSeedsSize << "\n";
 
@@ -34,7 +32,6 @@ namespace osuCrypto
 		EllipticCurve mCurve(p256k1, OneBlock);
 		//mCurve.getMiracl().IOBASE = 10;
 		mFieldSize = mCurve.bitCount();
-
 		//std::cout << "r mFieldSize= " << mFieldSize << "\n";
 
 
@@ -50,8 +47,6 @@ namespace osuCrypto
 
 		nSeeds.reserve(mSetSeedsSize);
 		pG_seeds.reserve(mSetSeedsSize);
-		mSeeds.resize(mSetSeedsSize);
-
 
 		//seeds
 		for (u64 i = 0; i < mSetSeedsSize; i++)
@@ -59,9 +54,6 @@ namespace osuCrypto
 			// get a random value from Z_p
 			nSeeds.emplace_back(mCurve);
 			nSeeds[i].randomize(prng);
-
-			mSeeds[i] = new u8[nSeeds[i].sizeBytes()];
-			nSeeds[i].toBytes(mSeeds[i]); //store mSeeds byte for computing (g^k)^(subsum ri) later
 
 			//      pG_seeds[i] = g ^ mSeeds[i]
 			pG_seeds.emplace_back(mCurve);
@@ -72,10 +64,10 @@ namespace osuCrypto
 		gTimer.setTimePoint("r off pG_seeds done");
 
 		//generate all pairs from seeds
+		std::vector<std::pair<std::vector<u64>, EccPoint>> mG_pairs; //{index of sub ri}, g^(subsum ri)
 		mG_pairs.reserve(myInputSize);
 
 		std::vector<u64> indices(mSetSeedsSize);
-
 
 		for (u64 i = 0; i < myInputSize; i++)
 		{
@@ -87,12 +79,8 @@ namespace osuCrypto
 			for (u64 j = 0; j < mChoseSeedsSize; j++)
 				g_sum = g_sum + pG_seeds[indices[j]]; //g^sum
 
-
 			std::vector<u64> subIdx(indices.begin(), indices.begin() + mChoseSeedsSize);
-
-			u8* temp = new u8[g_sum.sizeBytes()];
-			g_sum.toBytes(temp);
-			mG_pairs.push_back(std::make_pair(subIdx, temp));
+			mG_pairs.push_back(std::make_pair(subIdx, g_sum));
 
 
 			//std::cout << "r sum= " << mG_pairs[i].first[0]
@@ -114,16 +102,9 @@ namespace osuCrypto
 		}
 
 		std::cout << "mG_pairs done" << std::endl;
-		gTimer.setTimePoint("r off mG_pairs done");
 
-
-	}
-
-	void MiniReceiver::outputBigPoly(span<block> inputs, span<Channel> chls)
-	{
-
-		EllipticCurve mCurve(p256k1, OneBlock);
-		//mCurve.getMiracl().IOBASE = 10;
+		//####################### online #########################
+		gTimer.setTimePoint("r online start ");
 
 		u8* mG_K;
 		chls[0].recv(mG_K);
@@ -133,14 +114,13 @@ namespace osuCrypto
 		//std::cout << "r g^k= " << g_k << std::endl;
 
 
-
 		u64 numThreads(chls.size());
 		const bool isMultiThreaded = numThreads > 1;
 		std::vector<std::thread> thrds(numThreads);
 		std::mutex mtx;
 
 		u64 n1n2MaskBits = (40 + log2(mTheirInputSize*mMyInputSize));
-		u64 n1n2MaskBytes = 64 / 8;// (n1n2MaskBits + 7) / 8;
+		u64 n1n2MaskBytes = (n1n2MaskBits + 7) / 8;
 
 		//=====================Poly=====================
 		mPrime = mPrime264;
@@ -164,11 +144,15 @@ namespace osuCrypto
 			zzX[idx] = to_ZZ_p(zz);
 		}
 
+
+
 		for (u64 idx = 0; idx < inputs.size(); idx++)
 		{
 			u8* yri = new u8[mPolyBytes];
 
-			ZZFromBytes(zz, mG_pairs[idx].second, mPolyBytes);
+			u8* temp = new u8[mG_pairs[idx].second.sizeBytes()];
+			mG_pairs[idx].second.toBytes(temp);
+			ZZFromBytes(zz, temp, mPolyBytes);
 			//std::cout << "r P(x)= " << idx << " - " << toBlock(mG_pairs[idx].second) << std::endl;
 			zzY[idx] = to_ZZ_p(zz);
 
@@ -215,19 +199,13 @@ namespace osuCrypto
 		//#####################(g^K)^ (subsum ri) #####################
 
 		//compute seeds (g^K)^ri
-		std::vector<EccNumber> nSeeds;
 		std::vector<EccPoint> pgK_seeds;
-
-		nSeeds.reserve(mSetSeedsSize);
 		pgK_seeds.reserve(mSetSeedsSize);
 
 
 		//seeds
 		for (u64 i = 0; i < mSetSeedsSize; i++)
 		{
-			nSeeds.emplace_back(mCurve);
-			nSeeds[i].fromBytes(mSeeds[i]); //restore mSeeds byte for computing (g^k)^(subsum ri) later
-
 			pgK_seeds.emplace_back(mCurve);
 			pgK_seeds[i] = g_k * nSeeds[i];  //(g^k)^ri
 			//std::cout << mG_seeds[i] << std::endl;		

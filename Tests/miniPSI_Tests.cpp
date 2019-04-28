@@ -78,13 +78,11 @@ namespace tests_libOTe
 
 		auto thrd = std::thread([&]() {
 			gTimer.setTimePoint("r start ");
-			recv.init(recvSet.size(), sendSet.size(), 40, prng1, recvChls);
-			recv.outputBigPoly(recvSet, recvChls);
+			recv.outputBigPoly(recvSet.size(), sendSet.size(), 40, prng1, recvSet, recvChls);
 
 		});
 
-		sender.init(sendSet.size(), recvSet.size(), 40, prng0, sendChls);
-		sender.outputBigPoly(sendSet, sendChls);
+		sender.outputBigPoly(sendSet.size(), recvSet.size(), 40,  prng0, sendSet, sendChls);
 
 		thrd.join();
 

@@ -35,10 +35,10 @@ namespace osuCrypto {
 		PRNG mPrng;
 		ZZ mPrime;
 
-		void init(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG& prng, span<Channel> chls);
+		void outputBigPoly(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG& prng, span<block> inputs, span<Channel> chls);
 		/////*void output(span<block> inputs, span<Channel> chls);
 		////void outputBestComm(span<block> inputs, span<Channel> chls);*/
-		void outputBigPoly(span<block> inputs, span<Channel> chls);
+		//void outputBigPoly(span<block> inputs, span<Channel> chls);
 
 	};
 }

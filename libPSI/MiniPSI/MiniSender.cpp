@@ -11,8 +11,11 @@ namespace osuCrypto
 	using namespace NTL;
 
 
-	void MiniSender::init(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG & prng, span<Channel> chls)
+	void MiniSender::outputBigPoly(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG & prng, span<block> inputs, span<Channel> chls)
 	{
+		//####################### offline #########################
+		gTimer.setTimePoint("r offline start ");
+
 		mPsiSecParam = psiSecParam;
 		mMyInputSize = myInputSize;
 		mTheirInputSize = theirInputSize;
@@ -35,15 +38,9 @@ namespace osuCrypto
 		mPolyBytes = pG.sizeBytes();
 		//std::cout << "s mPolyBytes= " << mPolyBytes << "\n";
 
-
-
 		auto g_k = pG*nK;
-
 		mG_K = new u8[g_k.sizeBytes()];
-		mK = new u8[nK.sizeBytes()];
-
 		g_k.toBytes(mG_K); //g^k
-		nK.toBytes(mK);  //k
 
 		//EccPoint pGtest(mCurve);
 		//EccNumber nKTest(mCurve);
@@ -53,17 +50,11 @@ namespace osuCrypto
 		//std::cout << "s g^k= " << pGtest << std::endl;
 		//std::cout << "s k= " << nK << std::endl;
 		//std::cout << "s k= " << nKTest << std::endl;
-	}
+	
 
-
-	void MiniSender::outputBigPoly(span<block> inputs, span<Channel> chls)
-	{
+		//####################### online #########################
+		gTimer.setTimePoint("r online start ");
 		chls[0].asyncSend(mG_K);
-
-		EllipticCurve mCurve(p256k1, OneBlock);
-
-		EccNumber nK(mCurve);
-		nK.fromBytes(mK);
 
 
 		u64 numThreads(chls.size());
@@ -73,7 +64,7 @@ namespace osuCrypto
 
 
 		u64 n1n2MaskBits = (40 + log2(mTheirInputSize*mMyInputSize));
-		u64 n1n2MaskBytes = 64/8;// (n1n2MaskBits + 7) / 8;
+		u64 n1n2MaskBytes =  (n1n2MaskBits + 7) / 8;
 
 
 		//=====================Poly=====================
@@ -146,7 +137,7 @@ namespace osuCrypto
 				EccPoint point_ri(mCurve);
 				u8* temp = new u8[point_ri.sizeBytes()];
 
-				for (u64 idx = 0; idx < curStepSize; idx++)
+				for (u64 idx = 0; idx < curStepSize; idx++) 
 				{
 					//std::cout << "s idx= " << idx << std::endl;
 					u64 idxItem = i + idx;

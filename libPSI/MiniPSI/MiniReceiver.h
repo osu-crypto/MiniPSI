@@ -29,8 +29,7 @@ namespace osuCrypto
 		Ecc2mParams mCurveParam;
 		block mCurveSeed;
 		
-		std::vector<u8*> mSeeds; //all ri in bytes for computing (g^k)^(subsum ri) later
-		std::vector<std::pair<std::vector<u64>, u8*>> mG_pairs; //{index of sub ri}, g^(subsum ri)
+		//std::vector<u8*> mSeeds; //all ri in bytes for computing (g^k)^(subsum ri) later
 		//std::vector<std::pair<u64, std::vector<u64>>> mSubsetSum; //all ri in sum ri
 
 
@@ -55,10 +54,10 @@ namespace osuCrypto
 
 		std::vector<block> Outputs;
 
-		void init(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG& prng, span<Channel> chls);
+		void outputBigPoly(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG& prng, span<block> inputs, span<Channel> chls);
 		//void output(span<block> inputs, span<Channel> chls);
 		//void outputBestComm(span<block> inputs, span<Channel> chls);
-		void outputBigPoly(span<block> inputs, span<Channel> chls);
+		//void outputBigPoly(span<block> inputs, span<Channel> chls);
 		
     };
 
