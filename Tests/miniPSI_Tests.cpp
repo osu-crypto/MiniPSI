@@ -661,6 +661,21 @@ namespace tests_libOTe
 		
 	}
 
+
+	void schnorrZKDL()
+	{
+		PRNG prng(ZeroBlock);
+		EllipticCurve mCurve(p256k1, OneBlock);
+		EccPoint mG(mCurve);
+		mG = mCurve.getGenerator();
+
+		EccNumber nK(mCurve);
+		EccPoint pG(mCurve);
+		nK.randomize(prng);
+		pG = mCurve.getGenerator();
+		auto g_k = pG*nK;  //g^k
+
+	}
 	/*void subsetSum_test() {
 		
 		vector<EccPoint> points;
