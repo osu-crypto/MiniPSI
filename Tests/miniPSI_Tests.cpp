@@ -121,8 +121,7 @@ namespace tests_libOTe
 
 	}
 
-
-
+	
 	void MiniPSI_hasing_impl()
 	{
 		setThreadName("Sender");
@@ -170,6 +169,92 @@ namespace tests_libOTe
 		});
 
 		sender.outputHashing(sendSet.size(), recvSet.size(), 40, prng0, sendSet, sendChls);
+
+		thrd.join();
+
+		std::cout << gTimer << std::endl;
+
+
+		std::cout << "recv.mIntersection.size(): " << recv.mIntersection.size() << std::endl;
+		for (u64 i = 0; i < recv.mIntersection.size(); ++i)//thrds.size()
+		{
+			std::cout << "#id: " << recv.mIntersection[i] <<
+				"\t" << recvSet[recv.mIntersection[i]] << std::endl;
+		}
+
+		u64 dataSent = 0, dataRecv(0);
+		for (u64 g = 0; g < recvChls.size(); ++g)
+		{
+			dataSent += recvChls[g].getTotalDataSent();
+			dataRecv += recvChls[g].getTotalDataRecv();
+			recvChls[g].resetStats();
+		}
+
+		//		std::cout << "      Total Comm = " << string_format("%5.2f", (dataRecv + dataSent) / std::pow(2.0, 20)) << " MB\n";
+
+
+
+
+		for (u64 i = 0; i < numThreads; ++i)
+		{
+			sendChls[i].close();
+			recvChls[i].close();
+		}
+
+		ep0.stop(); ep1.stop();	ios.stop();
+
+
+	}
+
+
+	void MiniPSI_malicious_impl()
+	{
+		setThreadName("Sender");
+		u64 setSenderSize = 1 << 6, setRecvSize = 1 << 6, psiSecParam = 40, numThreads(1);
+
+		PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
+		PRNG prng1(_mm_set_epi32(4253465, 3434565, 234435, 23987025));
+
+
+		std::vector<block> sendSet(setSenderSize), recvSet(setRecvSize);
+		for (u64 i = 0; i < setSenderSize; ++i)
+			sendSet[i] = prng0.get<block>();
+
+		for (u64 i = 0; i < setRecvSize; ++i)
+			recvSet[i] = prng0.get<block>();
+
+
+		for (u64 i = 0; i < setSenderSize; ++i)
+		{
+			sendSet[i] = recvSet[i];
+			//std::cout << "intersection: " <<sendSet[i] << "\n";
+		}
+
+		//sendSet[0] = ZeroBlock;
+		// set up networking
+		std::string name = "n";
+		IOService ios;
+		Endpoint ep0(ios, "localhost", 1212, EpMode::Client, name);
+		Endpoint ep1(ios, "localhost", 1212, EpMode::Server, name);
+
+		std::vector<Channel> sendChls(numThreads), recvChls(numThreads);
+		for (u64 i = 0; i < numThreads; ++i)
+		{
+			sendChls[i] = ep1.addChannel("chl" + std::to_string(i), "chl" + std::to_string(i));
+			recvChls[i] = ep0.addChannel("chl" + std::to_string(i), "chl" + std::to_string(i));
+		}
+
+
+		MiniSender sender;
+		MiniReceiver recv;
+
+		auto thrd = std::thread([&]() {
+			gTimer.setTimePoint("r start ");
+			recv.outputBigPoly_malicious(recvSet.size(), sendSet.size(), 40, prng1, recvSet, recvChls);
+
+		});
+
+		sender.outputBigPoly_malicious(sendSet.size(), recvSet.size(), 40, prng0, sendSet, sendChls);
 
 		thrd.join();
 
@@ -692,7 +777,7 @@ namespace tests_libOTe
 		g_v.toBytes(challeger_bytes[2]);
 
 
-		block* challenger = new block[numSuperBlocks];
+		block* challenger = new block[numSuperBlocks]; //g + g^k+g^v
 		block* cipher_challenger = new block[numSuperBlocks];
 		for (int i = 0; i < numSuperBlocks; i++)
 			challenger[i] = ZeroBlock;
@@ -704,12 +789,12 @@ namespace tests_libOTe
 			challenger[i] = challenger[i] + temp;
 		}
 
-		mAesFixedKey.ecbEncBlocks(challenger, numSuperBlocks, cipher_challenger);
+		mAesFixedKey.ecbEncBlocks(challenger, numSuperBlocks, cipher_challenger);  //c=H(g,g^k, g^v)
 		EccNumber nC(mCurve);
 		nC.fromBytes((u8*)&cipher_challenger);
 		
 		EccNumber nR(mCurve);
-		nR = nV - nC*nK;
+		nR = nV - nC*nK; //r=v-ck
 
 		std::cout << "t=" << g_v << "\n";
 		auto g_r = pG*nR;  //g^r
@@ -721,15 +806,15 @@ namespace tests_libOTe
 
 
 
-		//auto thrd = std::thread([&]() { //prover
-		//	
+		auto thrd = std::thread([&]() { //prover
+			
 
 
-		//});
+		});
 
-		////verifier
+		//verifier
 
-		//thrd.join();
+		thrd.join();
 
 
 

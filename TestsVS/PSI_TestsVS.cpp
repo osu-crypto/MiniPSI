@@ -97,6 +97,12 @@ namespace tests_libOTe
 			schnorrZKDL();
 		}
 
+		TEST_METHOD(MiniPSI_malicious_TestVS)
+		{
+			InitDebugPrinting();
+			MiniPSI_malicious_impl();
+		}
+
 
 
 

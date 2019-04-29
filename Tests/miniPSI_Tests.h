@@ -12,5 +12,6 @@ namespace tests_libOTe
 
 	void MiniPSI_hasing_impl();
 	void schnorrZKDL();
+	void MiniPSI_malicious_impl();
 
 }
