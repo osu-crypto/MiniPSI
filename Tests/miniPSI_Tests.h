@@ -13,5 +13,6 @@ namespace tests_libOTe
 	void MiniPSI_hasing_impl();
 	void schnorrZKDL();
 	void MiniPSI_malicious_impl();
+	void JL10PSI_subsetsum_malicious_impl();
 
 }
