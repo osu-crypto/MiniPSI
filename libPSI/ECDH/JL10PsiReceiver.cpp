@@ -671,6 +671,7 @@ namespace osuCrypto
 		}
 
 		u8* onebit = new u8[1]; //return bit
+		std::vector<block> hashX(inputs.size());
 
 		std::cout << "mG_pairs done" << std::endl;
 
@@ -703,12 +704,13 @@ namespace osuCrypto
 #if 1	//generate all pairs from seeds
 		std::unordered_map<u64, std::pair<block, u64>> localMasks;
 		localMasks.reserve(inputs.size());
+		std::vector<block> xik(inputs.size()); //H(x)^k 
 
 		//##################### compute/send yi=H(x)*(g^ri). recv yi^k, comp. H(x)^k  #####################
 
 		auto routine = [&](u64 t)
 		{
-
+			SHA1 inputHasher;
 			u64 inputStartIdx = inputs.size() * t / chls.size();
 			u64 inputEndIdx = inputs.size() * (t + 1) / chls.size();
 			u64 subsetInputSize = inputEndIdx - inputStartIdx;
@@ -718,7 +720,6 @@ namespace osuCrypto
 
 			//EllipticCurve curve(p256k1, thrdPrng[t].get<block>());
 
-			SHA1 inputHasher;
 			EccPoint point(mCurve),  xk(mCurve), gri(mCurve), xab(mCurve);
 			std::vector<EccPoint> yi; //yi=H(xi)*g^ri
 			std::vector<EccPoint> yik;
@@ -756,8 +757,8 @@ namespace osuCrypto
 					inputHasher.Reset();
 					inputHasher.Update(inputs[i + k]);
 					inputHasher.Final(hashOut);
-
-					point.randomize(toBlock(hashOut)); //H(x)
+					hashX[i + k] = toBlock(hashOut);
+					point.randomize(hashX[i + k]); //H(x)
 													   //std::cout << "sp  " << point << "  " << toBlock(hashOut) << std::endl;
 
 					yi.emplace_back(mCurve);
@@ -851,8 +852,23 @@ namespace osuCrypto
 				for (u64 k = 0; k < curStepSize; ++k)
 				{
 					xk = yik[k] - pgK_sum[k]; //H(x)^k
-					xk.toBytes(xk_byte);
-					temp = toBlock(xk_byte); //H(x)^k
+					u8* temp_yik = new u8[yik[k].sizeBytes()];
+					
+					xk.toBytes(temp_yik);
+					block blkTemp = ZeroBlock;
+					for (int idxBlock = 0; idxBlock < numSuperBlocks; idxBlock++)
+					{
+						auto minsize = std::min(sizeof(block), xk.sizeBytes() - idxBlock * sizeof(block));
+						memcpy((u8*)&blkTemp, temp_yik + minsize, minsize);
+						xik[i + k] = xik[i + k] + blkTemp;
+					}
+
+					xik[i + k] = xik[i + k] + hashX[i + k];
+					inputHasher.Reset();
+					//inputHasher.Update(hashX[i + k]);
+					inputHasher.Update(xik[i + k]);
+					inputHasher.Final(hashOut);
+					temp = toBlock(hashOut); //H(x)^k
 
 #ifdef PRINT
 					if (i + k == 10 || i + k == 20)
@@ -898,15 +914,14 @@ namespace osuCrypto
 			u64 tempEndIdx = mTheirInputSize* (t + 1) / numThreads;
 			u64 endIdx = std::min(tempEndIdx, mTheirInputSize);
 
-			std::vector<u8> recvBuffs;
-			chl.recv(recvBuffs); //receive Hash
-			auto theirMasks = recvBuffs.data();
-			std::cout << "r toBlock(recvBuffs): " << t << " - " << toBlock(theirMasks) << std::endl;
-
-
 			for (u64 i = startIdx; i < endIdx; i += stepSizeMaskSent)
 			{
 				auto curStepSize = std::min(stepSizeMaskSent, endIdx - i);
+
+				std::vector<u8> recvBuffs;
+				chl.recv(recvBuffs); //receive Hash
+				auto theirMasks = recvBuffs.data();
+				std::cout << "r toBlock(recvBuffs): " << t << " - " << toBlock(theirMasks) << std::endl;
 
 				if (n1n2MaskBytes >= sizeof(u64)) //unordered_map only work for key >= 64 bits. i.e. setsize >=2^12
 				{

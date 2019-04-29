@@ -409,6 +409,8 @@ namespace osuCrypto
 		EccNumber nV(mCurve);
 		nV.randomize(mPrng); //g^v for ZKDL
 
+		std::vector<block> hashX(inputs.size());
+
 						   //####################### online #########################
 		gTimer.setTimePoint("s online start ");
 
@@ -424,7 +426,7 @@ namespace osuCrypto
 		u64 n1n2MaskBytes = (n1n2MaskBits + 7) / 8;
 
 
-		std::vector<std::vector<u8>> sendBuff_mask(chls.size()); //H(x)^k
+		std::vector<block> xik(inputs.size()); //H(x)^k //todo: not really secure here
 
 
 																 //##################### compute H(x*)^k. compute/send yi^k#####################
@@ -433,22 +435,17 @@ namespace osuCrypto
 
 		auto routine = [&](u64 t)
 		{
-
+			
 			u64 inputStartIdx = inputs.size() * t / chls.size();
 			u64 inputEndIdx = inputs.size() * (t + 1) / chls.size();
 			u64 subsetInputSize = inputEndIdx - inputStartIdx;
 
-
-			sendBuff_mask[t].resize(n1n2MaskBytes*subsetInputSize);
-			int idxSendMaskIter = 0;
-
-
 			auto& chl = chls[t];
+			SHA1 inputHasher;
 			u8 hashOut[SHA1::HashSize];
 
 			//EllipticCurve curve(p256k1, thrdPrng[t].get<block>());
 
-			SHA1 inputHasher;
 			//EllipticCurve mCurve(p256k1, OneBlock);
 			EccPoint point(mCurve), yik(mCurve), yi(mCurve), xk(mCurve);
 
@@ -471,8 +468,8 @@ namespace osuCrypto
 					inputHasher.Reset();
 					inputHasher.Update(inputs[i + k]);
 					inputHasher.Final(hashOut);
-
-					point.randomize(toBlock(hashOut)); //H(x)
+					hashX[i + k] = toBlock(hashOut);
+					point.randomize(hashX[i + k]); //H(x)
 													   //std::cout << "sp  " << point << "  " << toBlock(hashOut) << std::endl;
 					xk = (point * nK); //H(x)^k
 
@@ -480,9 +477,16 @@ namespace osuCrypto
 					if (i + k == 10 || i + k == 20)
 						std::cout << "s xk[" << i + k << "] " << xk << std::endl;
 #endif
+					u8* temp= new u8[xk.sizeBytes()];
 					xk.toBytes(temp);
-					memcpy(sendBuff_mask[t].data() + idxSendMaskIter, temp, n1n2MaskBytes);
-					idxSendMaskIter += n1n2MaskBytes;
+
+					block blkTemp = ZeroBlock;
+					for (int idxBlock = 0; idxBlock < numSuperBlocks; idxBlock++)
+					{
+						auto minsize = std::min(sizeof(block), xk.sizeBytes() - idxBlock * sizeof(block));
+						memcpy((u8*)&blkTemp, temp+minsize, minsize);
+						xik[i+k] = xik[i + k] + blkTemp;
+					}
 				}
 
 #if 1
@@ -579,14 +583,28 @@ namespace osuCrypto
 			u64 endIdx = std::min(tempEndIdx, mTheirInputSize);
 			u64 subsetInputSize = endIdx - startIdx;
 
+			SHA1 inputHasher;
+			u8 hashOut[SHA1::HashSize];
 
+			for (u64 i = startIdx; i < endIdx; i += stepSizeMaskSent)
+			{
 
-			auto myMasks = sendBuff_mask[t].data();
-			std::cout << "s toBlock(sendBuff_mask): " << t << " - " << toBlock(myMasks) << std::endl;
+				auto curStepSize = std::min(stepSizeMaskSent, endIdx - i);
+				std::vector<u8> sendBuff_mask(n1n2MaskBytes * curStepSize);
 
-			chl.asyncSend(std::move(sendBuff_mask[t]));
+				for (u64 k = 0; k < curStepSize; ++k)
+				{
+					inputHasher.Reset();
+					xik[i + k] = xik[i + k] + hashX[i + k];//not really secur here
+					//inputHasher.Update(hashX[i + k]);
+					inputHasher.Update(xik[i+k]);
+					inputHasher.Final(hashOut);
 
-
+					memcpy(sendBuff_mask.data() + k*n1n2MaskBytes, hashOut, n1n2MaskBytes);
+				}
+			//	std::cout << "s toBlock(sendBuff_mask): " << t << " - " << toBlock(sendBuff_mask) << std::endl;
+				chl.asyncSend(std::move(sendBuff_mask));
+			}
 		};
 
 		for (u64 i = 0; i < thrds.size(); ++i)//thrds.size()
