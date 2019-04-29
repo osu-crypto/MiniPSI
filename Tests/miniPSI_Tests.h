@@ -11,4 +11,6 @@ namespace tests_libOTe
 	void subsetSum_test();
 
 	void MiniPSI_hasing_impl();
+	void schnorrZKDL();
+
 }

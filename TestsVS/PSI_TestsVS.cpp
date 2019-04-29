@@ -91,6 +91,13 @@ namespace tests_libOTe
 			JL10PSI_subsetsum_impl();
 		}
 
+		TEST_METHOD(schnorrZKDL_TestVS)
+		{
+			InitDebugPrinting();
+			schnorrZKDL();
+		}
+
+
 
 
 	};

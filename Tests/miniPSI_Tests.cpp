@@ -669,11 +669,69 @@ namespace tests_libOTe
 		EccPoint mG(mCurve);
 		mG = mCurve.getGenerator();
 
-		EccNumber nK(mCurve);
 		EccPoint pG(mCurve);
-		nK.randomize(prng);
 		pG = mCurve.getGenerator();
+
+		EccNumber nK(mCurve);
+		nK.randomize(prng);
 		auto g_k = pG*nK;  //g^k
+
+		EccNumber nV(mCurve);
+		nV.randomize(prng);
+		auto g_v = pG*nV;  //g^v
+
+		std::vector<u8*> challeger_bytes(3);
+			
+		challeger_bytes[0]= new u8[pG.sizeBytes()];
+		pG.toBytes(challeger_bytes[0]);
+
+		challeger_bytes[1] = new u8[g_k.sizeBytes()];
+		g_k.toBytes(challeger_bytes[1]);
+
+		challeger_bytes[2] = new u8[g_v.sizeBytes()];
+		g_v.toBytes(challeger_bytes[2]);
+
+
+		block* challenger = new block[numSuperBlocks];
+		block* cipher_challenger = new block[numSuperBlocks];
+		for (int i = 0; i < numSuperBlocks; i++)
+			challenger[i] = ZeroBlock;
+
+		block temp = ZeroBlock;
+		for (int i = 0; i < numSuperBlocks; i++)
+		{
+			memcpy((u8*)&temp, challeger_bytes[i]+i*sizeof(block), sizeof(block));
+			challenger[i] = challenger[i] + temp;
+		}
+
+		mAesFixedKey.ecbEncBlocks(challenger, numSuperBlocks, cipher_challenger);
+		EccNumber nC(mCurve);
+		nC.fromBytes((u8*)&cipher_challenger);
+		
+		EccNumber nR(mCurve);
+		nR = nV - nC*nK;
+
+		std::cout << "t=" << g_v << "\n";
+		auto g_r = pG*nR;  //g^r
+		auto y_c = g_k*nC;  //g^r
+
+		auto gryc = g_r + y_c;
+		std::cout << "g^r*y^c=" << gryc << "\n";
+
+
+
+
+		//auto thrd = std::thread([&]() { //prover
+		//	
+
+
+		//});
+
+		////verifier
+
+		//thrd.join();
+
+
 
 	}
 	/*void subsetSum_test() {
