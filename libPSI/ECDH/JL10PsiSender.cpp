@@ -18,7 +18,7 @@ namespace osuCrypto
     void JL10PsiSender::startPsi(u64 myInputSize, u64 theirInputSize, u64 secParam, block seed, span<block> inputs, span<Channel> chls)
     {
 		//####################### offline #########################
-		gTimer.setTimePoint("s offline start ");
+		//gTimer.setTimePoint("s offline start ");
 
         mSecParam = secParam;
         mPrng.SetSeed(seed);
@@ -44,7 +44,7 @@ namespace osuCrypto
 
     
 		//####################### online #########################
-		gTimer.setTimePoint("s online start ");
+		//gTimer.setTimePoint("s online start ");
 
 		chls[0].asyncSend(mG_K); //send g^k
 
@@ -63,7 +63,7 @@ namespace osuCrypto
 
 		//##################### compute H(x*)^k. compute/send yi^k#####################
 
-		auto start = timer.setTimePoint("start");
+		//auto start = timer.setTimePoint("start");
 
 		auto routine = [&](u64 t)
 		{
@@ -174,7 +174,7 @@ namespace osuCrypto
 
 
 			auto myMasks = sendBuff_mask[t].data();
-			std::cout << "s toBlock(sendBuff_mask): " << t << " - " << toBlock(myMasks) << std::endl;
+			//std::cout << "s toBlock(sendBuff_mask): " << t << " - " << toBlock(myMasks) << std::endl;
 
 			chl.asyncSend(std::move(sendBuff_mask[t]));
 
@@ -191,8 +191,8 @@ namespace osuCrypto
 		for (auto& thrd : thrds)
 			thrd.join();
 #endif
-		gTimer.setTimePoint("s Psi done");
-		std::cout << "s gkr done\n";
+		//gTimer.setTimePoint("s Psi done");
+		//std::cout << "s gkr done\n";
 
 
 	}
@@ -356,7 +356,7 @@ namespace osuCrypto
 
 
 			auto myMasks = sendBuff_mask[t].data();
-			std::cout << "s toBlock(sendBuff_mask): " << t << " - " << toBlock(myMasks) << std::endl;
+			//std::cout << "s toBlock(sendBuff_mask): " << t << " - " << toBlock(myMasks) << std::endl;
 
 			chl.asyncSend(std::move(sendBuff_mask[t]));
 
@@ -542,7 +542,7 @@ namespace osuCrypto
 				memcpy(nC_bytes, cipher_challenger.data(), nC.sizeBytes());
 				nC.fromBytes(nC_bytes); //c=H(sum (yi^k+ yi^v))
 
-				std::cout << "s nC= " << nC << " idx= " << i << "\n";
+				//std::cout << "s nC= " << nC << " idx= " << i << "\n";
 
 				EccNumber nR(mCurve);
 				nR = nV - nC*nK; //r=v-ck

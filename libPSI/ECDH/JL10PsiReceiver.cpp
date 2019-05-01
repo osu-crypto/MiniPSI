@@ -66,7 +66,7 @@ namespace osuCrypto
 		u8* mG_K; chls[0].recv(mG_K);
 		EccPoint g_k(mCurve); 	g_k.fromBytes(mG_K); //receiving g^k
 
-		std::cout << "r g^k= " << g_k << std::endl;
+		//std::cout << "r g^k= " << g_k << std::endl;
 
 		u64 numThreads(chls.size());
 		const bool isMultiThreaded = numThreads > 1;
@@ -217,7 +217,7 @@ namespace osuCrypto
 			std::vector<u8> recvBuffs;
 			chl.recv(recvBuffs); //receive Hash
 			auto theirMasks = recvBuffs.data();
-			std::cout << "r toBlock(recvBuffs): " << t << " - " << toBlock(theirMasks) << std::endl;
+			//std::cout << "r toBlock(recvBuffs): " << t << " - " << toBlock(theirMasks) << std::endl;
 
 
 			for (u64 i = startIdx; i < endIdx; i += stepSizeMaskSent)
@@ -231,8 +231,8 @@ namespace osuCrypto
 
 						auto& msk = *(u64*)(theirMasks);
 						
-						if (i + k == 10)
-							std::cout << "r msk: " << i+k << " - " << toBlock(msk) << std::endl;
+						/*if (i + k == 10)
+							std::cout << "r msk: " << i+k << " - " << toBlock(msk) << std::endl;*/
 
 						// check 64 first bits
 						auto match = localMasks.find(msk);
@@ -647,7 +647,7 @@ namespace osuCrypto
 			pG_seeds.emplace_back(mCurve);
 			pG_seeds[i] = mG * nSeeds[i];  //g^ri
 		}
-		std::cout << "g^seed done" << std::endl;
+		//std::cout << "g^seed done" << std::endl;
 
 
 		std::vector<std::pair<std::vector<u64>, EccPoint>> mG_pairs; //{index of sub ri}, g^(subsum ri)
@@ -673,14 +673,14 @@ namespace osuCrypto
 		u8* onebit = new u8[1]; //return bit
 		std::vector<block> hashX(inputs.size());
 
-		std::cout << "mG_pairs done" << std::endl;
+		//std::cout << "mG_pairs done" << std::endl;
 
 		//####################### online #########################
 		gTimer.setTimePoint("r online start ");
 
 		u8* mG_K; chls[0].recv(mG_K);
 		EccPoint g_k(mCurve); 	g_k.fromBytes(mG_K); //receiving g^k
-		std::cout << "r g^k= " << g_k << std::endl;
+		//std::cout << "r g^k= " << g_k << std::endl;
 
 		//compute seeds (g^k)^ri
 		std::vector<EccPoint> pgK_seeds;
@@ -802,7 +802,7 @@ namespace osuCrypto
 				auto recvIter = recvBuff.data();
 
 				nR.fromBytes(recvIter + curStepSize * (2 * yi[0].sizeBytes())); //last sizeBytes() bit
-				std::cout << "r nR= " << nR << " idx= "<< i<<"\n";
+				//std::cout << "r nR= " << nR << " idx= "<< i<<"\n";
 
 				for (u64 k = 0; k < curStepSize; ++k) //ZKDL verifier
 				{
@@ -831,14 +831,14 @@ namespace osuCrypto
 				u8* nC_bytes = new u8[nC.sizeBytes()];
 				memcpy(nC_bytes, cipher_challenger.data(), nC.sizeBytes());
 				nC.fromBytes(nC_bytes); //c=H(sum (yi^k+ yi^v))
-				std::cout << "r nC= " << nC << " idx= " << i << "\n";
+				//std::cout << "r nC= " << nC << " idx= " << i << "\n";
 
 				for (u64 k = 0; k < curStepSize; ++k) //ZKDL verifier
 				{
 					auto yiRyiKC =yi[k]*nR+yik[k]*nC ; //yi^r*(yi^k)^c
 					if (yiRyiKC != yiv[k])
 					{
-						std::cout << "Malicious Sender!" << std::endl;
+						std::cout << "Malicious EchdSender!" << std::endl;
 						onebit[0] = 1;
 						break;
 					}
@@ -921,7 +921,7 @@ namespace osuCrypto
 				std::vector<u8> recvBuffs;
 				chl.recv(recvBuffs); //receive Hash
 				auto theirMasks = recvBuffs.data();
-				std::cout << "r toBlock(recvBuffs): " << t << " - " << toBlock(theirMasks) << std::endl;
+				//std::cout << "r toBlock(recvBuffs): " << t << " - " << toBlock(theirMasks) << std::endl;
 
 				if (n1n2MaskBytes >= sizeof(u64)) //unordered_map only work for key >= 64 bits. i.e. setsize >=2^12
 				{
@@ -930,8 +930,8 @@ namespace osuCrypto
 
 						auto& msk = *(u64*)(theirMasks);
 
-						if (i + k == 10)
-							std::cout << "r msk: " << i + k << " - " << toBlock(msk) << std::endl;
+			/*			if (i + k == 10)
+							std::cout << "r msk: " << i + k << " - " << toBlock(msk) << std::endl;*/
 
 						// check 64 first bits
 						auto match = localMasks.find(msk);

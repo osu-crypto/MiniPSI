@@ -56,7 +56,7 @@ namespace tests_libOTe
         {
             // perform the init on each of the classes. should be performed concurrently
             auto thrd = std::thread([&]() {
-                setThreadName("Sender");
+                setThreadName("EchdSender");
                 sender.init(numOTs, prng0, sendChl);
             });
             recv.init(numOTs, prng1, recvChl);
@@ -194,7 +194,7 @@ namespace tests_libOTe
 
     void KkrtNcoOt_Test_Impl()
     {
-        setThreadName("Sender");
+        setThreadName("EchdSender");
 
         PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
         PRNG prng1(_mm_set_epi32(4253465, 3434565, 234435, 23987025));
@@ -354,7 +354,7 @@ namespace tests_libOTe
 
     void OosNcoOt_Test_Impl()
     {
-        setThreadName("Sender");
+        setThreadName("EchdSender");
 
         PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
         PRNG prng1(_mm_set_epi32(4253465, 3434565, 234435, 23987025));
@@ -409,7 +409,7 @@ namespace tests_libOTe
     void Rr17NcoOt_Test_Impl()
     {
 
-        setThreadName("Sender");
+        setThreadName("EchdSender");
 
         PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
         PRNG prng1(_mm_set_epi32(4253465, 3434565, 234435, 23987025));

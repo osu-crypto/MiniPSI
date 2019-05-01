@@ -838,7 +838,7 @@ namespace osuCrypto
 					auto yiRyiKC =yi[k]*nR+yik[k]*nC ; //yi^r*(yi^k)^c
 					if (yiRyiKC != yiv[k])
 					{
-						std::cout << "Malicious Sender!" << std::endl;
+						std::cout << "Malicious EchdSender!" << std::endl;
 						onebit[0] = 1;
 						break;
 					}

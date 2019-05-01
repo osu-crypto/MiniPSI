@@ -837,7 +837,7 @@ namespace osuCrypto
 
 			if (gryc != g_v)
 			{
-				std::cout << "Malicious Sender!" << std::endl;
+				std::cout << "Malicious EchdSender!" << std::endl;
 				onebit[0] = 1;
 			}
 

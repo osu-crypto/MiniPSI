@@ -79,6 +79,8 @@ using namespace osuCrypto;
 #include "MiniPSI/MiniSender.h"
 #include "libPSI/ECDH/EcdhPsiReceiver.h"
 #include "libPSI/ECDH/EcdhPsiSender.h"
+#include "libPSI/ECDH/JL10PsiReceiver.h"
+#include "libPSI/ECDH/JL10PsiSender.h"
 
 template<typename ... Args>
 std::string string_format(const std::string& format, Args ... args)
@@ -99,32 +101,32 @@ void usage(const char* argv0)
 	std::cout << "Error! Please use:" << std::endl;
 	std::cout << "\t 1. For unit test (balanced PSI): " << argv0 << " -t" << std::endl;
 	std::cout << "\t 2. For simulation (2 terminals): " << std::endl;;
-	std::cout << "\t\t Sender terminal: " << argv0 << " -r 0" << std::endl;
+	std::cout << "\t\t EchdSender terminal: " << argv0 << " -r 0" << std::endl;
 	std::cout << "\t\t Receiver terminal: " << argv0 << " -r 1" << std::endl;
 
 	std::cout << "\t 2. For 2 machines: " << std::endl;
 	std::cout << "\t\t Balanced PSI with best communication: " << std::endl;
-	std::cout << "\t\t\t Sender terminal: " << argv0 << "-r 0 -n <log(setsize)> -t <#thread> -p 0 -ip <ip:port>" << std::endl;
+	std::cout << "\t\t\t EchdSender terminal: " << argv0 << "-r 0 -n <log(setsize)> -t <#thread> -p 0 -ip <ip:port>" << std::endl;
 	std::cout << "\t\t\t Receiver terminal: " << argv0 << "-r 1 -n <log(setsize)> -t <#thread> -p 0 -ip <ip:port>" << std::endl;
-	std::cout << "\t\t\t Sender Example: " << argv0 << "-r 0 -n 16 -t 1 -p 0 -ip 172.31.22.179:1212" << std::endl;
+	std::cout << "\t\t\t EchdSender Example: " << argv0 << "-r 0 -n 16 -t 1 -p 0 -ip 172.31.22.179:1212" << std::endl;
 
 
 	std::cout << "\t\t Balanced PSI with running time: " << std::endl;
-	std::cout << "\t\t\t Sender terminal: " << argv0 << "-r 0 -n <log(setsize)> -t <#thread> -p 1 -ip <ip:port>" << std::endl;
+	std::cout << "\t\t\t EchdSender terminal: " << argv0 << "-r 0 -n <log(setsize)> -t <#thread> -p 1 -ip <ip:port>" << std::endl;
 	std::cout << "\t\t\t Receiver terminal: " << argv0 << "-r 1 -n <log(setsize)> -t <#thread> -p 1 -ip <ip:port>" << std::endl;
-	std::cout << "\t\t\t Sender Example: " << argv0 << "-r 0 -n 16 -t 1 -p 1 -ip 172.31.22.179:1212" << std::endl;
+	std::cout << "\t\t\t EchdSender Example: " << argv0 << "-r 0 -n 16 -t 1 -p 1 -ip 172.31.22.179:1212" << std::endl;
 
 
 	std::cout << "\t\t Unbalanced PSI: " << std::endl;
-	std::cout << "\t\t\t Sender terminal: " << argv0 << "-r 0 -n <log(largesize)> -N <smallsize> -t <#thread> -ip <ip:port>" << std::endl;
+	std::cout << "\t\t\t EchdSender terminal: " << argv0 << "-r 0 -n <log(largesize)> -N <smallsize> -t <#thread> -ip <ip:port>" << std::endl;
 	std::cout << "\t\t\t Receiver terminal: " << argv0 << "-r 1 -n <log(largesize)> -N <smallsize> -t <#thread> -ip <ip:port>" << std::endl;
-	std::cout << "\t\t\t Sender Example: " << argv0 << "-r 0 -n 20 -N 5000 -t 1 -ip 172.31.22.179:1212" << std::endl;
+	std::cout << "\t\t\t EchdSender Example: " << argv0 << "-r 0 -n 20 -N 5000 -t 1 -ip 172.31.22.179:1212" << std::endl;
 
 
 }
 
 
-void Sender(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numThreads = 1)
+void EchdSender(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numThreads = 1)
 {
 	u64 psiSecParam = 40;
 	PRNG prngSet(_mm_set_epi32(4253465, 3434565, 234435, 0));
@@ -166,8 +168,7 @@ void Sender(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numThreads 
 		ep1.stop();	ios.stop();
 }
 
-
-void Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numThreads=1)
+void EchdReceiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numThreads=1)
 {
 		u64 psiSecParam = 40;
 		PRNG prngSet(_mm_set_epi32(4253465, 3434565, 234435, 0));
@@ -182,7 +183,7 @@ void Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numThread
 			for (u64 i = 0; i < numThreads; ++i)
 				recvChls[i] = ep0.addChannel("chl" + std::to_string(i), "chl" + std::to_string(i));
 
-
+			std::cout << "====================================Echd====================================\n";
 			std::cout << "SetSize: " << mySetSize << " vs " << theirSetSize << "   |  numThreads: " << numThreads << "\t";
 
 
@@ -233,10 +234,108 @@ void Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numThread
 }
 
 
+void JL10Sender(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numThreads = 1)
+{
+	u64 psiSecParam = 40;
+	PRNG prngSet(_mm_set_epi32(4253465, 3434565, 234435, 0));
+	PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
+
+
+	// set up networking
+	std::string name = "n";
+	IOService ios;
+	Endpoint ep1(ios, ipAddr_Port, EpMode::Server, name);
+
+	std::vector<Channel> sendChls(numThreads);
+	for (u64 i = 0; i < numThreads; ++i)
+		sendChls[i] = ep1.addChannel("chl" + std::to_string(i), "chl" + std::to_string(i));
+
+
+	std::cout << "SetSize: " << mySetSize << " vs " << theirSetSize << "   |  numThreads: " << numThreads << "\t";
+
+	std::vector<block> inputs(mySetSize);
+	for (u64 i = 0; i < inputs.size(); ++i)
+		inputs[i] = prngSet.get<block>();
+
+	//MiniSender sender;
+
+	JL10PsiSender sender;
+	//gTimer.reset();
+	//gTimer.setTimePoint("JL10PsiSender s_start");
+	sender.startPsi(inputs.size(), theirSetSize, 40, prng0.get<block>(), inputs, sendChls);
+	//std::cout << gTimer << std::endl;
+
+
+	for (u64 i = 0; i < numThreads; ++i)
+		sendChls[i].close();
+
+	ep1.stop();	ios.stop();
+}
+
+void JL10Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numThreads = 1)
+{
+	u64 psiSecParam = 40;
+	PRNG prngSet(_mm_set_epi32(4253465, 3434565, 234435, 0));
+	PRNG prng1(_mm_set_epi32(4253465, 3434565, 234435, 23987025));
+
+
+	std::string name = "n";
+	IOService ios;
+	Endpoint ep0(ios, ipAddr_Port, EpMode::Client, name);
+
+	std::vector<Channel> sendChls(numThreads), recvChls(numThreads);
+	for (u64 i = 0; i < numThreads; ++i)
+		recvChls[i] = ep0.addChannel("chl" + std::to_string(i), "chl" + std::to_string(i));
+
+	std::cout << "====================================JL10====================================\n";
+	std::cout << "SetSize: " << mySetSize << " vs " << theirSetSize << "   |  numThreads: " << numThreads << "\t";
+
+
+	std::vector<block> inputs(mySetSize);
+
+	for (u64 i = 0; i < expectedIntersection; ++i)
+		inputs[i] = prngSet.get<block>();
+
+	for (u64 i = expectedIntersection; i < inputs.size(); ++i)
+		inputs[i] = prng1.get<block>();
+
+	JL10PsiReceiver recv;
+	gTimer.reset();
+	gTimer.setTimePoint("r_start");
+	recv.startPsi(inputs.size(), theirSetSize, 40, prng1.get<block>(), inputs, recvChls);
+	
+	std::cout << gTimer << std::endl;
+
+	std::cout << "recv.mIntersection  : " << recv.mIntersection.size() << std::endl;
+	std::cout << "expectedIntersection: " << expectedIntersection << std::endl;
+	for (u64 i = 0; i < recv.mIntersection.size(); ++i)//thrds.size()
+	{
+		/*std::cout << "#id: " << recv.mIntersection[i] <<
+		"\t" << inputs[recv.mIntersection[i]] << std::endl;*/
+	}
+
+	u64 dataSent = 0, dataRecv(0);
+	for (u64 g = 0; g < recvChls.size(); ++g)
+	{
+		dataSent += recvChls[g].getTotalDataSent();
+		dataRecv += recvChls[g].getTotalDataRecv();
+		recvChls[g].resetStats();
+	}
+
+	std::cout << "      Total Comm = " << string_format("%5.2f", (dataRecv + dataSent) / std::pow(2.0, 20)) << " MB\n";
+
+
+	for (u64 i = 0; i < numThreads; ++i)
+		recvChls[i].close();
+
+	ep0.stop(); ios.stop();
+}
+
+
 
 void MiniPSI_impl()
 {
-	setThreadName("Sender");
+	setThreadName("EchdSender");
 	u64 setSenderSize = 1 << 6, setRecvSize = 1 << 6, psiSecParam = 40, numThreads(1);
 
 	PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
@@ -410,7 +509,7 @@ int main(int argc, char** argv)
 	
 
 	string ipadrr = "localhost:1212";
-	u64 sendSetSize = 1 << 8, recvSetSize = 1 << 8, numThreads = 1;
+	u64 sendSetSize = 1 << 12, recvSetSize = 1 << 12, numThreads = 1;
 
 	PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
 
@@ -436,12 +535,16 @@ int main(int argc, char** argv)
 
 	std::cout << "SetSize: " << sendSetSize << " vs " << recvSetSize << "   |  numThreads: " << numThreads << "\t";
 	
-#if 0
+#if 1
 	std::thread thrd = std::thread([&]() {
-		Sender(sendSetSize, recvSetSize, ipadrr, numThreads);
+		//EchdSender(sendSetSize, recvSetSize, ipadrr, numThreads);
+		JL10Sender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
+
 	});
 
-	Receiver(recvSetSize, sendSetSize, ipadrr, numThreads);
+	//EchdReceiver(recvSetSize, sendSetSize, ipadrr, numThreads);
+	JL10Receiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
+
 
 	thrd.join();
 	return 0;
@@ -452,19 +555,24 @@ int main(int argc, char** argv)
 	if (argv[1][0] == '-' && argv[1][1] == 't') {
 		
 		std::thread thrd = std::thread([&]() {
-			Sender(sendSetSize, recvSetSize,"localhost:1212", numThreads);
+			EchdSender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
+			JL10Sender(sendSetSize, recvSetSize,"localhost:1212", numThreads);
 		});
 
-		Receiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
+		EchdReceiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
+		JL10Receiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
 
 		thrd.join();
 
 	}
 	else if (argv[1][0] == '-' && argv[1][1] == 'r' && atoi(argv[2]) == 0) {
-		Sender(sendSetSize, recvSetSize, ipadrr, numThreads);
+		//EchdSender(sendSetSize, recvSetSize, ipadrr, numThreads);
+		JL10Sender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
+
 	}
 	else if (argv[1][0] == '-' && argv[1][1] == 'r' && atoi(argv[2]) == 1) {
-		Receiver(recvSetSize, sendSetSize, ipadrr, numThreads);
+		//EchdReceiver(recvSetSize, sendSetSize, ipadrr, numThreads);
+		JL10Receiver(recvSetSize, sendSetSize, ipadrr, numThreads);
 	}
 	else {
 		usage(argv[0]);

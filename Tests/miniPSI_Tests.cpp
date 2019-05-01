@@ -38,7 +38,7 @@ namespace tests_libOTe
 
 	void MiniPSI_impl2()
 	{
-		setThreadName("Sender");
+		setThreadName("EchdSender");
 		u64 setSenderSize = 1 << 6, setRecvSize = 1 << 6, psiSecParam = 40, numThreads(1);
 
 		PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
@@ -124,7 +124,7 @@ namespace tests_libOTe
 	
 	void MiniPSI_hasing_impl()
 	{
-		setThreadName("Sender");
+		setThreadName("EchdSender");
 		u64 setSenderSize = 1 << 6, setRecvSize = 1 << 6, psiSecParam = 40, numThreads(1);
 
 		PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
@@ -209,7 +209,7 @@ namespace tests_libOTe
 
 	void MiniPSI_malicious_impl()
 	{
-		setThreadName("Sender");
+		setThreadName("EchdSender");
 		u64 setSenderSize = 1 << 6, setRecvSize = 1 << 6, psiSecParam = 40, numThreads(1);
 
 		PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
@@ -296,7 +296,7 @@ namespace tests_libOTe
 
 	void DhPSI_impl()
 	{
-		setThreadName("Sender");
+		setThreadName("EchdSender");
 		int curveType = 0;
 
 		u64 setSenderSize = 1 << 6, setRecvSize = 1 << 6, psiSecParam = 40, numThreads(1);
@@ -386,7 +386,7 @@ namespace tests_libOTe
 
 	void JL10PSI_impl()
 	{
-		setThreadName("Sender");
+		setThreadName("EchdSender");
 		u64 setSenderSize = 1 << 6, setRecvSize = 1 << 6, psiSecParam = 40, numThreads(1);
 
 		PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
@@ -472,7 +472,7 @@ namespace tests_libOTe
 
 	void JL10PSI_subsetsum_impl()
 	{
-		setThreadName("Sender");
+		setThreadName("EchdSender");
 		u64 setSenderSize = 1 << 6, setRecvSize = 1 << 6, psiSecParam = 40, numThreads(1);
 
 		PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
@@ -559,7 +559,7 @@ namespace tests_libOTe
 
 	void JL10PSI_subsetsum_malicious_impl()
 	{
-		setThreadName("Sender");
+		setThreadName("EchdSender");
 		u64 setSenderSize = 1 << 6, setRecvSize = 1 << 6, psiSecParam = 40, numThreads(1);
 
 		PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));

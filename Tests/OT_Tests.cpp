@@ -358,7 +358,7 @@ namespace tests_libOTe
 
     void KosOtExt_100Receive_Test_Impl()
     {
-        setThreadName("Sender");
+        setThreadName("EchdSender");
 
         IOService ios(0);
         Endpoint ep0(ios, "127.0.0.1", 1212, EpMode::Server, "ep");
@@ -431,7 +431,7 @@ namespace tests_libOTe
 
     void LzKosOtExt_100Receive_Test_Impl()
     {
-        setThreadName("Sender");
+        setThreadName("EchdSender");
 
         IOService ios(0);
         Endpoint ep0(ios, "127.0.0.1", 1212, EpMode::Server, "ep");
@@ -517,7 +517,7 @@ namespace tests_libOTe
 
     void KosDotExt_100Receive_Test_Impl()
     {
-        setThreadName("Sender");
+        setThreadName("EchdSender");
 
         IOService ios(0);
         Endpoint ep0(ios, "127.0.0.1", 1212, EpMode::Server, "ep");
@@ -593,7 +593,7 @@ namespace tests_libOTe
 
     void IknpOtExt_100Receive_Test_Impl()
     {
-        setThreadName("Sender");
+        setThreadName("EchdSender");
 
         IOService ios(0);
         Endpoint ep0(ios, "127.0.0.1", 1212, EpMode::Server, "ep");

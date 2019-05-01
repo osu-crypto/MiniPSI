@@ -27,7 +27,7 @@ namespace tests_libOTe
 
     void NaorPinkasOt_Test_Impl()
     {
-        setThreadName("Sender");
+        setThreadName("EchdSender");
 
         IOService ios(0);
         Endpoint ep0(ios, "127.0.0.1", 1212, EpMode::Server, "ep");
@@ -56,7 +56,7 @@ namespace tests_libOTe
 
             NaorPinkas baseOTs;// (&crpt);
 
-            //baseOTs(recvChannel, OTRole::Sender);
+            //baseOTs(recvChannel, OTRole::EchdSender);
 
             baseOTs.send(sendMsg, prng1, recvChannel, 1);
             //baseOTs.exec_base(prng0);

@@ -60,7 +60,7 @@ namespace tests_libOTe
 
         std::thread thrd([&]() {
 
-            setThreadName("Sender");
+            setThreadName("EchdSender");
 
             send.init(totalOts, cncThreshold, cncProb, otExtSend, sendChls, sPrng);
         });
