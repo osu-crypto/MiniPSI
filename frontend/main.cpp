@@ -77,6 +77,8 @@ using namespace osuCrypto;
 #include "ecdhMain.h"
 #include "MiniPSI/MiniReceiver.h"
 #include "MiniPSI/MiniSender.h"
+#include "libPSI/ECDH/EcdhPsiReceiver.h"
+#include "libPSI/ECDH/EcdhPsiSender.h"
 
 template<typename ... Args>
 std::string string_format(const std::string& format, Args ... args)
@@ -122,91 +124,112 @@ void usage(const char* argv0)
 }
 
 
-void Sender(span<block> inputs, u64 theirSetSize, string ipAddr_Port, u64 numThreads = 1)
+void Sender(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numThreads = 1)
 {
 	u64 psiSecParam = 40;
-
+	PRNG prngSet(_mm_set_epi32(4253465, 3434565, 234435, 0));
 	PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
 
-	// set up networking
-	std::string name = "n";
-	IOService ios;
-	Endpoint ep1(ios, ipAddr_Port, EpMode::Server, name);
+	
+		// set up networking
+		std::string name = "n";
+		IOService ios;
+		Endpoint ep1(ios, ipAddr_Port, EpMode::Server, name);
 
-	std::vector<Channel> sendChls(numThreads);
-	for (u64 i = 0; i < numThreads; ++i)
-		sendChls[i] = ep1.addChannel("chl" + std::to_string(i), "chl" + std::to_string(i));
+		std::vector<Channel> sendChls(numThreads);
+		for (u64 i = 0; i < numThreads; ++i)
+			sendChls[i] = ep1.addChannel("chl" + std::to_string(i), "chl" + std::to_string(i));
 
-	MiniSender sender;
-	gTimer.reset();
-	gTimer.setTimePoint("s_start");
-	sender.init(inputs.size(), theirSetSize,40, prng0,sendChls);
-	gTimer.setTimePoint("s_offline");
 
-	sender.outputBigPoly(inputs, sendChls);
+		std::cout << "SetSize: " << mySetSize << " vs " << theirSetSize << "   |  numThreads: " << numThreads << "\t";
 
-	gTimer.setTimePoint("s_end");
-	std::cout << gTimer << std::endl;
+		std::vector<block> inputs(mySetSize);
+		for (u64 i = 0; i < inputs.size(); ++i)
+			inputs[i] = prngSet.get<block>();
 
-	for (u64 i = 0; i < numThreads; ++i)
-		sendChls[i].close();
+		//MiniSender sender;
+		
+		EcdhPsiSender sender;
+		gTimer.reset();
+		gTimer.setTimePoint("EcdhPsiSender s_start");
+		sender.init(inputs.size(), 40, prng0.get<block>());
 
-	ep1.stop();	ios.stop();
+		gTimer.setTimePoint("EcdhPsiSender s_offline done");
+		sender.sendInput(inputs, sendChls, 0);
+		gTimer.setTimePoint("EcdhPsiSender s_end");
+		std::cout << gTimer << std::endl;
+
+
+		for (u64 i = 0; i < numThreads; ++i)
+			sendChls[i].close();
+
+		ep1.stop();	ios.stop();
 }
 
 
-void Receiver( span<block> inputs, u64 theirSetSize, string ipAddr_Port, u64 numThreads=1)
+void Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numThreads=1)
 {
-	u64 psiSecParam = 40;
+		u64 psiSecParam = 40;
+		PRNG prngSet(_mm_set_epi32(4253465, 3434565, 234435, 0));
+		PRNG prng1(_mm_set_epi32(4253465, 3434565, 234435, 23987025));
+		
+		
+			std::string name = "n";
+			IOService ios;
+			Endpoint ep0(ios, ipAddr_Port, EpMode::Client, name);
 
-	PRNG prng1(_mm_set_epi32(4253465, 3434565, 234435, 23987025));
+			std::vector<Channel> sendChls(numThreads), recvChls(numThreads);
+			for (u64 i = 0; i < numThreads; ++i)
+				recvChls[i] = ep0.addChannel("chl" + std::to_string(i), "chl" + std::to_string(i));
 
-	// set up networking
-	std::string name = "n";
-	IOService ios;
-	Endpoint ep0(ios, ipAddr_Port, EpMode::Client, name);
 
-	std::vector<Channel> sendChls(numThreads), recvChls(numThreads);
-	for (u64 i = 0; i < numThreads; ++i)
-		recvChls[i] = ep0.addChannel("chl" + std::to_string(i), "chl" + std::to_string(i));
+			std::cout << "SetSize: " << mySetSize << " vs " << theirSetSize << "   |  numThreads: " << numThreads << "\t";
 
-	MiniReceiver recv;
-	gTimer.reset();
-	gTimer.setTimePoint("r_start");
 
-	recv.init(inputs.size(), theirSetSize,40, prng1,recvChls); //offline
-	
-	gTimer.setTimePoint("r_offline");
-	
-	recv.outputBigPoly(inputs, recvChls);
-	
-	gTimer.setTimePoint("r_end");
+			std::vector<block> inputs(mySetSize);
 
-	std::cout << gTimer << std::endl;
+			for (u64 i = 0; i < expectedIntersection; ++i)
+				inputs[i] = prngSet.get<block>();
 
-	std::cout << "recv.mIntersection  : " << recv.mIntersection.size() << std::endl;
-	std::cout << "expectedIntersection: " << expectedIntersection << std::endl;
-	for (u64 i = 0; i < recv.mIntersection.size(); ++i)//thrds.size()
-	{
-		/*std::cout << "#id: " << recv.mIntersection[i] <<
-			"\t" << inputs[recv.mIntersection[i]] << std::endl;*/
-	}
-	
-	u64 dataSent = 0, dataRecv(0);
-	for (u64 g = 0; g < recvChls.size(); ++g)
-	{
-		dataSent += recvChls[g].getTotalDataSent();
-		dataRecv += recvChls[g].getTotalDataRecv();
-		recvChls[g].resetStats();
-	}
+			for (u64 i = expectedIntersection; i < inputs.size(); ++i)
+				inputs[i] = prng1.get<block>();
 
-	std::cout << "      Total Comm = " << string_format("%5.2f", (dataRecv + dataSent) / std::pow(2.0, 20)) << " MB\n";
-	
-	for (u64 i = 0; i < numThreads; ++i)
-		recvChls[i].close();
+			EcdhPsiReceiver recv;
+			gTimer.reset();
+			
+			gTimer.setTimePoint("r_start");
+			recv.init(inputs.size(), 40, prng1.get<block>());; //offline
+			gTimer.setTimePoint("r_offline");
 
-	ep0.stop(); ios.stop();
+			recv.sendInput(inputs, recvChls, 0);
 
+			gTimer.setTimePoint("r_end");
+
+			std::cout << gTimer << std::endl;
+
+			std::cout << "recv.mIntersection  : " << recv.mIntersection.size() << std::endl;
+			std::cout << "expectedIntersection: " << expectedIntersection << std::endl;
+			for (u64 i = 0; i < recv.mIntersection.size(); ++i)//thrds.size()
+			{
+				/*std::cout << "#id: " << recv.mIntersection[i] <<
+					"\t" << inputs[recv.mIntersection[i]] << std::endl;*/
+			}
+
+			u64 dataSent = 0, dataRecv(0);
+			for (u64 g = 0; g < recvChls.size(); ++g)
+			{
+				dataSent += recvChls[g].getTotalDataSent();
+				dataRecv += recvChls[g].getTotalDataRecv();
+				recvChls[g].resetStats();
+			}
+
+			std::cout << "      Total Comm = " << string_format("%5.2f", (dataRecv + dataSent) / std::pow(2.0, 20)) << " MB\n";
+
+
+			for (u64 i = 0; i < numThreads; ++i)
+				recvChls[i].close();
+
+			ep0.stop(); ios.stop();
 }
 
 
@@ -253,13 +276,13 @@ void MiniPSI_impl()
 
 	auto thrd = std::thread([&]() {
 		gTimer.setTimePoint("r start ");
-		recv.init(recvSet.size(), sendSet.size(), 40, prng1, recvChls);
+		/*recv.outputBigPoly(recvSet.size(), sendSet.size(), 40, prng1, recvChls);
 		recv.outputBigPoly(recvSet, recvChls);
-
+*/
 	});
 
-	sender.init(sendSet.size(), recvSet.size(), 40, prng0, sendChls);
-	sender.outputBigPoly(sendSet, sendChls);
+	/*sender.init(sendSet.size(), recvSet.size(), 40, prng0, sendChls);
+	sender.outputBigPoly(sendSet, sendChls);*/
 
 	thrd.join();
 
@@ -377,44 +400,48 @@ int main(int argc, char** argv)
 	//curveType = 0 =>k286
 	//./bin/frontend.exe -r 0 -echd -c 1 -n 8 & ./bin/frontend.exe -r 1 -echd -c 1 -n 8                                       
 
-	subsetSum_test();
+	/*subsetSum_test();
 	return 0;
 
-	string ipadrr = "localhost:1212";
+	
 
 	MiniPSI_impl();
-	return 0;
+	return 0;*/
 	
-	u64 sendSetSize = 1 << 12, recvSetSize = 1 << 12, numThreads = 1;
 
-		
+	string ipadrr = "localhost:1212";
+	u64 sendSetSize = 1 << 8, recvSetSize = 1 << 8, numThreads = 1;
+
 	PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
-	std::vector<block> sendSet(sendSetSize), recvSet(recvSetSize);
-	
-	std::cout << "SetSize: " << sendSetSize << " vs " << recvSetSize << "   |  numThreads: " << numThreads<< "\t";
-	
 
-	
-	for (u64 i = 0; i < sendSetSize; ++i)
-		sendSet[i] = prng0.get<block>();
 
-	for (u64 i = 0; i < recvSetSize; ++i)
-		recvSet[i] = prng0.get<block>();
-
-	for (u64 i = 0; i < expectedIntersection; ++i)
+	if (argc == 7 
+		&& argv[3][0] == '-' && argv[3][1] == 'n'
+		&& argv[5][0] == '-' && argv[5][1] == 't')
 	{
-		sendSet[i] = recvSet[i];
+		sendSetSize = 1 << atoi(argv[4]);
+		recvSetSize = sendSetSize;
+		numThreads = atoi(argv[6]);
 	}
 
-	
-#if 1
-	std::thread thrd = std::thread([&]() {
-		Sender(sendSet, recvSetSize, ipadrr, numThreads);
 
+	if (argc == 5
+		&& argv[3][0] == '-' && argv[3][1] == 'n')
+	{
+		sendSetSize = 1 << atoi(argv[4]);
+		recvSetSize = sendSetSize;
+	}
+
+	std::vector<block> sendSet(sendSetSize), recvSet(recvSetSize);
+
+	std::cout << "SetSize: " << sendSetSize << " vs " << recvSetSize << "   |  numThreads: " << numThreads << "\t";
+	
+#if 0
+	std::thread thrd = std::thread([&]() {
+		Sender(sendSetSize, recvSetSize, ipadrr, numThreads);
 	});
 
-	Receiver(recvSet, sendSetSize, ipadrr, numThreads);
-
+	Receiver(recvSetSize, sendSetSize, ipadrr, numThreads);
 
 	thrd.join();
 	return 0;
@@ -425,19 +452,19 @@ int main(int argc, char** argv)
 	if (argv[1][0] == '-' && argv[1][1] == 't') {
 		
 		std::thread thrd = std::thread([&]() {
-			Sender(sendSet, recvSetSize,"localhost:1212", numThreads);
+			Sender(sendSetSize, recvSetSize,"localhost:1212", numThreads);
 		});
 
-		Receiver(recvSet, sendSetSize, "localhost:1212", numThreads);
+		Receiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
 
 		thrd.join();
 
 	}
 	else if (argv[1][0] == '-' && argv[1][1] == 'r' && atoi(argv[2]) == 0) {
-		Sender(sendSet, recvSetSize, ipadrr, numThreads);
+		Sender(sendSetSize, recvSetSize, ipadrr, numThreads);
 	}
 	else if (argv[1][0] == '-' && argv[1][1] == 'r' && atoi(argv[2]) == 1) {
-		Receiver(recvSet, sendSetSize, ipadrr, numThreads);
+		Receiver(recvSetSize, sendSetSize, ipadrr, numThreads);
 	}
 	else {
 		usage(argv[0]);

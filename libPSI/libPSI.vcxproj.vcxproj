@@ -15,6 +15,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ECDH\DKT10PsiReceiver.cpp" />
+    <ClCompile Include="ECDH\DKT10PsiSender.cpp" />
     <ClCompile Include="ECDH\EcdhPsiReceiver.cpp" />
     <ClCompile Include="ECDH\EcdhPsiSender.cpp" />
     <ClCompile Include="ECDH\JL10PsiReceiver.cpp" />
@@ -30,6 +32,8 @@
     <ClCompile Include="Tools\SimpleIndex .cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ECDH\DKT10PsiReceiver.h" />
+    <ClInclude Include="ECDH\DKT10PsiSender.h" />
     <ClInclude Include="ECDH\EcdhPsiReceiver.h" />
     <ClInclude Include="ECDH\EcdhPsiSender.h" />
     <ClInclude Include="ECDH\JL10PsiReceiver.h" />

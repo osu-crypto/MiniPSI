@@ -22,9 +22,9 @@ namespace osuCrypto
         //void init(u64 n, u64 statSecParam);
 
 
-		void sendInput_k283(std::vector<block>& inputs, span<Channel> chl);
-		void sendInput_Curve25519(std::vector<block>& inputs, span<Channel> chl);
-		void sendInput(std::vector<block>& inputs, span<Channel> chl, int curveType);
+		void sendInput_k283(span<block> inputs, span<Channel> chl);
+		void sendInput_Curve25519(span<block> inputs, span<Channel> chl);
+		void sendInput(span<block> inputs, span<Channel> chl, int curveType);
         //void sendInput(std::vector<block>& inputs, std::vector<Channel*>& chl);
     };
 

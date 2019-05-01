@@ -23,7 +23,7 @@ namespace osuCrypto
     }
 
 
-    void EcdhPsiSender::sendInput_k283(std::vector<block>& inputs, span<Channel> chls)
+    void EcdhPsiSender::sendInput_k283(span<block> inputs, span<Channel> chls)
     {
 		std::cout << "curveParam = k283\n";
 
@@ -175,7 +175,7 @@ namespace osuCrypto
 
     }
 
-	void EcdhPsiSender::sendInput_Curve25519(std::vector<block>& inputs, span<Channel> chls)
+	void EcdhPsiSender::sendInput_Curve25519(span<block> inputs, span<Channel> chls)
 	{
 		std::cout << "curveParam = Curve25519\n";
 
@@ -327,7 +327,7 @@ namespace osuCrypto
 
 	}
 
-	void EcdhPsiSender::sendInput(std::vector<block>& inputs, span<Channel> chl, int curveType)
+	void EcdhPsiSender::sendInput(span<block> inputs, span<Channel> chl, int curveType)
 	{
 		if (curveType == 0)
 			sendInput_k283(inputs, chl);
