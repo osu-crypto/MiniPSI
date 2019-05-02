@@ -92,12 +92,12 @@ namespace osuCrypto
 					sendIter += xa.sizeBytes();
 				}
 				chl.asyncSend(std::move(sendBuff));	//send H(x)^a
-			}
+			//}
 
 
-			for (u64 i = inputStartIdx; i < inputEndIdx; i += stepSize)
-			{
-				auto curStepSize = std::min(stepSize, inputEndIdx - i);
+			//for (u64 i = inputStartIdx; i < inputEndIdx; i += stepSize)
+			//{
+				//auto curStepSize = std::min(stepSize, inputEndIdx - i);
 
 			
 

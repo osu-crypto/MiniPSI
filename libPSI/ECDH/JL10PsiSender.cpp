@@ -18,7 +18,7 @@ namespace osuCrypto
     void JL10PsiSender::startPsi(u64 myInputSize, u64 theirInputSize, u64 secParam, block seed, span<block> inputs, span<Channel> chls)
     {
 		//####################### offline #########################
-		//gTimer.setTimePoint("s offline start ");
+		gTimer.setTimePoint("s offline start ");
 
         mSecParam = secParam;
         mPrng.SetSeed(seed);
@@ -41,12 +41,19 @@ namespace osuCrypto
 
 		u8* mG_K = new u8[g_k.sizeBytes()];
 		g_k.toBytes(mG_K); //g^k
-
+		std::vector<u8> tempSend(g_k.sizeBytes());
+		
+		memcpy(tempSend.data(), mG_K, g_k.sizeBytes());
     
 		//####################### online #########################
-		//gTimer.setTimePoint("s online start ");
+		gTimer.setTimePoint("s online start ");
 
-		chls[0].asyncSend(mG_K); //send g^k
+		//chls[0].send(mG_K); //send g^k
+		chls[0].asyncSend(std::move(tempSend));
+
+
+		std::cout << "\nr chls[0].send(mG_K)" << g_k<< std::endl;
+
 
 		u64 numThreads(chls.size());
 		const bool isMultiThreaded = numThreads > 1;
@@ -62,7 +69,7 @@ namespace osuCrypto
 
 
 		//##################### compute H(x*)^k. compute/send yi^k#####################
-
+#if 1
 		//auto start = timer.setTimePoint("start");
 
 		auto routine = [&](u64 t)
@@ -159,6 +166,8 @@ namespace osuCrypto
 		for (auto& thrd : thrds)
 			thrd.join();
 
+#endif
+		gTimer.setTimePoint("s exp done");
 
 		//#####################Send Mask #####################
 
@@ -191,7 +200,7 @@ namespace osuCrypto
 		for (auto& thrd : thrds)
 			thrd.join();
 #endif
-		//gTimer.setTimePoint("s Psi done");
+		 gTimer.setTimePoint("s Psi done");
 		//std::cout << "s gkr done\n";
 
 
@@ -618,7 +627,7 @@ namespace osuCrypto
 			thrd.join();
 #endif
 		gTimer.setTimePoint("s Psi done");
-		std::cout << "s gkr done\n";
+		//std::cout << "s gkr done\n";
 
 		return true;
 

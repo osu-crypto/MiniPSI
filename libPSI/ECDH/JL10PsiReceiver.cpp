@@ -63,10 +63,15 @@ namespace osuCrypto
 		//####################### online #########################
 		gTimer.setTimePoint("r online start ");
 
-		u8* mG_K; chls[0].recv(mG_K);
-		EccPoint g_k(mCurve); 	g_k.fromBytes(mG_K); //receiving g^k
+		EccPoint g_k(mCurve);
+		std::vector<u8> mG_K; chls[0].recv(mG_K);
 
-		//std::cout << "r g^k= " << g_k << std::endl;
+	//	u8* mG_K= new u8[g_k.sizeBytes()]; chls[0].recv(mG_K);
+	//	u8* ttt = new u8[g_k.sizeBytes()];
+	//	memcpy(ttt, mG_K.data(), g_k.sizeBytes());
+		g_k.fromBytes(mG_K.data()); //receiving g^k
+
+		std::cout << "r g^k= " << g_k << std::endl;
 
 		u64 numThreads(chls.size());
 		const bool isMultiThreaded = numThreads > 1;
@@ -76,13 +81,13 @@ namespace osuCrypto
 		u64 n1n2MaskBits = (40 + log2(mTheirInputSize*mMyInputSize));
 		u64 n1n2MaskBytes =  (n1n2MaskBits + 7) / 8;
 
-#if 1	//generate all pairs from seeds
+	//generate all pairs from seeds
 		std::unordered_map<u64, std::pair<block, u64>> localMasks;
 		localMasks.reserve(inputs.size());
 
 		//##################### compute/send yi=H(x)*(g^ri). recv yi^k, comp. H(x)^k  #####################
 
-
+#if 1
 		auto routine = [&](u64 t)
 		{
 
@@ -201,7 +206,8 @@ namespace osuCrypto
 
 		for (auto& thrd : thrds)
 			thrd.join();
-
+#endif
+		gTimer.setTimePoint("r exp done");
 
 #if 1
 		//#####################Receive Mask #####################
@@ -293,7 +299,7 @@ namespace osuCrypto
 		std::cout << "r gkr done\n";
 
 #endif
-#endif
+
 	}
 	
 	void JL10PsiReceiver::startPsi_subsetsum(u64 myInputSize, u64 theirInputSize, u64 secParam, block seed, span<block> inputs, span<Channel> chls)

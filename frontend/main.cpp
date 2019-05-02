@@ -260,10 +260,10 @@ void JL10Sender(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numThre
 	//MiniSender sender;
 
 	JL10PsiSender sender;
-	//gTimer.reset();
+	gTimer.reset();
 	//gTimer.setTimePoint("JL10PsiSender s_start");
 	sender.startPsi(inputs.size(), theirSetSize, 40, prng0.get<block>(), inputs, sendChls);
-	//std::cout << gTimer << std::endl;
+	std::cout << gTimer << std::endl;
 
 
 	for (u64 i = 0; i < numThreads; ++i)
@@ -509,7 +509,7 @@ int main(int argc, char** argv)
 	
 
 	string ipadrr = "localhost:1212";
-	u64 sendSetSize = 1 << 12, recvSetSize = 1 << 12, numThreads = 1;
+	u64 sendSetSize = 1 << 8, recvSetSize = 1 << 8, numThreads = 1;
 
 	PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
 
@@ -535,7 +535,7 @@ int main(int argc, char** argv)
 
 	std::cout << "SetSize: " << sendSetSize << " vs " << recvSetSize << "   |  numThreads: " << numThreads << "\t";
 	
-#if 1
+#if 0
 	std::thread thrd = std::thread([&]() {
 		//EchdSender(sendSetSize, recvSetSize, ipadrr, numThreads);
 		JL10Sender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
@@ -555,11 +555,11 @@ int main(int argc, char** argv)
 	if (argv[1][0] == '-' && argv[1][1] == 't') {
 		
 		std::thread thrd = std::thread([&]() {
-			EchdSender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
+			//EchdSender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
 			JL10Sender(sendSetSize, recvSetSize,"localhost:1212", numThreads);
 		});
 
-		EchdReceiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
+		//EchdReceiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
 		JL10Receiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
 
 		thrd.join();
@@ -572,7 +572,7 @@ int main(int argc, char** argv)
 	}
 	else if (argv[1][0] == '-' && argv[1][1] == 'r' && atoi(argv[2]) == 1) {
 		//EchdReceiver(recvSetSize, sendSetSize, ipadrr, numThreads);
-		JL10Receiver(recvSetSize, sendSetSize, ipadrr, numThreads);
+		JL10Receiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
 	}
 	else {
 		usage(argv[0]);

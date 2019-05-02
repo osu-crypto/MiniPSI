@@ -106,16 +106,16 @@ namespace osuCrypto
 				 }
 				 chl.asyncSend(std::move(sendBuff));
 
-			 }
+			// }
 
 			/* auto ybTime = timer.setTimePoint("yb");
 			 auto ybTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(ybTime - start).count();*/
 			// std::cout << "compute H(y)^b:  " << ybTimeMs << "\n";
 
 
-			 for (u64 i = inputStartIdx; i < inputEndIdx; i += stepSize)
-			 {
-				 auto curStepSize = std::min(stepSize, inputEndIdx - i);
+			// for (u64 i = inputStartIdx; i < inputEndIdx; i += stepSize)
+			 //{
+			//	 auto curStepSize = std::min(stepSize, inputEndIdx - i);
 
 
 			 //recv H(x)^a
