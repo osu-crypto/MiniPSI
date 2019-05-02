@@ -25,7 +25,7 @@ namespace osuCrypto
 	
 		simple.init(mTheirInputSize, recvMaxBinSize, recvNumDummies);
 
-		EllipticCurve mCurve(p256k1, OneBlock);
+		EllipticCurve mCurve(k283, OneBlock);
 		mFieldSize = mCurve.bitCount();
 
 		//std::cout << "s mFieldSize= " << mFieldSize << "\n";
@@ -205,7 +205,7 @@ namespace osuCrypto
 
 		simple.init(mTheirInputSize, recvMaxBinSize, recvNumDummies);
 
-		EllipticCurve mCurve(p256k1, OneBlock);
+		EllipticCurve mCurve(k283, OneBlock);
 		mFieldSize = mCurve.bitCount();
 
 		//std::cout << "s mFieldSize= " << mFieldSize << "\n";
@@ -432,7 +432,7 @@ namespace osuCrypto
 
 		simple.init(mTheirInputSize, recvMaxBinSize, recvNumDummies);
 
-		EllipticCurve mCurve(p256k1, OneBlock);
+		EllipticCurve mCurve(k283, OneBlock);
 		mFieldSize = mCurve.bitCount();
 
 		//std::cout << "s mFieldSize= " << mFieldSize << "\n";

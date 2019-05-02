@@ -17,6 +17,7 @@ namespace osuCrypto
     }
     void JL10PsiSender::startPsi(u64 myInputSize, u64 theirInputSize, u64 secParam, block seed, span<block> inputs, span<Channel> chls)
     {
+		//stepSize = myInputSize;
 		//####################### offline #########################
 		gTimer.setTimePoint("s offline start ");
 
@@ -28,7 +29,7 @@ namespace osuCrypto
 
 		mPrng.SetSeed(seed);
 		
-		EllipticCurve mCurve(p256k1, OneBlock);
+		EllipticCurve mCurve(k283, OneBlock);
 		mFieldSize = mCurve.bitCount();
 
 
@@ -89,8 +90,8 @@ namespace osuCrypto
 
 			//EllipticCurve curve(p256k1, thrdPrng[t].get<block>());
 
-			SHA1 inputHasher;
-			//EllipticCurve mCurve(p256k1, OneBlock);
+			RandomOracle inputHasher(sizeof(block));
+			//EllipticCurve mCurve(k283, OneBlock);
 			EccPoint point(mCurve), yik(mCurve), yi(mCurve), xk(mCurve);
 
 			u8* temp= new u8[xk.sizeBytes()];
@@ -102,15 +103,17 @@ namespace osuCrypto
 
 				//	std::cout << "send H(y)^b" << std::endl;
 
+				//gTimer.setTimePoint("s online H(x)^k start ");
+
 		//compute H(x)^k
 				for (u64 k = 0; k < curStepSize; ++k)
 				{
-
+					block seed;
 					inputHasher.Reset();
 					inputHasher.Update(inputs[i + k]);
-					inputHasher.Final(hashOut);
+					inputHasher.Final(seed);
 
-					point.randomize(toBlock(hashOut)); //H(x)
+					point.randomize(seed); //H(x)
 													   //std::cout << "sp  " << point << "  " << toBlock(hashOut) << std::endl;
 					xk = (point * nK); //H(x)^k
 
@@ -122,6 +125,7 @@ namespace osuCrypto
 					memcpy(sendBuff_mask[t].data()+ idxSendMaskIter, temp, n1n2MaskBytes);
 					idxSendMaskIter += n1n2MaskBytes;
 				}
+				//gTimer.setTimePoint("s online H(x)^k done ");
 
 #if 1
 				//receive yi=H(.)*g^ri
@@ -140,6 +144,8 @@ namespace osuCrypto
 				std::vector<u8> sendBuff_yik(yik.sizeBytes() * curStepSize);
 				auto sendIter_yik = sendBuff_yik.data();
 
+				//gTimer.setTimePoint("s online yi^k start ");
+
 				for (u64 k = 0; k < curStepSize; ++k)
 				{
 					yi.fromBytes(recvIter); recvIter += yi.sizeBytes();
@@ -147,6 +153,7 @@ namespace osuCrypto
 					yik.toBytes(sendIter_yik);
 					sendIter_yik += yik.sizeBytes();
 				}
+				//gTimer.setTimePoint("s online yi^k start ");
 
 				chl.asyncSend(std::move(sendBuff_yik));  //sending yi^k
 #endif
@@ -219,7 +226,7 @@ namespace osuCrypto
 
 		mPrng.SetSeed(seed);
 
-		EllipticCurve mCurve(p256k1, OneBlock);
+		EllipticCurve mCurve(k283, OneBlock);
 		mFieldSize = mCurve.bitCount();
 
 
@@ -274,7 +281,7 @@ namespace osuCrypto
 			//EllipticCurve curve(p256k1, thrdPrng[t].get<block>());
 
 			SHA1 inputHasher;
-			//EllipticCurve mCurve(p256k1, OneBlock);
+			//EllipticCurve mCurve(k283, OneBlock);
 			EccPoint point(mCurve), yik(mCurve), yi(mCurve), xk(mCurve);
 
 			u8* temp = new u8[xk.sizeBytes()];
@@ -401,7 +408,7 @@ namespace osuCrypto
 
 		mPrng.SetSeed(seed);
 
-		EllipticCurve mCurve(p256k1, OneBlock);
+		EllipticCurve mCurve(k283, OneBlock);
 		mFieldSize = mCurve.bitCount();
 
 
@@ -455,7 +462,7 @@ namespace osuCrypto
 
 			//EllipticCurve curve(p256k1, thrdPrng[t].get<block>());
 
-			//EllipticCurve mCurve(p256k1, OneBlock);
+			//EllipticCurve mCurve(k283, OneBlock);
 			EccPoint point(mCurve), yik(mCurve), yi(mCurve), xk(mCurve);
 
 			u8* temp = new u8[xk.sizeBytes()];

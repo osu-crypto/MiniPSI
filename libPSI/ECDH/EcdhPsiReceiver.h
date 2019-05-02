@@ -13,7 +13,7 @@ namespace osuCrypto
         EcdhPsiReceiver();
         ~EcdhPsiReceiver();
 
-		u64 stepSize = 1<<6;
+		u64 stepSize = 1<< 6;
         u64 mN, mSecParam;
         PRNG mPrng;
 

@@ -189,10 +189,13 @@ void EchdReceiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 
 			std::vector<block> inputs(mySetSize);
 
-			for (u64 i = 0; i < expectedIntersection; ++i)
+			for (u64 i = 0; i < 10; ++i)
+				inputs[i] = prng1.get<block>();
+
+			for (u64 i = 10; i < expectedIntersection+10; ++i)
 				inputs[i] = prngSet.get<block>();
 
-			for (u64 i = expectedIntersection; i < inputs.size(); ++i)
+			for (u64 i = 10+expectedIntersection; i < inputs.size(); ++i)
 				inputs[i] = prng1.get<block>();
 
 			EcdhPsiReceiver recv;
@@ -433,7 +436,7 @@ void subsetSum_test() {
 
 	PRNG prng(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
 
-	EllipticCurve mCurve(p256k1, OneBlock);
+	EllipticCurve mCurve(k283, OneBlock);
 	EccPoint mG(mCurve);
 	mG = mCurve.getGenerator();
 
@@ -493,8 +496,80 @@ void subsetSum_test() {
 }
 
 
+void testExp(u64 curStepSize)
+{
+	EllipticCurve mCurve(k283, OneBlock);
+	PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
+
+	EccNumber nK(mCurve);
+	EccPoint pG(mCurve);
+	nK.randomize(prng0);
+	pG = mCurve.getGenerator();
+	auto g_k = pG*nK;
+	
+	std::vector<EccNumber> nSeeds;
+	nSeeds.reserve(curStepSize);
+
+	for (u64 i = 0; i < curStepSize; i++)
+	{
+		// get a random value from Z_p
+		nSeeds.emplace_back(mCurve);
+		nSeeds[i].randomize(prng0);
+	}
+
+	gTimer.reset();
+	gTimer.setTimePoint("r online g^k^ri start ");
+	std::vector<EccPoint> pgK_seeds;
+	pgK_seeds.reserve(curStepSize);
+
+	for (u64 k = 0; k < curStepSize; k++)
+	{
+		pgK_seeds.emplace_back(mCurve);
+		pgK_seeds[k] = g_k * nSeeds[k];  //(g^k)^ri
+	}
+	gTimer.setTimePoint("r online g^k^ri done ");
+	//std::cout << gTimer << std::endl;
+
+
+	SHA1 inputHasher;
+	u8 hashOut[SHA1::HashSize];
+
+	std::vector<block> inputs(curStepSize);
+	for (u64 i = 0; i < curStepSize; ++i)
+		inputs[i] = prng0.get<block>();
+
+
+	EccNumber b(mCurve);
+	EccPoint yb(mCurve), point(mCurve);
+	b.randomize(prng0.get<block>());
+
+
+	//gTimer.reset();
+	gTimer.setTimePoint("r online H(x)^b start ");
+
+	//send H(y)^b
+	for (u64 k = 0; k < curStepSize; ++k)
+	{
+
+		inputHasher.Reset();
+		inputHasher.Update(inputs[k]);
+		inputHasher.Final(hashOut);
+		point.randomize(toBlock(hashOut));
+
+		yb = (point * b);
+	}
+	gTimer.setTimePoint("r online H(x)^b done ");
+
+	std::cout << gTimer << std::endl;
+
+}
+
 int main(int argc, char** argv)
 {
+
+	//u64 curStepSize = 1 << 12;
+	//testExp(curStepSize);
+	//return 0;
 	//#####################ECHD##############
 	//curveType = 0 =>k286
 	//./bin/frontend.exe -r 0 -echd -c 1 -n 8 & ./bin/frontend.exe -r 1 -echd -c 1 -n 8                                       

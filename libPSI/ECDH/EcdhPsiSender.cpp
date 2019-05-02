@@ -25,6 +25,7 @@ namespace osuCrypto
 
     void EcdhPsiSender::sendInput_k283(span<block> inputs, span<Channel> chls)
     {
+		//stepSize = inputs.size();
 		std::cout << "curveParam = k283\n";
 
         auto curveParam = k283;
@@ -40,10 +41,6 @@ namespace osuCrypto
         auto RsSeed = mPrng.get<block>();
 
 		std::vector<std::vector<u8>> sendBuff2(chls.size());
-
-		
-
-	
 
 
         auto routine = [&](u64 t)

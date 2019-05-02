@@ -702,7 +702,7 @@ namespace tests_libOTe
 		
 		PRNG prng(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
 
-		EllipticCurve mCurve(p256k1, OneBlock);
+		EllipticCurve mCurve(k283, OneBlock);
 		EccPoint mG(mCurve);
 		mG = mCurve.getGenerator();
 
@@ -769,7 +769,7 @@ namespace tests_libOTe
 
 		PRNG prng(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
 
-		EllipticCurve mCurve(p256k1, OneBlock);
+		EllipticCurve mCurve(k283, OneBlock);
 		EccPoint mG(mCurve);
 		mG = mCurve.getGenerator();
 
@@ -837,7 +837,7 @@ namespace tests_libOTe
 	void schnorrZKDL()
 	{
 		PRNG prng(ZeroBlock);
-		EllipticCurve mCurve(p256k1, OneBlock);
+		EllipticCurve mCurve(k283, OneBlock);
 		EccPoint mG(mCurve);
 		mG = mCurve.getGenerator();
 

@@ -33,7 +33,7 @@ namespace osuCrypto
 		std::cout << "r mSetSeedsSize= " << mMyInputSize << " - " << mSetSeedsSize << " - " << mChoseSeedsSize << "\n";
 
 		mCurveSeed = mPrng.get<block>();
-		EllipticCurve mCurve(p256k1, OneBlock);
+		EllipticCurve mCurve(k283, OneBlock);
 		//mCurve.getMiracl().IOBASE = 10;
 		mFieldSize = mCurve.bitCount();
 
@@ -313,7 +313,7 @@ namespace osuCrypto
 		std::cout << "r mSetSeedsSize= " << mMyInputSize << " - " << mSetSeedsSize << " - " << mChoseSeedsSize << "\n";
 
 		mCurveSeed = mPrng.get<block>();
-		EllipticCurve mCurve(p256k1, OneBlock);
+		EllipticCurve mCurve(k283, OneBlock);
 		//mCurve.getMiracl().IOBASE = 10;
 		mFieldSize = mCurve.bitCount();
 
@@ -623,7 +623,7 @@ namespace osuCrypto
 		std::cout << "r mSetSeedsSize= " << mMyInputSize << " - " << mSetSeedsSize << " - " << mChoseSeedsSize << "\n";
 
 		mCurveSeed = mPrng.get<block>();
-		EllipticCurve mCurve(p256k1, OneBlock);
+		EllipticCurve mCurve(k283, OneBlock);
 		//mCurve.getMiracl().IOBASE = 10;
 		mFieldSize = mCurve.bitCount();
 

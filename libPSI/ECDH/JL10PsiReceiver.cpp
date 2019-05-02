@@ -20,6 +20,7 @@ namespace osuCrypto
     
 	void JL10PsiReceiver::startPsi(u64 myInputSize, u64 theirInputSize, u64 secParam, block seed,span<block> inputs, span<Channel> chls)
     {
+		//stepSize = myInputSize;
 		//####################### offline #########################
 		gTimer.setTimePoint("r offline start ");
 
@@ -33,7 +34,7 @@ namespace osuCrypto
 		std::cout << "r mSetSeedsSize= " << mMyInputSize << " - " << mSetSeedsSize << " - " << mChoseSeedsSize << "\n";
 
 		mCurveSeed = mPrng.get<block>();
-		EllipticCurve mCurve(p256k1, OneBlock);
+		EllipticCurve mCurve(k283, OneBlock);
 		//mCurve.getMiracl().IOBASE = 10;
 		mFieldSize = mCurve.bitCount();
 
@@ -100,11 +101,11 @@ namespace osuCrypto
 
 			//EllipticCurve curve(p256k1, thrdPrng[t].get<block>());
 
-			SHA1 inputHasher;
-			EccPoint point(mCurve), yik(mCurve), xk(mCurve), gri(mCurve), xab(mCurve);
+			RandomOracle inputHasher(sizeof(block));
+			EccPoint point(mCurve), yik(mCurve), yi(mCurve), xk(mCurve), gri(mCurve), xab(mCurve);
 
-			std::vector<EccPoint> yi; //yi=H(xi)*g^ri
-			yi.reserve(subsetInputSize);
+			//std::vector<EccPoint> yi; //yi=H(xi)*g^ri
+			//yi.reserve(subsetInputSize);
 			int idxYi = 0;
 
 			for (u64 i = inputStartIdx; i < inputEndIdx; i += stepSize)  //yi=H(xi)*g^ri
@@ -116,57 +117,62 @@ namespace osuCrypto
 				auto sendIter = sendBuff.data();
 				//	std::cout << "send H(y)^b" << std::endl;
 			
+				
+				//gTimer.setTimePoint("r online g^k^ri start ");
+				//compute  (g^K)^ri
+				std::vector<EccPoint> pgK_seeds;
+				pgK_seeds.reserve(curStepSize);
+
+				for (u64 k = 0; k < curStepSize; k++)
+				{
+					pgK_seeds.emplace_back(mCurve);
+					pgK_seeds[k] = g_k * nSeeds[i + k];  //(g^k)^ri
+														 //std::cout << mG_seeds[i] << std::endl;		
+				}
+				//gTimer.setTimePoint("r online g^k^ri done ");
+
 
 				//send H(y)^b
 				for (u64 k = 0; k < curStepSize; ++k)
 				{
-
+					block seed;
 					inputHasher.Reset();
 					inputHasher.Update(inputs[i + k]);
-					inputHasher.Final(hashOut);
+					inputHasher.Final(seed);
 
-					point.randomize(toBlock(hashOut)); //H(x)
+					point.randomize(seed); //H(x)
 					//std::cout << "sp  " << point << "  " << toBlock(hashOut) << std::endl;
 
-					yi.emplace_back(mCurve);
-					yi[idxYi] = (point + pG_seeds[i+k]); //H(x) *g^ri
+					//yi.emplace_back(mCurve);
+					yi = (point + pG_seeds[i+k]); //H(x) *g^ri
 
 #ifdef PRINT
 					if (i+k==10)
 						std::cout << "r yi[" << idxYi << "] " << yi[idxYi] << std::endl;
 #endif
-					yi[idxYi].toBytes(sendIter);
-					sendIter += yi[idxYi++].sizeBytes();
+					yi.toBytes(sendIter);
+					sendIter += yi.sizeBytes();
 				}
+				//gTimer.setTimePoint("r online H(x) g^k done ");
 
 				chl.asyncSend(std::move(sendBuff));  //sending yi=H(xi)*g^ri
 
-				
-				//compute  (g^K)^ri
-				std::vector<EccPoint> pgK_seeds;
-				pgK_seeds.reserve(curStepSize);
-				
-				for (u64 k = 0; k < curStepSize; k++)
-				{
-					pgK_seeds.emplace_back(mCurve);
-					pgK_seeds[k] = g_k * nSeeds[i + k];  //(g^k)^ri
-													 //std::cout << mG_seeds[i] << std::endl;		
-				}
 
 
-
-				std::vector<u8> recvBuff(yi[0].sizeBytes() * curStepSize); //receiving yi^k = H(x)^k *g^ri^k
-				u8* xk_byte = new u8[yi[0].sizeBytes()];
+				std::vector<u8> recvBuff(yi.sizeBytes() * curStepSize); //receiving yi^k = H(x)^k *g^ri^k
+				u8* xk_byte = new u8[yi.sizeBytes()];
 				block temp;
 #if 1				
 				chl.recv(recvBuff); //recv yi^k
 
-				if (recvBuff.size() != curStepSize * yi[0].sizeBytes())
+				if (recvBuff.size() != curStepSize * yi.sizeBytes())
 				{
 					std::cout << "error @ " << (LOCATION) << std::endl;
 					throw std::runtime_error(LOCATION);
 				}
 				auto recvIter = recvBuff.data();
+
+				//gTimer.setTimePoint("r online H(x)^k start");
 
 				for (u64 k = 0; k < curStepSize; ++k)
 				{
@@ -190,6 +196,8 @@ namespace osuCrypto
 						localMasks.emplace(*(u64*)&temp, std::pair<block, u64>(temp, i + k));
 					}
 				}
+				//gTimer.setTimePoint("r online H(x)^k done");
+
 
 #endif
 			}
@@ -319,7 +327,7 @@ namespace osuCrypto
 		std::cout << "r mSetSeedsSize= " << mMyInputSize << " - " << mSetSeedsSize << " - " << mChoseSeedsSize << "\n";
 
 		mCurveSeed = mPrng.get<block>();
-		EllipticCurve mCurve(p256k1, OneBlock);
+		EllipticCurve mCurve(k283, OneBlock);
 		//mCurve.getMiracl().IOBASE = 10;
 		mFieldSize = mCurve.bitCount();
 
@@ -629,7 +637,7 @@ namespace osuCrypto
 		std::cout << "r mSetSeedsSize= " << mMyInputSize << " - " << mSetSeedsSize << " - " << mChoseSeedsSize << "\n";
 
 		mCurveSeed = mPrng.get<block>();
-		EllipticCurve mCurve(p256k1, OneBlock);
+		EllipticCurve mCurve(k283, OneBlock);
 		//mCurve.getMiracl().IOBASE = 10;
 		mFieldSize = mCurve.bitCount();
 

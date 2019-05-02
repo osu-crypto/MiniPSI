@@ -31,6 +31,8 @@ namespace osuCrypto
         span<block> inputs,
         span<Channel> chls)
     {
+		//stepSize = inputs.size();
+
         std::vector<PRNG> thrdPrng(chls.size());
         for (u64 i = 0; i < thrdPrng.size(); i++)
             thrdPrng[i].SetSeed(mPrng.get<block>());
@@ -84,6 +86,8 @@ namespace osuCrypto
 				 auto sendIter = sendBuff.data();
 				 //	std::cout << "send H(y)^b" << std::endl;
 
+				 //gTimer.setTimePoint("r online H(x)^b start ");
+
 				 //send H(y)^b
 				 for (u64 k = 0; k < curStepSize; ++k)
 				 {
@@ -104,6 +108,9 @@ namespace osuCrypto
 					 yb.toBytes(sendIter);
 					 sendIter += yb.sizeBytes();
 				 }
+				//' gTimer.setTimePoint("r online H(x)^b done ");
+
+
 				 chl.asyncSend(std::move(sendBuff));
 
 			// }
