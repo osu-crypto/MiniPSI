@@ -33,7 +33,7 @@ namespace osuCrypto
 	
 		simple.init(mTheirInputSize, recvMaxBinSize, recvNumDummies);
 
-		EllipticCurve mCurve(k283, OneBlock);
+		EllipticCurve mCurve(p256k1, OneBlock);
 		mFieldSize = mCurve.bitCount();
 
 		//std::cout << "s mFieldSize= " << mFieldSize << "\n";
@@ -68,10 +68,12 @@ namespace osuCrypto
 
 		u64 n1n2MaskBits = (40 + log2(mTheirInputSize*mMyInputSize));
 		u64 n1n2MaskBytes = (n1n2MaskBits + 7) / 8;
+		std::vector<u8> tempSend(g_k.sizeBytes());
+		memcpy(tempSend.data(), mG_K, g_k.sizeBytes());
 
 		//####################### online #########################
 		gTimer.setTimePoint("r online start ");
-		chls[0].asyncSend(mG_K);
+		chls[0].asyncSend(std::move(tempSend));//send g^k
 
 
 		//=====================Poly=====================
@@ -168,10 +170,10 @@ namespace osuCrypto
 					yri_K.toBytes(temp);
 					memcpy(sendBuff.data() + idx*n1n2MaskBytes, temp, n1n2MaskBytes);
 
-					std::cout << "s sendIter= " << idxItem << " - " << toBlock(temp) << std::endl;
+					//std::cout << "s sendIter= " << idxItem << " - " << toBlock(temp) << std::endl;
 				}
 
-				std::cout << "s toBlock(sendBuff): "<< toBlock(sendBuff.data()) << std::endl;
+				//std::cout << "s toBlock(sendBuff): "<< toBlock(sendBuff.data()) << std::endl;
 
 				chls[t].asyncSend(std::move(sendBuff));	// some bits of g^(subsum ri)^k
 			}
@@ -221,7 +223,7 @@ namespace osuCrypto
 
 		simple.init(mTheirInputSize, recvMaxBinSize, recvNumDummies);
 
-		EllipticCurve mCurve(k283, OneBlock);
+		EllipticCurve mCurve(p256k1, OneBlock);
 		mFieldSize = mCurve.bitCount();
 
 		//std::cout << "s mFieldSize= " << mFieldSize << "\n";
@@ -250,12 +252,16 @@ namespace osuCrypto
 
 #pragma endregion
 
+
+		std::vector<u8> tempSend(g_k.sizeBytes());
+		memcpy(tempSend.data(), mG_K, g_k.sizeBytes());
+
 		//####################### online #########################
 		gTimer.setTimePoint("r online start ");
 		simple.insertItems(inputs);
 		gTimer.setTimePoint("s_binning");
 
-		chls[0].asyncSend(mG_K);
+		chls[0].asyncSend(std::move(tempSend));//send g^k
 
 		std::vector<std::vector<u8>> sendBuff_mask(chls.size()); //H(x)^k
 		std::array<std::vector<u8>, 2> globalHash;
@@ -394,7 +400,7 @@ namespace osuCrypto
 
 		//#####################Send Mask #####################
 
-#if 0
+#if 1
 		auto sendingMask = [&](u64 t)
 		{
 			auto& chl = chls[t]; //parallel along with inputs
@@ -456,7 +462,7 @@ namespace osuCrypto
 
 		simple.init(mTheirInputSize, recvMaxBinSize, recvNumDummies);
 
-		EllipticCurve mCurve(k283, OneBlock);
+		EllipticCurve mCurve(p256k1, OneBlock);
 		mFieldSize = mCurve.bitCount();
 
 		//std::cout << "s mFieldSize= " << mFieldSize << "\n";
@@ -669,10 +675,10 @@ namespace osuCrypto
 					yri_K.toBytes(temp);
 					memcpy(sendBuff.data() + idx*n1n2MaskBytes, temp, n1n2MaskBytes);
 
-					std::cout << "s sendIter= " << idxItem << " - " << toBlock(temp) << std::endl;
+					//std::cout << "s sendIter= " << idxItem << " - " << toBlock(temp) << std::endl;
 				}
 
-				std::cout << "s toBlock(sendBuff): " << toBlock(sendBuff.data()) << std::endl;
+				//std::cout << "s toBlock(sendBuff): " << toBlock(sendBuff.data()) << std::endl;
 
 				chls[t].asyncSend(std::move(sendBuff));	// some bits of g^(subsum ri)^k
 			}

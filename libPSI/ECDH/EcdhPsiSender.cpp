@@ -328,12 +328,12 @@ namespace osuCrypto
 			chls[i].asyncSend(dummy, 1);
 			chls[i].resetStats();
 		}
+		gTimer.reset();
 
 		mN = n;
 		mSecParam = secParam;
 		mPrng.SetSeed(seed);
 
-		gTimer.reset();
 
 		if (curveType == 0)
 			sendInput_k283(inputs, chls);

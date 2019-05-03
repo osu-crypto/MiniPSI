@@ -37,7 +37,7 @@ namespace osuCrypto
 
 		//seed for subset-sum exp
 		mCurveSeed = mPrng.get<block>();
-		EllipticCurve mCurve(k283, OneBlock);
+		EllipticCurve mCurve(p256k1, OneBlock);
 		//mCurve.getMiracl().IOBASE = 10;
 		mFieldSize = mCurve.bitCount();
 		//std::cout << "r mFieldSize= " << mFieldSize << "\n";
@@ -114,10 +114,9 @@ namespace osuCrypto
 		//####################### online #########################
 		gTimer.setTimePoint("r online start ");
 
-		u8* mG_K;
-		chls[0].recv(mG_K);
 		EccPoint g_k(mCurve);
-		g_k.fromBytes(mG_K);
+		std::vector<u8> mG_K; chls[0].recv(mG_K);
+		g_k.fromBytes(mG_K.data()); //receiving g^k
 
 		//std::cout << "r g^k= " << g_k << std::endl;
 
@@ -236,14 +235,14 @@ namespace osuCrypto
 				gk_sum.toBytes(gk_sum_byte);
 
 				//std::cout << "r gk_sum: " << i << " - " << gk_sum << std::endl;
-				std::cout << "r toBlock(gk_sum_byte): " << i << " - " << toBlock(gk_sum_byte) << std::endl;
+				//std::cout << "r toBlock(gk_sum_byte): " << i << " - " << toBlock(gk_sum_byte) << std::endl;
 				block temp = toBlock(gk_sum_byte);
 				localMasks.emplace(*(u64*)&temp, std::pair<block, u64>(temp, i));
 
 			}
 			std::cout << "r gkr done\n";
 
-			gTimer.setTimePoint("r_gkr");
+			gTimer.setTimePoint("r_gkr done");
 
 
 			//#####################Receive Mask #####################
@@ -266,7 +265,7 @@ namespace osuCrypto
 
 
 					auto theirMasks = recvBuffs.data();
-					std::cout << "r toBlock(recvBuffs): " << i << " - " << toBlock(theirMasks) << std::endl;
+					//std::cout << "r toBlock(recvBuffs): " << i << " - " << toBlock(theirMasks) << std::endl;
 
 
 					if (n1n2MaskBytes >= sizeof(u64)) //unordered_map only work for key >= 64 bits. i.e. setsize >=2^12
@@ -348,7 +347,6 @@ namespace osuCrypto
 			chls[i].resetStats();
 		}
 		gTimer.reset();
-
 			//####################### offline #########################
 #pragma region Offline
 			gTimer.setTimePoint("r offline start ");
@@ -363,7 +361,7 @@ namespace osuCrypto
 
 			//seed for subset-sum exp
 			mCurveSeed = mPrng.get<block>();
-			EllipticCurve mCurve(k283, OneBlock);
+			EllipticCurve mCurve(p256k1, OneBlock);
 			//mCurve.getMiracl().IOBASE = 10;
 			mFieldSize = mCurve.bitCount();
 			//std::cout << "r mFieldSize= " << mFieldSize << "\n";
@@ -443,7 +441,6 @@ namespace osuCrypto
 
 			u64 n1n2MaskBits = (40 + log2(mTheirInputSize*mMyInputSize));
 			u64 n1n2MaskBytes = (n1n2MaskBits + 7) / 8;
-			u8* mG_K;
 			EccPoint g_k(mCurve);
 			std::vector<EccPoint> pgK_seeds;
 			pgK_seeds.reserve(mSetSeedsSize);
@@ -464,9 +461,9 @@ namespace osuCrypto
 			mBalance.insertItems(inputs);//Balaced Allocation=====================
 			gTimer.setTimePoint("r_binning");
 			
-			chls[0].recv(mG_K);
-			g_k.fromBytes(mG_K);
-			std::cout << "r g^k= " << g_k << std::endl;
+			std::vector<u8> mG_K; chls[0].recv(mG_K);
+			g_k.fromBytes(mG_K.data()); //receiving g^k
+			//std::cout << "r g^k= " << g_k << std::endl;
 
 			//#####################(g^K)^ (subsum ri) #####################
 
@@ -597,7 +594,7 @@ namespace osuCrypto
 
 
 			//#####################Receive Mask #####################
-#if 0
+#if 1
 			auto receiveMask = [&](u64 t)
 			{
 				auto& chl = chls[t]; //parallel along with inputs
@@ -718,7 +715,7 @@ namespace osuCrypto
 
 			//seed for subset-sum exp
 			mCurveSeed = mPrng.get<block>();
-			EllipticCurve mCurve(k283, OneBlock);
+			EllipticCurve mCurve(p256k1, OneBlock);
 			//mCurve.getMiracl().IOBASE = 10;
 			mFieldSize = mCurve.bitCount();
 			//std::cout << "r mFieldSize= " << mFieldSize << "\n";
@@ -862,7 +859,7 @@ namespace osuCrypto
 
 			if (gryc != g_v)
 			{
-				std::cout << "Malicious EchdSender!" << std::endl;
+				std::cout << "Malicious Sender!" << std::endl;
 				onebit[0] = 1;
 			}
 
@@ -950,8 +947,8 @@ namespace osuCrypto
 
 			chls[0].asyncSend(std::move(sendBuff));
 
-			gTimer.setTimePoint("r_Poly");
-			std::cout << "r Poly done\n";
+			gTimer.setTimePoint("r Poly done");
+			//std::cout << "r Poly done\n";
 
 
 
@@ -988,14 +985,14 @@ namespace osuCrypto
 				gk_sum.toBytes(gk_sum_byte);
 
 				//std::cout << "r gk_sum: " << i << " - " << gk_sum << std::endl;
-				std::cout << "r toBlock(gk_sum_byte): " << i << " - " << toBlock(gk_sum_byte) << std::endl;
+				//std::cout << "r toBlock(gk_sum_byte): " << i << " - " << toBlock(gk_sum_byte) << std::endl;
 				block temp = toBlock(gk_sum_byte);
 				localMasks.emplace(*(u64*)&temp, std::pair<block, u64>(temp, i));
 
 			}
-			std::cout << "r gkr done\n";
+			//std::cout << "r gkr done\n";
 
-			gTimer.setTimePoint("r_gkr");
+			gTimer.setTimePoint("r gkr done");
 
 
 			//#####################Receive Mask #####################
@@ -1018,7 +1015,7 @@ namespace osuCrypto
 
 
 					auto theirMasks = recvBuffs.data();
-					std::cout << "r toBlock(recvBuffs): " << i << " - " << toBlock(theirMasks) << std::endl;
+					//std::cout << "r toBlock(recvBuffs): " << i << " - " << toBlock(theirMasks) << std::endl;
 
 
 					if (n1n2MaskBytes >= sizeof(u64)) //unordered_map only work for key >= 64 bits. i.e. setsize >=2^12
