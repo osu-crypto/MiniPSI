@@ -357,7 +357,7 @@ namespace osuCrypto
 			mPrng.SetSeed(prng.get<block>());
 			getExpParams(mMyInputSize, mSetSeedsSize, mChoseSeedsSize);
 
-			std::cout << "r mSetSeedsSize= " << mMyInputSize << " - " << mSetSeedsSize << " - " << mChoseSeedsSize << "\n";
+			std::cout << "MiniReceiver::outputHashing r mSetSeedsSize= " << mMyInputSize << " - " << mSetSeedsSize << " - " << mChoseSeedsSize << "\n";
 
 			//seed for subset-sum exp
 			mCurveSeed = mPrng.get<block>();
@@ -457,13 +457,14 @@ namespace osuCrypto
 
 			//####################### online #########################
 			gTimer.setTimePoint("r online start ");
-
 			mBalance.insertItems(inputs);//Balaced Allocation=====================
 			gTimer.setTimePoint("r_binning");
+			std::cout << "r_binning done" << std::endl;
+
 			
 			std::vector<u8> mG_K; chls[0].recv(mG_K);
 			g_k.fromBytes(mG_K.data()); //receiving g^k
-			//std::cout << "r g^k= " << g_k << std::endl;
+			std::cout << "r g^k= " << g_k << std::endl;
 
 			//#####################(g^K)^ (subsum ri) #####################
 
@@ -496,6 +497,8 @@ namespace osuCrypto
 					for (u64 k = 0; k < curStepSize; ++k)
 					{
 						u64 bIdx = i + k;
+						std::cout << "r bIdx= " << bIdx << std::endl;
+
 						std::vector<std::array<block, numSuperBlocks>> listGRi(mBalance.mBins[bIdx].cnt);
 
 						//get list of g^ri for xi in bin
@@ -548,7 +551,7 @@ namespace osuCrypto
 
 
 					}
-					//std::cout << sendBuff.size() << "  sendBuff.size()\n";
+					std::cout << sendBuff.size() << "  r sendBuff.size()\n";
 					chl.asyncSend(std::move(sendBuff)); //send poly P(x)=g^ri
 
 

@@ -257,12 +257,17 @@ namespace osuCrypto
 		std::vector<u8> tempSend(g_k.sizeBytes());
 		memcpy(tempSend.data(), mG_K, g_k.sizeBytes());
 
+
+
 		//####################### online #########################
 		gTimer.setTimePoint("r online start ");
 		simple.insertItems(inputs);
 		gTimer.setTimePoint("s_binning");
+		std::cout << "s_binning done" << std::endl;
 
 		chls[0].asyncSend(std::move(tempSend));//send g^k
+		std::cout << "s g^k= " << g_k << std::endl;
+
 
 		std::vector<std::vector<u8>> sendBuff_mask(chls.size()); //H(x)^k
 		std::array<std::vector<u8>, 2> globalHash;
@@ -313,7 +318,7 @@ namespace osuCrypto
 				for (u64 k = 0; k < curStepSize; ++k)
 				{
 					u64 bIdx = i + k;
-					//std::cout << "bIdx= " << bIdx << std::endl;
+					std::cout << "s bIdx= " << bIdx << std::endl;
 
 					u64 realNumItem = simple.mBins[bIdx].blks.size();
 
@@ -333,7 +338,7 @@ namespace osuCrypto
 
 
 					poly.evalSuperPolynomial(coeffs, simple.mBins[bIdx].blks, YRi_bytes); //P(x)
-					//std::cout << "poly.evalSuperPolynomial done YRi_bytes.size()=" << YRi_bytes.size() << std::endl;
+					std::cout << "poly.evalSuperPolynomial done YRi_bytes.size()=" << YRi_bytes.size() << std::endl;
 
 					
 					/*for (u64 idx = 0; idx < YRi_bytes.size(); ++idx)
@@ -367,7 +372,7 @@ namespace osuCrypto
 
 						
 						point_ri.fromBytes(yri);
-						//std::cout << "s point_ri= " << point_ri << std::endl;
+						std::cout << "s point_ri= " << point_ri << std::endl;
 
 						auto yri_K = point_ri*nK; //P(x)^k
 						//std::cout << "s yri_K[" << idx << "]= " << yri_K << std::endl;

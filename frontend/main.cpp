@@ -375,15 +375,16 @@ void Mini19Sender(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 		sendChls[i].close();
 
 
-	//====================
-	for (u64 i = 0; i < numThreads; ++i)
-		sendChls[i] = ep1.addChannel("chl" + std::to_string(i + numThreads), "chl" + std::to_string(i + numThreads));
+	//std::cout << "\n\n";
+	////====================
+	//for (u64 i = 0; i < numThreads; ++i)
+	//	sendChls[i] = ep1.addChannel("chl" + std::to_string(i + numThreads), "chl" + std::to_string(i + numThreads));
 
 	//sender.outputHashing(inputs.size(), theirSetSize, 40, prng0, inputs, sendChls);
-	std::cout << gTimer << std::endl;
+	//std::cout << gTimer << std::endl;
 
-	for (u64 i = 0; i < numThreads; ++i)
-		sendChls[i].close();
+	//for (u64 i = 0; i < numThreads; ++i)
+	//	sendChls[i].close();
 
 
 
@@ -392,6 +393,8 @@ void Mini19Sender(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 
 void Mini19Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numThreads = 1)
 {
+	expectedIntersection = mySetSize;
+
 	u64 psiSecParam = 40;
 	PRNG prngSet(_mm_set_epi32(4253465, 3434565, 234435, 0));
 	PRNG prng1(_mm_set_epi32(4253465, 3434565, 234435, 23987025));
@@ -401,7 +404,7 @@ void Mini19Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 num
 	Endpoint ep0(ios, ipAddr_Port, EpMode::Client, name);
 	std::vector<Channel> recvChls(numThreads);
 
-	std::cout << "====================================JL10====================================\n";
+	std::cout << "\n\n====================================Mini19Receiver====================================\n";
 	std::cout << "SetSize: " << mySetSize << " vs " << theirSetSize << "   |  numThreads: " << numThreads << "\t";
 
 	std::vector<block> inputs(mySetSize);
@@ -414,7 +417,7 @@ void Mini19Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 num
 
 	MiniReceiver recv;
 
-	//====================JL psi
+	//====================Mini19Receiver outputBigPoly
 	for (u64 i = 0; i < numThreads; ++i)
 		recvChls[i] = ep0.addChannel("chl" + std::to_string(i), "chl" + std::to_string(i));
 
@@ -437,26 +440,27 @@ void Mini19Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 num
 		recvChls[i].close();
 
 
-	//====================JL psi startPsi_subsetsum
-	for (u64 i = 0; i < numThreads; ++i)
-		recvChls[i] = ep0.addChannel("chl" + std::to_string(numThreads + i), "chl" + std::to_string(numThreads + i));
+	////====================JL psi startPsi_subsetsum
+	//std::cout << "\n\n";
+	//for (u64 i = 0; i < numThreads; ++i)
+	//	recvChls[i] = ep0.addChannel("chl" + std::to_string(numThreads + i), "chl" + std::to_string(numThreads + i));
 
-	//recv.outputBigPoly(inputs.size(), theirSetSize, 40, prng1, inputs, recvChls);
+	//recv.outputHashing(inputs.size(), theirSetSize, 40, prng1, inputs, recvChls);
 
-	std::cout << gTimer << std::endl;
+	//std::cout << gTimer << std::endl;
 
 
-	for (u64 g = 0; g < recvChls.size(); ++g)
-	{
-		dataSent += recvChls[g].getTotalDataSent();
-		dataRecv += recvChls[g].getTotalDataRecv();
-		recvChls[g].resetStats();
-	}
-	std::cout << "      Total Comm = " << string_format("%5.2f", (dataRecv + dataSent) / std::pow(2.0, 20)) << " MB\n";
-	std::cout << "recv.mIntersection vs exp : " << recv.mIntersection.size() << " vs " << expectedIntersection << std::endl;
+	//for (u64 g = 0; g < recvChls.size(); ++g)
+	//{
+	//	dataSent += recvChls[g].getTotalDataSent();
+	//	dataRecv += recvChls[g].getTotalDataRecv();
+	//	recvChls[g].resetStats();
+	//}
+	//std::cout << "      Total Comm = " << string_format("%5.2f", (dataRecv + dataSent) / std::pow(2.0, 20)) << " MB\n";
+	//std::cout << "recv.mIntersection vs exp : " << recv.mIntersection.size() << " vs " << expectedIntersection << std::endl;
 
-	for (u64 i = 0; i < numThreads; ++i)
-		recvChls[i].close();
+	//for (u64 i = 0; i < numThreads; ++i)
+	//	recvChls[i].close();
 
 
 
@@ -758,12 +762,12 @@ int main(int argc, char** argv)
 	if (argv[1][0] == '-' && argv[1][1] == 't') {
 		
 		std::thread thrd = std::thread([&]() {
-			EchdSender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
-			JL10Sender(sendSetSize, recvSetSize,"localhost:1212", numThreads);
+			EchdSender(sendSetSize, recvSetSize, "localhost:1214", numThreads);
+			JL10Sender(sendSetSize, recvSetSize,"localhost:1214", numThreads);
 		});
 
-		EchdReceiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
-		JL10Receiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
+		EchdReceiver(recvSetSize, sendSetSize, "localhost:1214", numThreads);
+		JL10Receiver(recvSetSize, sendSetSize, "localhost:1214", numThreads);
 
 		thrd.join();
 
@@ -772,14 +776,14 @@ int main(int argc, char** argv)
 
 		//EchdSender(sendSetSize, recvSetSize, ipadrr, numThreads);
 		//JL10Sender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
-		Mini19Sender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
+		Mini19Sender(sendSetSize, recvSetSize, "localhost:1214", numThreads);
 
 
 	}
 	else if (argv[1][0] == '-' && argv[1][1] == 'r' && atoi(argv[2]) == 1) {
 		//EchdReceiver(recvSetSize, sendSetSize, ipadrr, numThreads);
 		//JL10Receiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
-		Mini19Receiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
+		Mini19Receiver(recvSetSize, sendSetSize, "localhost:1214", numThreads);
 
 	}
 	else {
