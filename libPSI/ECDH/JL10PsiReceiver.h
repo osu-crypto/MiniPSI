@@ -27,7 +27,7 @@ namespace osuCrypto
         JL10PsiReceiver();
         ~JL10PsiReceiver();
 
-		u64 stepSize = 1<<6;
+		u64 stepSize = 1<<11;
         u64 mN, mSecParam;
         PRNG mPrng;
 

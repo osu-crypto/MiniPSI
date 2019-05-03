@@ -18,21 +18,13 @@ namespace osuCrypto
     EcdhPsiReceiver::~EcdhPsiReceiver()
     {
     }
-    void EcdhPsiReceiver::init(u64 n, u64 secParam, block seed)
-    {
-        mN = n;
-        mSecParam = secParam;
-        mPrng.SetSeed(seed);
-        mIntersection.clear();
-    }
-
 
     void EcdhPsiReceiver::sendInput_k283(
         span<block> inputs,
         span<Channel> chls)
     {
 		//stepSize = inputs.size();
-
+		gTimer.setTimePoint("hdpsi starts");
         std::vector<PRNG> thrdPrng(chls.size());
         for (u64 i = 0; i < thrdPrng.size(); i++)
             thrdPrng[i].SetSeed(mPrng.get<block>());
@@ -522,10 +514,24 @@ namespace osuCrypto
 
 	}
 
-	void EcdhPsiReceiver::sendInput(
+	void EcdhPsiReceiver::sendInput(u64 n, u64 secParam, block seed,
 		span<block> inputs,
 		span<Channel> chls, int curveType)
 	{
+		for (u64 i = 0; i < chls.size(); ++i)
+		{
+			u8 dummy[1];
+			chls[i].asyncSend(dummy, 1);
+			chls[i].recv(dummy, 1);
+			chls[i].resetStats();
+		}
+		gTimer.reset();
+
+		mN = n;
+		mSecParam = secParam;
+		mPrng.SetSeed(seed);
+		mIntersection.clear();
+
 		if (curveType == 0)
 			sendInput_k283(inputs, chls);
 		else

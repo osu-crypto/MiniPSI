@@ -3,6 +3,8 @@
 #include "cryptoTools/Crypto/RandomOracle.h"
 #include "cryptoTools/Common/Log.h"
 #include "cryptoTools/Network/Channel.h"
+#include "cryptoTools/Common/Timer.h"
+
 
 namespace osuCrypto
 {
@@ -15,13 +17,6 @@ namespace osuCrypto
     EcdhPsiSender::~EcdhPsiSender()
     {
     }
-    void EcdhPsiSender::init(u64 n, u64 secParam, block seed)
-    {
-        mN = n;
-        mSecParam = secParam;
-        mPrng.SetSeed(seed);
-    }
-
 
     void EcdhPsiSender::sendInput_k283(span<block> inputs, span<Channel> chls)
     {
@@ -324,12 +319,26 @@ namespace osuCrypto
 
 	}
 
-	void EcdhPsiSender::sendInput(span<block> inputs, span<Channel> chl, int curveType)
+	void EcdhPsiSender::sendInput(u64 n, u64 secParam, block seed,span<block> inputs, span<Channel> chls, int curveType)
 	{
+		for (u64 i = 0; i < chls.size(); ++i)
+		{
+			u8 dummy[1];
+			chls[i].recv(dummy, 1);
+			chls[i].asyncSend(dummy, 1);
+			chls[i].resetStats();
+		}
+
+		mN = n;
+		mSecParam = secParam;
+		mPrng.SetSeed(seed);
+
+		gTimer.reset();
+
 		if (curveType == 0)
-			sendInput_k283(inputs, chl);
+			sendInput_k283(inputs, chls);
 		else
-			sendInput_Curve25519(inputs, chl);
+			sendInput_Curve25519(inputs, chls);
 	}
 
 	

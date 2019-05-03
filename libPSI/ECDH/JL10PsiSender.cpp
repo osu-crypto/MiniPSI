@@ -18,7 +18,18 @@ namespace osuCrypto
     void JL10PsiSender::startPsi(u64 myInputSize, u64 theirInputSize, u64 secParam, block seed, span<block> inputs, span<Channel> chls)
     {
 		//stepSize = myInputSize;
+		for (u64 i = 0; i < chls.size(); ++i)
+		{
+			u8 dummy[1];
+			chls[i].recv(dummy, 1);
+			chls[i].asyncSend(dummy, 1);
+			chls[i].resetStats();
+		}
+
 		//####################### offline #########################
+		
+
+		gTimer.reset();
 		gTimer.setTimePoint("s offline start ");
 
         mSecParam = secParam;
@@ -43,7 +54,6 @@ namespace osuCrypto
 		u8* mG_K = new u8[g_k.sizeBytes()];
 		g_k.toBytes(mG_K); //g^k
 		std::vector<u8> tempSend(g_k.sizeBytes());
-		
 		memcpy(tempSend.data(), mG_K, g_k.sizeBytes());
     
 		//####################### online #########################
@@ -53,7 +63,7 @@ namespace osuCrypto
 		chls[0].asyncSend(std::move(tempSend));
 
 
-		std::cout << "\nr chls[0].send(mG_K)" << g_k<< std::endl;
+		//std::cout << "\nr chls[0].send(mG_K)" << g_k<< std::endl;
 
 
 		u64 numThreads(chls.size());
@@ -127,7 +137,7 @@ namespace osuCrypto
 				}
 				//gTimer.setTimePoint("s online H(x)^k done ");
 
-#if 1
+
 				//receive yi=H(.)*g^ri
 				std::vector<u8> recvBuff(xk.sizeBytes() * curStepSize); //receiving yi^k = H(.)*g^ri
 
@@ -138,7 +148,7 @@ namespace osuCrypto
 					std::cout << "error @ " << (LOCATION) << std::endl;
 					throw std::runtime_error(LOCATION);
 				}
-
+#if 1
 				auto recvIter = recvBuff.data();
 
 				std::vector<u8> sendBuff_yik(yik.sizeBytes() * curStepSize);
@@ -215,7 +225,15 @@ namespace osuCrypto
 	
 	void JL10PsiSender::startPsi_subsetsum(u64 myInputSize, u64 theirInputSize, u64 secParam, block seed, span<block> inputs, span<Channel> chls)
 	{
+		for (u64 i = 0; i < chls.size(); ++i)
+		{
+			u8 dummy[1];
+			chls[i].recv(dummy, 1);
+			chls[i].asyncSend(dummy, 1);
+			chls[i].resetStats();
+		}
 		//####################### offline #########################
+		gTimer.reset();
 		gTimer.setTimePoint("s offline start ");
 
 		mSecParam = secParam;
@@ -240,11 +258,14 @@ namespace osuCrypto
 		u8* mG_K = new u8[g_k.sizeBytes()];
 		g_k.toBytes(mG_K); //g^k
 
+		std::vector<u8> tempSend(g_k.sizeBytes());
+		memcpy(tempSend.data(), mG_K, g_k.sizeBytes());
+
 
 						   //####################### online #########################
 		gTimer.setTimePoint("s online start ");
 
-		chls[0].asyncSend(mG_K); //send g^k
+		chls[0].asyncSend(std::move(tempSend));//send g^k
 
 		u64 numThreads(chls.size());
 		const bool isMultiThreaded = numThreads > 1;
@@ -276,11 +297,11 @@ namespace osuCrypto
 
 
 			auto& chl = chls[t];
-			u8 hashOut[SHA1::HashSize];
+			RandomOracle inputHasher(sizeof(block));
+			block hashOut;
 
 			//EllipticCurve curve(p256k1, thrdPrng[t].get<block>());
 
-			SHA1 inputHasher;
 			//EllipticCurve mCurve(k283, OneBlock);
 			EccPoint point(mCurve), yik(mCurve), yi(mCurve), xk(mCurve);
 
@@ -300,8 +321,7 @@ namespace osuCrypto
 					inputHasher.Reset();
 					inputHasher.Update(inputs[i + k]);
 					inputHasher.Final(hashOut);
-
-					point.randomize(toBlock(hashOut)); //H(x)
+					point.randomize(hashOut); //H(x)
 													   //std::cout << "sp  " << point << "  " << toBlock(hashOut) << std::endl;
 					xk = (point * nK); //H(x)^k
 
@@ -397,7 +417,15 @@ namespace osuCrypto
 
 	bool JL10PsiSender::startPsi_subsetsum_malicious(u64 myInputSize, u64 theirInputSize, u64 secParam, block seed, span<block> inputs, span<Channel> chls)
 	{
+		for (u64 i = 0; i < chls.size(); ++i)
+		{
+			u8 dummy[1];
+			chls[i].recv(dummy, 1);
+			chls[i].asyncSend(dummy, 1);
+			chls[i].resetStats();
+		}
 		//####################### offline #########################
+		gTimer.reset();
 		gTimer.setTimePoint("s offline start ");
 
 		mSecParam = secParam;
@@ -457,8 +485,8 @@ namespace osuCrypto
 			u64 subsetInputSize = inputEndIdx - inputStartIdx;
 
 			auto& chl = chls[t];
-			SHA1 inputHasher;
-			u8 hashOut[SHA1::HashSize];
+			RandomOracle inputHasher(sizeof(block));
+			block hashOut;
 
 			//EllipticCurve curve(p256k1, thrdPrng[t].get<block>());
 
@@ -483,8 +511,7 @@ namespace osuCrypto
 
 					inputHasher.Reset();
 					inputHasher.Update(inputs[i + k]);
-					inputHasher.Final(hashOut);
-					hashX[i + k] = toBlock(hashOut);
+					inputHasher.Final(hashX[i + k]);
 					point.randomize(hashX[i + k]); //H(x)
 													   //std::cout << "sp  " << point << "  " << toBlock(hashOut) << std::endl;
 					xk = (point * nK); //H(x)^k
@@ -599,8 +626,8 @@ namespace osuCrypto
 			u64 endIdx = std::min(tempEndIdx, mTheirInputSize);
 			u64 subsetInputSize = endIdx - startIdx;
 
-			SHA1 inputHasher;
-			u8 hashOut[SHA1::HashSize];
+			RandomOracle inputHasher(sizeof(block));
+			block hashOut;
 
 			for (u64 i = startIdx; i < endIdx; i += stepSizeMaskSent)
 			{
@@ -616,7 +643,7 @@ namespace osuCrypto
 					inputHasher.Update(xik[i+k]);
 					inputHasher.Final(hashOut);
 
-					memcpy(sendBuff_mask.data() + k*n1n2MaskBytes, hashOut, n1n2MaskBytes);
+					memcpy(sendBuff_mask.data() + k*n1n2MaskBytes,(u8*)&hashOut, n1n2MaskBytes);
 				}
 			//	std::cout << "s toBlock(sendBuff_mask): " << t << " - " << toBlock(sendBuff_mask) << std::endl;
 				chl.asyncSend(std::move(sendBuff_mask));

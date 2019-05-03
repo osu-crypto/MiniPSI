@@ -18,13 +18,10 @@ namespace osuCrypto
         u64 mN, mSecParam;
         PRNG mPrng;
 
-        void init(u64 n, u64 secParam, block seed);
-        //void init(u64 n, u64 statSecParam);
-
 
 		void sendInput_k283(span<block> inputs, span<Channel> chl);
 		void sendInput_Curve25519(span<block> inputs, span<Channel> chl);
-		void sendInput(span<block> inputs, span<Channel> chl, int curveType);
+		void sendInput(u64 n, u64 secParam, block seed, span<block> inputs,  span<Channel> chl, int curveType);
         //void sendInput(std::vector<block>& inputs, std::vector<Channel*>& chl);
     };
 

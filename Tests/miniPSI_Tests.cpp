@@ -338,13 +338,11 @@ namespace tests_libOTe
 
 		auto thrd = std::thread([&]() {
 			gTimer.setTimePoint("r start ");
-			recv.init(recvSet.size(), 40, prng1.get<block>());
-			recv.sendInput(recvSet, recvChls, curveType);
+			recv.sendInput(recvSet.size(), 40, prng1.get<block>(),recvSet, recvChls, curveType);
 
 		});
 
-		sender.init(sendSet.size(), 40, prng0.get<block>());
-		sender.sendInput(sendSet, sendChls, curveType);
+		sender.sendInput(sendSet.size(), 40, prng0.get<block>(),sendSet, sendChls, curveType);
 
 
 		thrd.join();

@@ -142,23 +142,16 @@ void EchdSender(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numThre
 		for (u64 i = 0; i < numThreads; ++i)
 			sendChls[i] = ep1.addChannel("chl" + std::to_string(i), "chl" + std::to_string(i));
 
-
 		std::cout << "SetSize: " << mySetSize << " vs " << theirSetSize << "   |  numThreads: " << numThreads << "\t";
 
 		std::vector<block> inputs(mySetSize);
 		for (u64 i = 0; i < inputs.size(); ++i)
 			inputs[i] = prngSet.get<block>();
 
-		//MiniSender sender;
 		
 		EcdhPsiSender sender;
-		gTimer.reset();
-		gTimer.setTimePoint("EcdhPsiSender s_start");
-		sender.init(inputs.size(), 40, prng0.get<block>());
-
-		gTimer.setTimePoint("EcdhPsiSender s_offline done");
-		sender.sendInput(inputs, sendChls, 0);
-		gTimer.setTimePoint("EcdhPsiSender s_end");
+		sender.sendInput(inputs.size(), 40, prng0.get<block>(),inputs, sendChls, 0);
+		gTimer.setTimePoint("r psi done");
 		std::cout << gTimer << std::endl;
 
 
@@ -199,15 +192,8 @@ void EchdReceiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 				inputs[i] = prng1.get<block>();
 
 			EcdhPsiReceiver recv;
-			gTimer.reset();
-			
-			gTimer.setTimePoint("r_start");
-			recv.init(inputs.size(), 40, prng1.get<block>());; //offline
-			gTimer.setTimePoint("r_offline");
-
-			recv.sendInput(inputs, recvChls, 0);
-
-			gTimer.setTimePoint("r_end");
+			recv.sendInput(inputs.size(), 40, prng1.get<block>(),inputs, recvChls, 0);
+			gTimer.setTimePoint("r psi done");
 
 			std::cout << gTimer << std::endl;
 
@@ -248,29 +234,37 @@ void JL10Sender(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numThre
 	std::string name = "n";
 	IOService ios;
 	Endpoint ep1(ios, ipAddr_Port, EpMode::Server, name);
-
-	std::vector<Channel> sendChls(numThreads);
-	for (u64 i = 0; i < numThreads; ++i)
-		sendChls[i] = ep1.addChannel("chl" + std::to_string(i), "chl" + std::to_string(i));
-
-
 	std::cout << "SetSize: " << mySetSize << " vs " << theirSetSize << "   |  numThreads: " << numThreads << "\t";
-
+	std::vector<Channel> sendChls(numThreads);
 	std::vector<block> inputs(mySetSize);
 	for (u64 i = 0; i < inputs.size(); ++i)
 		inputs[i] = prngSet.get<block>();
 
-	//MiniSender sender;
-
 	JL10PsiSender sender;
-	gTimer.reset();
-	//gTimer.setTimePoint("JL10PsiSender s_start");
+
+	
+	//====================JL psi
+	for (u64 i = 0; i < numThreads; ++i)
+		sendChls[i] = ep1.addChannel("chl" + std::to_string(i), "chl" + std::to_string(i));
+
 	sender.startPsi(inputs.size(), theirSetSize, 40, prng0.get<block>(), inputs, sendChls);
 	std::cout << gTimer << std::endl;
 
+	for (u64 i = 0; i < numThreads; ++i)
+		sendChls[i].close();
+
+
+	//====================JL psi startPsi_subsetsum
+	for (u64 i = 0; i < numThreads; ++i)
+		sendChls[i] = ep1.addChannel("chl" + std::to_string(i+ numThreads), "chl" + std::to_string(i+ numThreads));
+
+	sender.startPsi_subsetsum(inputs.size(), theirSetSize, 40, prng0.get<block>(), inputs, sendChls);
+	std::cout << gTimer << std::endl;
 
 	for (u64 i = 0; i < numThreads; ++i)
 		sendChls[i].close();
+
+
 
 	ep1.stop();	ios.stop();
 }
@@ -281,41 +275,32 @@ void JL10Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 	PRNG prngSet(_mm_set_epi32(4253465, 3434565, 234435, 0));
 	PRNG prng1(_mm_set_epi32(4253465, 3434565, 234435, 23987025));
 
-
 	std::string name = "n";
 	IOService ios;
 	Endpoint ep0(ios, ipAddr_Port, EpMode::Client, name);
-
-	std::vector<Channel> sendChls(numThreads), recvChls(numThreads);
-	for (u64 i = 0; i < numThreads; ++i)
-		recvChls[i] = ep0.addChannel("chl" + std::to_string(i), "chl" + std::to_string(i));
+	std::vector<Channel> recvChls(numThreads);
 
 	std::cout << "====================================JL10====================================\n";
 	std::cout << "SetSize: " << mySetSize << " vs " << theirSetSize << "   |  numThreads: " << numThreads << "\t";
 
-
 	std::vector<block> inputs(mySetSize);
-
 	for (u64 i = 0; i < expectedIntersection; ++i)
 		inputs[i] = prngSet.get<block>();
 
 	for (u64 i = expectedIntersection; i < inputs.size(); ++i)
 		inputs[i] = prng1.get<block>();
 
-	JL10PsiReceiver recv;
-	gTimer.reset();
-	gTimer.setTimePoint("r_start");
-	recv.startPsi(inputs.size(), theirSetSize, 40, prng1.get<block>(), inputs, recvChls);
-	
-	std::cout << gTimer << std::endl;
 
-	std::cout << "recv.mIntersection  : " << recv.mIntersection.size() << std::endl;
-	std::cout << "expectedIntersection: " << expectedIntersection << std::endl;
-	for (u64 i = 0; i < recv.mIntersection.size(); ++i)//thrds.size()
-	{
-		/*std::cout << "#id: " << recv.mIntersection[i] <<
-		"\t" << inputs[recv.mIntersection[i]] << std::endl;*/
-	}
+	JL10PsiReceiver recv;
+
+	//====================JL psi
+	for (u64 i = 0; i < numThreads; ++i)
+		recvChls[i] = ep0.addChannel("chl" + std::to_string(i), "chl" + std::to_string(i));
+
+	recv.startPsi(inputs.size(), theirSetSize, 40, prng1.get<block>(), inputs, recvChls);
+
+
+	std::cout << gTimer << std::endl;
 
 	u64 dataSent = 0, dataRecv(0);
 	for (u64 g = 0; g < recvChls.size(); ++g)
@@ -324,12 +309,34 @@ void JL10Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 		dataRecv += recvChls[g].getTotalDataRecv();
 		recvChls[g].resetStats();
 	}
-
 	std::cout << "      Total Comm = " << string_format("%5.2f", (dataRecv + dataSent) / std::pow(2.0, 20)) << " MB\n";
-
+	std::cout << "recv.mIntersection vs exp : " << recv.mIntersection.size() << " vs " << expectedIntersection << std::endl;
 
 	for (u64 i = 0; i < numThreads; ++i)
 		recvChls[i].close();
+
+
+	//====================JL psi startPsi_subsetsum
+	for (u64 i = 0; i < numThreads; ++i)
+		recvChls[i] = ep0.addChannel("chl" + std::to_string(numThreads+i), "chl" + std::to_string(numThreads+i));
+
+	recv.startPsi_subsetsum(inputs.size(), theirSetSize, 40, prng1.get<block>(), inputs, recvChls);
+	std::cout << gTimer << std::endl;
+
+
+	for (u64 g = 0; g < recvChls.size(); ++g)
+	{
+		dataSent += recvChls[g].getTotalDataSent();
+		dataRecv += recvChls[g].getTotalDataRecv();
+		recvChls[g].resetStats();
+	}
+	std::cout << "      Total Comm = " << string_format("%5.2f", (dataRecv + dataSent) / std::pow(2.0, 20)) << " MB\n";
+	std::cout << "recv.mIntersection vs exp : " << recv.mIntersection.size() << " vs " << expectedIntersection << std::endl;
+
+	for (u64 i = 0; i < numThreads; ++i)
+		recvChls[i].close();
+
+
 
 	ep0.stop(); ios.stop();
 }
@@ -641,12 +648,12 @@ int main(int argc, char** argv)
 
 	}
 	else if (argv[1][0] == '-' && argv[1][1] == 'r' && atoi(argv[2]) == 0) {
-		//EchdSender(sendSetSize, recvSetSize, ipadrr, numThreads);
+		EchdSender(sendSetSize, recvSetSize, ipadrr, numThreads);
 		JL10Sender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
 
 	}
 	else if (argv[1][0] == '-' && argv[1][1] == 'r' && atoi(argv[2]) == 1) {
-		//EchdReceiver(recvSetSize, sendSetSize, ipadrr, numThreads);
+		EchdReceiver(recvSetSize, sendSetSize, ipadrr, numThreads);
 		JL10Receiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
 	}
 	else {
