@@ -81,6 +81,8 @@ using namespace osuCrypto;
 #include "libPSI/ECDH/EcdhPsiSender.h"
 #include "libPSI/ECDH/JL10PsiReceiver.h"
 #include "libPSI/ECDH/JL10PsiSender.h"
+#include "libPSI/MiniPSI/MiniReceiver.h"
+#include "libPSI/MiniPSI/MiniSender.h"
 
 template<typename ... Args>
 std::string string_format(const std::string& format, Args ... args)
@@ -341,6 +343,125 @@ void JL10Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 	ep0.stop(); ios.stop();
 }
 
+
+
+void Mini19Sender(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numThreads = 1)
+{
+	u64 psiSecParam = 40;
+	PRNG prngSet(_mm_set_epi32(4253465, 3434565, 234435, 0));
+	PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
+
+
+	// set up networking
+	std::string name = "n";
+	IOService ios;
+	Endpoint ep1(ios, ipAddr_Port, EpMode::Server, name);
+	std::cout << "SetSize: " << mySetSize << " vs " << theirSetSize << "   |  numThreads: " << numThreads << "\t";
+	std::vector<Channel> sendChls(numThreads);
+	std::vector<block> inputs(mySetSize);
+	for (u64 i = 0; i < inputs.size(); ++i)
+		inputs[i] = prngSet.get<block>();
+
+	MiniSender sender;
+
+	//====================outputBigPoly psi
+	for (u64 i = 0; i < numThreads; ++i)
+		sendChls[i] = ep1.addChannel("chl" + std::to_string(i), "chl" + std::to_string(i));
+
+	sender.outputBigPoly(inputs.size(), theirSetSize, 40, prng0, inputs, sendChls);
+	std::cout << gTimer << std::endl;
+
+	for (u64 i = 0; i < numThreads; ++i)
+		sendChls[i].close();
+
+
+	//====================
+	for (u64 i = 0; i < numThreads; ++i)
+		sendChls[i] = ep1.addChannel("chl" + std::to_string(i + numThreads), "chl" + std::to_string(i + numThreads));
+
+	//sender.outputHashing(inputs.size(), theirSetSize, 40, prng0, inputs, sendChls);
+	std::cout << gTimer << std::endl;
+
+	for (u64 i = 0; i < numThreads; ++i)
+		sendChls[i].close();
+
+
+
+	ep1.stop();	ios.stop();
+}
+
+void Mini19Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numThreads = 1)
+{
+	u64 psiSecParam = 40;
+	PRNG prngSet(_mm_set_epi32(4253465, 3434565, 234435, 0));
+	PRNG prng1(_mm_set_epi32(4253465, 3434565, 234435, 23987025));
+
+	std::string name = "n";
+	IOService ios;
+	Endpoint ep0(ios, ipAddr_Port, EpMode::Client, name);
+	std::vector<Channel> recvChls(numThreads);
+
+	std::cout << "====================================JL10====================================\n";
+	std::cout << "SetSize: " << mySetSize << " vs " << theirSetSize << "   |  numThreads: " << numThreads << "\t";
+
+	std::vector<block> inputs(mySetSize);
+	for (u64 i = 0; i < expectedIntersection; ++i)
+		inputs[i] = prngSet.get<block>();
+
+	for (u64 i = expectedIntersection; i < inputs.size(); ++i)
+		inputs[i] = prng1.get<block>();
+
+
+	MiniReceiver recv;
+
+	//====================JL psi
+	for (u64 i = 0; i < numThreads; ++i)
+		recvChls[i] = ep0.addChannel("chl" + std::to_string(i), "chl" + std::to_string(i));
+
+	recv.outputBigPoly(inputs.size(), theirSetSize, 40, prng1, inputs, recvChls);
+
+
+	std::cout << gTimer << std::endl;
+
+	u64 dataSent = 0, dataRecv(0);
+	for (u64 g = 0; g < recvChls.size(); ++g)
+	{
+		dataSent += recvChls[g].getTotalDataSent();
+		dataRecv += recvChls[g].getTotalDataRecv();
+		recvChls[g].resetStats();
+	}
+	std::cout << "      Total Comm = " << string_format("%5.2f", (dataRecv + dataSent) / std::pow(2.0, 20)) << " MB\n";
+	std::cout << "recv.mIntersection vs exp : " << recv.mIntersection.size() << " vs " << expectedIntersection << std::endl;
+
+	for (u64 i = 0; i < numThreads; ++i)
+		recvChls[i].close();
+
+
+	//====================JL psi startPsi_subsetsum
+	for (u64 i = 0; i < numThreads; ++i)
+		recvChls[i] = ep0.addChannel("chl" + std::to_string(numThreads + i), "chl" + std::to_string(numThreads + i));
+
+	//recv.outputBigPoly(inputs.size(), theirSetSize, 40, prng1, inputs, recvChls);
+
+	std::cout << gTimer << std::endl;
+
+
+	for (u64 g = 0; g < recvChls.size(); ++g)
+	{
+		dataSent += recvChls[g].getTotalDataSent();
+		dataRecv += recvChls[g].getTotalDataRecv();
+		recvChls[g].resetStats();
+	}
+	std::cout << "      Total Comm = " << string_format("%5.2f", (dataRecv + dataSent) / std::pow(2.0, 20)) << " MB\n";
+	std::cout << "recv.mIntersection vs exp : " << recv.mIntersection.size() << " vs " << expectedIntersection << std::endl;
+
+	for (u64 i = 0; i < numThreads; ++i)
+		recvChls[i].close();
+
+
+
+	ep0.stop(); ios.stop();
+}
 
 
 void MiniPSI_impl()
@@ -617,16 +738,16 @@ int main(int argc, char** argv)
 
 	std::cout << "SetSize: " << sendSetSize << " vs " << recvSetSize << "   |  numThreads: " << numThreads << "\t";
 	
-#if 0
+#if 1
 	std::thread thrd = std::thread([&]() {
 		//EchdSender(sendSetSize, recvSetSize, ipadrr, numThreads);
-		JL10Sender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
-
+		//JL10Sender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
+		Mini19Sender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
 	});
 
 	//EchdReceiver(recvSetSize, sendSetSize, ipadrr, numThreads);
-	JL10Receiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
-
+	//JL10Receiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
+	Mini19Receiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
 
 	thrd.join();
 	return 0;

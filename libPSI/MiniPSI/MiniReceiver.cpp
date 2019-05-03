@@ -16,6 +16,14 @@ namespace osuCrypto
 {
 	void MiniReceiver::outputBigPoly(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG & prng, span<block> inputs, span<Channel> chls)
 	{
+		for (u64 i = 0; i < chls.size(); ++i)
+		{
+			u8 dummy[1];
+			chls[i].asyncSend(dummy, 1);
+			chls[i].recv(dummy, 1);
+			chls[i].resetStats();
+		}
+		gTimer.reset();
 		//####################### offline #########################
 		gTimer.setTimePoint("r offline start ");
 
@@ -332,6 +340,15 @@ namespace osuCrypto
 
 	void MiniReceiver::outputHashing(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG & prng, span<block> inputs, span<Channel> chls)
 		{
+		for (u64 i = 0; i < chls.size(); ++i)
+		{
+			u8 dummy[1];
+			chls[i].asyncSend(dummy, 1);
+			chls[i].recv(dummy, 1);
+			chls[i].resetStats();
+		}
+		gTimer.reset();
+
 			//####################### offline #########################
 #pragma region Offline
 			gTimer.setTimePoint("r offline start ");
@@ -449,7 +466,7 @@ namespace osuCrypto
 			
 			chls[0].recv(mG_K);
 			g_k.fromBytes(mG_K);
-			//std::cout << "r g^k= " << g_k << std::endl;
+			std::cout << "r g^k= " << g_k << std::endl;
 
 			//#####################(g^K)^ (subsum ri) #####################
 
@@ -580,7 +597,7 @@ namespace osuCrypto
 
 
 			//#####################Receive Mask #####################
-#if 1
+#if 0
 			auto receiveMask = [&](u64 t)
 			{
 				auto& chl = chls[t]; //parallel along with inputs
@@ -680,6 +697,14 @@ namespace osuCrypto
 
 	bool MiniReceiver::outputBigPoly_malicious(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG & prng, span<block> inputs, span<Channel> chls)
 		{
+		for (u64 i = 0; i < chls.size(); ++i)
+		{
+			u8 dummy[1];
+			chls[i].asyncSend(dummy, 1);
+			chls[i].recv(dummy, 1);
+			chls[i].resetStats();
+		}
+		gTimer.reset();
 			//####################### offline #########################
 			gTimer.setTimePoint("r offline start ");
 

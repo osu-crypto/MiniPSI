@@ -13,6 +13,14 @@ namespace osuCrypto
 
 	void MiniSender::outputBigPoly(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG & prng, span<block> inputs, span<Channel> chls)
 	{
+		for (u64 i = 0; i < chls.size(); ++i)
+		{
+			u8 dummy[1];
+			chls[i].recv(dummy, 1);
+			chls[i].asyncSend(dummy, 1);
+			chls[i].resetStats();
+		}
+		gTimer.reset();
 		//####################### offline #########################
 		gTimer.setTimePoint("r offline start ");
 
@@ -192,6 +200,14 @@ namespace osuCrypto
 
 	void MiniSender::outputHashing(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG & prng, span<block> inputs, span<Channel> chls)
 	{
+		for (u64 i = 0; i < chls.size(); ++i)
+		{
+			u8 dummy[1];
+			chls[i].recv(dummy, 1);
+			chls[i].asyncSend(dummy, 1);
+			chls[i].resetStats();
+		}
+		gTimer.reset();
 		//####################### offline #########################
 #pragma region Offline
 		gTimer.setTimePoint("r offline start ");
@@ -378,7 +394,7 @@ namespace osuCrypto
 
 		//#####################Send Mask #####################
 
-#if 1
+#if 0
 		auto sendingMask = [&](u64 t)
 		{
 			auto& chl = chls[t]; //parallel along with inputs
@@ -420,6 +436,14 @@ namespace osuCrypto
 
 	bool MiniSender::outputBigPoly_malicious(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG & prng, span<block> inputs, span<Channel> chls)
 	{
+		for (u64 i = 0; i < chls.size(); ++i)
+		{
+			u8 dummy[1];
+			chls[i].recv(dummy, 1);
+			chls[i].asyncSend(dummy, 1);
+			chls[i].resetStats();
+		}
+		gTimer.reset();
 		//####################### offline #########################
 		gTimer.setTimePoint("r offline start ");
 
