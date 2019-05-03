@@ -736,9 +736,9 @@ int main(int argc, char** argv)
 
 	std::vector<block> sendSet(sendSetSize), recvSet(recvSetSize);
 
-	std::cout << "SetSize: " << sendSetSize << " vs " << recvSetSize << "   |  numThreads: " << numThreads << "\t";
+	std::cout << "SetSize: " << sendSetSize << " vs " << recvSetSize << "   |  numThreads: " << numThreads << "\n";
 	
-#if 1
+#if 0
 	std::thread thrd = std::thread([&]() {
 		//EchdSender(sendSetSize, recvSetSize, ipadrr, numThreads);
 		//JL10Sender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
@@ -758,24 +758,29 @@ int main(int argc, char** argv)
 	if (argv[1][0] == '-' && argv[1][1] == 't') {
 		
 		std::thread thrd = std::thread([&]() {
-			//EchdSender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
+			EchdSender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
 			JL10Sender(sendSetSize, recvSetSize,"localhost:1212", numThreads);
 		});
 
-		//EchdReceiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
+		EchdReceiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
 		JL10Receiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
 
 		thrd.join();
 
 	}
 	else if (argv[1][0] == '-' && argv[1][1] == 'r' && atoi(argv[2]) == 0) {
-		EchdSender(sendSetSize, recvSetSize, ipadrr, numThreads);
-		JL10Sender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
+
+		//EchdSender(sendSetSize, recvSetSize, ipadrr, numThreads);
+		//JL10Sender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
+		Mini19Sender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
+
 
 	}
 	else if (argv[1][0] == '-' && argv[1][1] == 'r' && atoi(argv[2]) == 1) {
-		EchdReceiver(recvSetSize, sendSetSize, ipadrr, numThreads);
-		JL10Receiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
+		//EchdReceiver(recvSetSize, sendSetSize, ipadrr, numThreads);
+		//JL10Receiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
+		Mini19Receiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
+
 	}
 	else {
 		usage(argv[0]);

@@ -127,6 +127,7 @@ namespace osuCrypto
 				//	std::cout << "s P(y)= " << idx << " - " << toBlock(pY) << std::endl;
 				//}
 
+		std::cout << "s Poly done\n";
 
 
 		auto computeGlobalHash = [&](u64 t)
