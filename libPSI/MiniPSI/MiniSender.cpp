@@ -262,7 +262,6 @@ namespace osuCrypto
 
 		std::vector<u8> tempSend(g_k.sizeBytes());
 		memcpy(tempSend.data(), mG_K, g_k.sizeBytes());
-		block fakeBlk = mPrng.get<block>();
 
 
 		//####################### online #########################
@@ -337,7 +336,7 @@ namespace osuCrypto
 				for (u64 k = 0; k < curStepSize; ++k)
 				{
 					u64 bIdx = i + k;
-					std::cout << "s bIdx= " << bIdx << std::endl;
+					//std::cout << "s bIdx= " << bIdx << std::endl;
 
 					u64 realNumItem = simple.mBins[bIdx].blks.size();
 
@@ -356,7 +355,7 @@ namespace osuCrypto
 					}
 
 					poly.evalSuperPolynomial(coeffs, simple.mBins[bIdx].blks, YRi_bytes); //P(x)
-					std::cout << "poly.evalSuperPolynomial done YRi_bytes.size()=" << YRi_bytes.size() << std::endl;
+					//std::cout << "poly.evalSuperPolynomial done YRi_bytes.size()=" << YRi_bytes.size() << std::endl;
 
 					/*for (u64 idx = 0; idx < YRi_bytes.size(); ++idx)
 					{
@@ -366,9 +365,14 @@ namespace osuCrypto
 						
 						std::cout << "\n";
 					}*/
+					
 
 					for (int idxYri = 0; idxYri < YRi_bytes.size(); idxYri++)
 					{
+//#ifdef PASS_MIRACL
+						//memcpy(yri, (u8*)&YRi_bytes[idx], point_ri.sizeBytes());
+						//point_ri.fromBytes(yri);
+
 						point_ri.fromBytes(fake_point_ri_bytes);
 						yri_K = point_ri*nK; //P(x)^k
 						yri_K.toBytes(yri_K_bytes);
@@ -376,26 +380,9 @@ namespace osuCrypto
 						u64 itemIdx = simple.mBins[bIdx].Idxs[idxYri];
 						
 						globalHash[hashIdx][itemIdx] = new u8[n1n2MaskBytes];
-						
 						//memcpy(globalHash[hashIdx][itemIdx], yri_K_bytes, n1n2MaskBytes);
+						block fakeBlk = mPrng.get<block>();
 						memcpy(globalHash[hashIdx][itemIdx], (u8*)&fakeBlk, n1n2MaskBytes);
-					}
-
-					for (u64 idx = 0; idx <  0; idx++)
-					{
-						std::cout << idx << " eeee\n";
-
-#ifdef PASS_MIRACL
-						point_ri.fromBytes(fake_point_ri_bytes);
-					//	std::cout << idx << " point_ri.fromBytes(fake_point_ri_bytes)\n";
-						yri_K = point_ri*nK; //P(x)^k
-
-#else
-						//memcpy(yri, (u8*)&YRi_bytes[idx], point_ri.sizeBytes());
-						//point_ri.fromBytes(yri);
-						//yri_K = point_ri*nK; //P(x)^k
-
-#endif // !PASS_MIRACL
 
 						//std::cout << simple.mBins[bIdx].blks[idx] << "  s x bin#" << bIdx << "\n";
 						//std::cout << toBlock(yri) << "\n";
@@ -403,23 +390,6 @@ namespace osuCrypto
 						//std::cout << toBlock(yri+2*sizeof(block)) << "\n";
 						//for (int iii = 0; iii < numSuperBlocks; iii++)
 						//	std::cout << YRi_bytes[idx][iii] << " s evalP(x) bin#" << bIdx << "\n";
-
-						std::cout << "s point_ri= " << point_ri << std::endl;
-
-						//std::cout << "s yri_K[" << idx << "]= " << yri_K << std::endl;
-						yri_K.toBytes(yri_K_bytes);
-
-
-						
-#if 1
-
-					/*	u64 hashIdx = simple.mBins[bIdx].hashIdxs[idx];
-						globalHash[hashIdx][permute[hashIdx][idxPermuteDone[hashIdx]]].resize(n1n2MaskBytes);
-
-						memcpy(globalHash[hashIdx][permute[hashIdx][idxPermuteDone[hashIdx]]].data(), yri_K_bytes, n1n2MaskBytes);
-						idxPermuteDone[hashIdx]++;*/
-#endif
-						//std::cout << "s sendIter= " << idxItem << " - " << toBlock(temp) << std::endl;
 					}
 				}
 			}
