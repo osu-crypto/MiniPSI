@@ -271,7 +271,7 @@ namespace osuCrypto
 		std::cout << "s_binning done" << std::endl;
 
 		chls[0].asyncSend(std::move(tempSend));//send g^k
-		std::cout << "s g^k= " << g_k << std::endl;
+		//std::cout << "s g^k= " << g_k << std::endl;
 
 
 		std::vector<std::vector<u8>> sendBuff_mask(chls.size()); //H(x)^k

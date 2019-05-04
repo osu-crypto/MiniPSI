@@ -368,23 +368,22 @@ void Mini19Sender(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 	for (u64 i = 0; i < numThreads; ++i)
 		sendChls[i] = ep1.addChannel("chl" + std::to_string(i), "chl" + std::to_string(i));
 
-	sender.outputHashing(inputs.size(), theirSetSize, 40, prng0, inputs, sendChls);
+	sender.outputBigPoly(inputs.size(), theirSetSize, 40, prng0, inputs, sendChls);
 	std::cout << gTimer << std::endl;
 
 	for (u64 i = 0; i < numThreads; ++i)
 		sendChls[i].close();
 
+	std::cout << "\n";
+	//====================
+	for (u64 i = 0; i < numThreads; ++i)
+		sendChls[i] = ep1.addChannel("chl" + std::to_string(i + numThreads), "chl" + std::to_string(i + numThreads));
 
-	//std::cout << "\n\n";
-	////====================
-	//for (u64 i = 0; i < numThreads; ++i)
-	//	sendChls[i] = ep1.addChannel("chl" + std::to_string(i + numThreads), "chl" + std::to_string(i + numThreads));
+	sender.outputHashing(inputs.size(), theirSetSize, 40, prng0, inputs, sendChls);
+	std::cout << gTimer << std::endl;
 
-	//sender.outputHashing(inputs.size(), theirSetSize, 40, prng0, inputs, sendChls);
-	//std::cout << gTimer << std::endl;
-
-	//for (u64 i = 0; i < numThreads; ++i)
-	//	sendChls[i].close();
+	for (u64 i = 0; i < numThreads; ++i)
+		sendChls[i].close();
 
 
 
@@ -421,7 +420,7 @@ void Mini19Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 num
 	for (u64 i = 0; i < numThreads; ++i)
 		recvChls[i] = ep0.addChannel("chl" + std::to_string(i), "chl" + std::to_string(i));
 
-	recv.outputHashing(inputs.size(), theirSetSize, 40, prng1, inputs, recvChls);
+	recv.outputBigPoly(inputs.size(), theirSetSize, 40, prng1, inputs, recvChls);
 
 
 	std::cout << gTimer << std::endl;
@@ -440,27 +439,27 @@ void Mini19Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 num
 		recvChls[i].close();
 
 
-	////====================JL psi startPsi_subsetsum
-	//std::cout << "\n\n";
-	//for (u64 i = 0; i < numThreads; ++i)
-	//	recvChls[i] = ep0.addChannel("chl" + std::to_string(numThreads + i), "chl" + std::to_string(numThreads + i));
+	//====================JL psi startPsi_subsetsum
+	std::cout << "\n";
+	for (u64 i = 0; i < numThreads; ++i)
+		recvChls[i] = ep0.addChannel("chl" + std::to_string(numThreads + i), "chl" + std::to_string(numThreads + i));
 
-	//recv.outputHashing(inputs.size(), theirSetSize, 40, prng1, inputs, recvChls);
+	recv.outputHashing(inputs.size(), theirSetSize, 40, prng1, inputs, recvChls);
 
-	//std::cout << gTimer << std::endl;
+	std::cout << gTimer << std::endl;
 
 
-	//for (u64 g = 0; g < recvChls.size(); ++g)
-	//{
-	//	dataSent += recvChls[g].getTotalDataSent();
-	//	dataRecv += recvChls[g].getTotalDataRecv();
-	//	recvChls[g].resetStats();
-	//}
-	//std::cout << "      Total Comm = " << string_format("%5.2f", (dataRecv + dataSent) / std::pow(2.0, 20)) << " MB\n";
-	//std::cout << "recv.mIntersection vs exp : " << recv.mIntersection.size() << " vs " << expectedIntersection << std::endl;
+	for (u64 g = 0; g < recvChls.size(); ++g)
+	{
+		dataSent += recvChls[g].getTotalDataSent();
+		dataRecv += recvChls[g].getTotalDataRecv();
+		recvChls[g].resetStats();
+	}
+	std::cout << "      Total Comm = " << string_format("%5.2f", (dataRecv + dataSent) / std::pow(2.0, 20)) << " MB\n";
+	std::cout << "recv.mIntersection vs exp : " << recv.mIntersection.size() << " vs " << expectedIntersection << std::endl;
 
-	//for (u64 i = 0; i < numThreads; ++i)
-	//	recvChls[i].close();
+	for (u64 i = 0; i < numThreads; ++i)
+		recvChls[i].close();
 
 
 

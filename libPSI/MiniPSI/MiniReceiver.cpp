@@ -464,7 +464,7 @@ namespace osuCrypto
 			
 			std::vector<u8> mG_K; chls[0].recv(mG_K);
 			g_k.fromBytes(mG_K.data()); //receiving g^k
-			std::cout << "r g^k= " << g_k << std::endl;
+			//std::cout << "r g^k= " << g_k << std::endl;
 
 			//#####################(g^K)^ (subsum ri) #####################
 
