@@ -412,7 +412,7 @@ namespace osuCrypto
 
 		//#####################Send Mask #####################
 
-#if 0
+#if 1
 		auto sendingMask = [&](u64 t)
 		{
 			auto& chl = chls[t]; //parallel along with inputs
@@ -428,7 +428,12 @@ namespace osuCrypto
 				for (u64 hIdx = 0; hIdx < 2; hIdx++)
 				{
 					std::vector<u8> sendBuff(curStepSize*n1n2MaskBytes);
-					memcpy(sendBuff.data(), globalHash[hIdx].data() + i*n1n2MaskBytes, curStepSize*n1n2MaskBytes);
+					
+					for (u64 k = 0; k < curStepSize; k++)
+					{
+						memcpy(sendBuff.data()+k*n1n2MaskBytes, globalHash[hIdx][i+k], n1n2MaskBytes);
+					}
+
 					chl.asyncSend(std::move(sendBuff));
 				}
 

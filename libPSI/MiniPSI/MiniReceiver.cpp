@@ -497,7 +497,7 @@ namespace osuCrypto
 					for (u64 k = 0; k < curStepSize; ++k)
 					{
 						u64 bIdx = i + k;
-						std::cout << "r bIdx= " << bIdx << std::endl;
+						//std::cout << "r bIdx= " << bIdx << std::endl;
 
 						std::vector<std::array<block, numSuperBlocks>> listGRi(mBalance.mBins[bIdx].cnt);
 
@@ -551,7 +551,7 @@ namespace osuCrypto
 
 
 					}
-					std::cout << sendBuff.size() << "  r sendBuff.size()\n";
+					//std::cout << sendBuff.size() << "  r sendBuff.size()\n";
 					chl.asyncSend(std::move(sendBuff)); //send poly P(x)=g^ri
 
 
@@ -598,7 +598,7 @@ namespace osuCrypto
 
 
 			//#####################Receive Mask #####################
-#if 0
+#if 1
 			auto receiveMask = [&](u64 t)
 			{
 				auto& chl = chls[t]; //parallel along with inputs
