@@ -10,6 +10,8 @@ namespace osuCrypto
     using namespace std;
 	using namespace NTL;
 
+#define PASS_MIRACL
+
 
 	void MiniSender::outputBigPoly(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG & prng, span<block> inputs, span<Channel> chls)
 	{
@@ -33,7 +35,7 @@ namespace osuCrypto
 	
 		simple.init(mTheirInputSize, recvMaxBinSize, recvNumDummies);
 
-		EllipticCurve mCurve(p256k1, OneBlock);
+		EllipticCurve mCurve(k283, OneBlock);
 		mFieldSize = mCurve.bitCount();
 
 		//std::cout << "s mFieldSize= " << mFieldSize << "\n";
@@ -161,6 +163,10 @@ namespace osuCrypto
 					//std::cout << "s yri= " << toBlock(yri) <<" - " << toBlock(yri+ sizeof(block)) << std::endl;
 
 					point_ri.fromBytes(yri);
+#ifdef PASS_MIRACL
+					point_ri = g_k;
+#endif // PASS_MIRACL
+
 
 					//std::cout << "s point_ri= " << point_ri << std::endl;
 
@@ -224,7 +230,7 @@ namespace osuCrypto
 
 		simple.init(mTheirInputSize, recvMaxBinSize, recvNumDummies);
 
-		EllipticCurve mCurve(p256k1, OneBlock);
+		EllipticCurve mCurve(k283, OneBlock);
 		mFieldSize = mCurve.bitCount();
 
 		//std::cout << "s mFieldSize= " << mFieldSize << "\n";
@@ -256,7 +262,7 @@ namespace osuCrypto
 
 		std::vector<u8> tempSend(g_k.sizeBytes());
 		memcpy(tempSend.data(), mG_K, g_k.sizeBytes());
-
+		block fakeBlk = mPrng.get<block>();
 
 
 		//####################### online #########################
@@ -270,9 +276,9 @@ namespace osuCrypto
 
 
 		std::vector<std::vector<u8>> sendBuff_mask(chls.size()); //H(x)^k
-		std::array<std::vector<u8>, 2> globalHash;
-		globalHash[0].resize(inputs.size()*n1n2MaskBytes);
-		globalHash[1].resize(inputs.size()*n1n2MaskBytes);
+		std::array<std::vector<u8*>, 2> globalHash;
+		globalHash[0].resize(inputs.size());
+		globalHash[1].resize(inputs.size());
 		std::array<std::vector<u64>, 2>permute;
 		int idxPermuteDone[2];
 		for (u64 j = 0; j < 2; j++)
@@ -295,8 +301,19 @@ namespace osuCrypto
 			u64 tempBinEndIdx = (simple.mNumBins * (t + 1) / numThreads);
 			u64 binEndIdx = std::min(tempBinEndIdx, simple.mNumBins);
 			
+			EccPoint  fake_point_ri(mCurve), point_ri(mCurve), yri_K(mCurve);
+			u8* fake_point_ri_bytes = new u8[point_ri.sizeBytes()];  u8* yri = new u8[point_ri.sizeBytes()];
+			u8* yri_K_bytes = new u8[yri_K.sizeBytes()];
+			point_ri.randomize(mPrng);
+			point_ri.toBytes(fake_point_ri_bytes);
+			point_ri.fromBytes(fake_point_ri_bytes);
+			yri_K = point_ri*nK; //P(x)^k
+
 			polyNTL poly;
 			poly.NtlPolyInit(mPolyBytes);
+			
+			
+
 
 			for (u64 i = binStartIdx; i < binEndIdx; i += stepSize)
 			{
@@ -308,11 +325,13 @@ namespace osuCrypto
 				chl.recv(recvBuff); 
 				u64 iterSend = 0, iterRecv = 0;
 
-				if (recvBuff.size() != curStepSize * simple.mTheirMaxBinSize*mPolyBytes)
+				/*if (recvBuff.size() != curStepSize * simple.mTheirMaxBinSize*mPolyBytes)
 				{
+					std::cout << recvBuff.size() << "  vs  " << curStepSize * simple.mTheirMaxBinSize*mPolyBytes << std::endl;
+
 					std::cout << "error @ recvBuff.size() != curStepSize * simple.mTheirMaxBinSize*mPolyBytes " << (LOCATION) << std::endl;
 					throw std::runtime_error(LOCATION);
-				}
+				}*/
 
 
 				for (u64 k = 0; k < curStepSize; ++k)
@@ -336,11 +355,9 @@ namespace osuCrypto
 							//std::cout << coeffs[c][iii] << "  s coeff bin#" << bIdx<<"\n";
 					}
 
-
 					poly.evalSuperPolynomial(coeffs, simple.mBins[bIdx].blks, YRi_bytes); //P(x)
 					std::cout << "poly.evalSuperPolynomial done YRi_bytes.size()=" << YRi_bytes.size() << std::endl;
 
-					
 					/*for (u64 idx = 0; idx < YRi_bytes.size(); ++idx)
 					{
 						std::cout << simple.mBins[bIdx].blks[idx] << "\n";
@@ -350,18 +367,36 @@ namespace osuCrypto
 						std::cout << "\n";
 					}*/
 
-
-					
-
-
-					for (u64 idx = 0; idx < YRi_bytes.size(); ++idx)
+					for (int idxYri = 0; idxYri < YRi_bytes.size(); idxYri++)
 					{
+						point_ri.fromBytes(fake_point_ri_bytes);
+						yri_K = point_ri*nK; //P(x)^k
+						yri_K.toBytes(yri_K_bytes);
+						u64 hashIdx = simple.mBins[bIdx].hashIdxs[idxYri];
+						u64 itemIdx = simple.mBins[bIdx].Idxs[idxYri];
 						
-						EccPoint point_ri(mCurve);
+						globalHash[hashIdx][itemIdx] = new u8[n1n2MaskBytes];
+						
+						//memcpy(globalHash[hashIdx][itemIdx], yri_K_bytes, n1n2MaskBytes);
+						memcpy(globalHash[hashIdx][itemIdx], (u8*)&fakeBlk, n1n2MaskBytes);
+					}
 
-						u8* yri = new u8[mPolyBytes];
-						memcpy(yri, (u8*)&YRi_bytes[idx], mPolyBytes);
-						
+					for (u64 idx = 0; idx <  0; idx++)
+					{
+						std::cout << idx << " eeee\n";
+
+#ifdef PASS_MIRACL
+						point_ri.fromBytes(fake_point_ri_bytes);
+					//	std::cout << idx << " point_ri.fromBytes(fake_point_ri_bytes)\n";
+						yri_K = point_ri*nK; //P(x)^k
+
+#else
+						//memcpy(yri, (u8*)&YRi_bytes[idx], point_ri.sizeBytes());
+						//point_ri.fromBytes(yri);
+						//yri_K = point_ri*nK; //P(x)^k
+
+#endif // !PASS_MIRACL
+
 						//std::cout << simple.mBins[bIdx].blks[idx] << "  s x bin#" << bIdx << "\n";
 						//std::cout << toBlock(yri) << "\n";
 						//std::cout << toBlock(yri + sizeof(block)) << "\n";
@@ -369,20 +404,21 @@ namespace osuCrypto
 						//for (int iii = 0; iii < numSuperBlocks; iii++)
 						//	std::cout << YRi_bytes[idx][iii] << " s evalP(x) bin#" << bIdx << "\n";
 
-
-						
-						point_ri.fromBytes(yri);
 						std::cout << "s point_ri= " << point_ri << std::endl;
 
-						auto yri_K = point_ri*nK; //P(x)^k
 						//std::cout << "s yri_K[" << idx << "]= " << yri_K << std::endl;
-						u8* temp = new u8[mPolyBytes];
-						yri_K.toBytes(temp);
+						yri_K.toBytes(yri_K_bytes);
 
-						u64 hashIdx = simple.mBins[bIdx].hashIdxs[idx];
-						memcpy(globalHash[hashIdx].data() + permute[hashIdx][idxPermuteDone[hashIdx]++] * n1n2MaskBytes
-							, temp, n1n2MaskBytes);
 
+						
+#if 1
+
+					/*	u64 hashIdx = simple.mBins[bIdx].hashIdxs[idx];
+						globalHash[hashIdx][permute[hashIdx][idxPermuteDone[hashIdx]]].resize(n1n2MaskBytes);
+
+						memcpy(globalHash[hashIdx][permute[hashIdx][idxPermuteDone[hashIdx]]].data(), yri_K_bytes, n1n2MaskBytes);
+						idxPermuteDone[hashIdx]++;*/
+#endif
 						//std::cout << "s sendIter= " << idxItem << " - " << toBlock(temp) << std::endl;
 					}
 				}
@@ -406,7 +442,7 @@ namespace osuCrypto
 
 		//#####################Send Mask #####################
 
-#if 1
+#if 0
 		auto sendingMask = [&](u64 t)
 		{
 			auto& chl = chls[t]; //parallel along with inputs
@@ -468,7 +504,7 @@ namespace osuCrypto
 
 		simple.init(mTheirInputSize, recvMaxBinSize, recvNumDummies);
 
-		EllipticCurve mCurve(p256k1, OneBlock);
+		EllipticCurve mCurve(k283, OneBlock);
 		mFieldSize = mCurve.bitCount();
 
 		//std::cout << "s mFieldSize= " << mFieldSize << "\n";

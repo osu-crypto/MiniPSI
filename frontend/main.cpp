@@ -368,7 +368,7 @@ void Mini19Sender(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 	for (u64 i = 0; i < numThreads; ++i)
 		sendChls[i] = ep1.addChannel("chl" + std::to_string(i), "chl" + std::to_string(i));
 
-	sender.outputBigPoly(inputs.size(), theirSetSize, 40, prng0, inputs, sendChls);
+	sender.outputHashing(inputs.size(), theirSetSize, 40, prng0, inputs, sendChls);
 	std::cout << gTimer << std::endl;
 
 	for (u64 i = 0; i < numThreads; ++i)
@@ -421,7 +421,7 @@ void Mini19Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 num
 	for (u64 i = 0; i < numThreads; ++i)
 		recvChls[i] = ep0.addChannel("chl" + std::to_string(i), "chl" + std::to_string(i));
 
-	recv.outputBigPoly(inputs.size(), theirSetSize, 40, prng1, inputs, recvChls);
+	recv.outputHashing(inputs.size(), theirSetSize, 40, prng1, inputs, recvChls);
 
 
 	std::cout << gTimer << std::endl;

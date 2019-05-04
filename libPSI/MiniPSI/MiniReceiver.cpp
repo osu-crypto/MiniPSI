@@ -37,7 +37,7 @@ namespace osuCrypto
 
 		//seed for subset-sum exp
 		mCurveSeed = mPrng.get<block>();
-		EllipticCurve mCurve(p256k1, OneBlock);
+		EllipticCurve mCurve(k283, OneBlock);
 		//mCurve.getMiracl().IOBASE = 10;
 		mFieldSize = mCurve.bitCount();
 		//std::cout << "r mFieldSize= " << mFieldSize << "\n";
@@ -361,7 +361,7 @@ namespace osuCrypto
 
 			//seed for subset-sum exp
 			mCurveSeed = mPrng.get<block>();
-			EllipticCurve mCurve(p256k1, OneBlock);
+			EllipticCurve mCurve(k283, OneBlock);
 			//mCurve.getMiracl().IOBASE = 10;
 			mFieldSize = mCurve.bitCount();
 			//std::cout << "r mFieldSize= " << mFieldSize << "\n";
@@ -594,10 +594,11 @@ namespace osuCrypto
 
 			gTimer.setTimePoint("send poly + g^ri^k done");
 
+			std::cout << " r send poly + g^ri^k done\n";
 
 
 			//#####################Receive Mask #####################
-#if 1
+#if 0
 			auto receiveMask = [&](u64 t)
 			{
 				auto& chl = chls[t]; //parallel along with inputs
@@ -718,7 +719,7 @@ namespace osuCrypto
 
 			//seed for subset-sum exp
 			mCurveSeed = mPrng.get<block>();
-			EllipticCurve mCurve(p256k1, OneBlock);
+			EllipticCurve mCurve(k283, OneBlock);
 			//mCurve.getMiracl().IOBASE = 10;
 			mFieldSize = mCurve.bitCount();
 			//std::cout << "r mFieldSize= " << mFieldSize << "\n";
