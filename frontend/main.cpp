@@ -869,7 +869,7 @@ void evalExp(int n)
 	EccPoint mG(mCurve);
 	mG = mCurve.getGenerator();
 	u64 mMyInputSize = 1<<n;
-#if 0
+#if 1
 	//////============clasic g^ri==========
 
 	{
