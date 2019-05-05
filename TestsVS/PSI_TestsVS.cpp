@@ -109,8 +109,11 @@ namespace tests_libOTe
 			MiniPSI_malicious_impl();
 		}
 
-
-
+		TEST_METHOD(evalExp_TestVS)
+		{
+			InitDebugPrinting();
+			evalExp();
+		}
 
 	};
 }

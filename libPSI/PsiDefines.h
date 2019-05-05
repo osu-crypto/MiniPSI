@@ -8,6 +8,9 @@
 #include <NTL/vec_ZZ_p.h>
 #include <NTL/ZZ_pX.h>
 #include <NTL/ZZ.h>
+#include <sstream>
+#include <string>
+
 using namespace NTL;
 #define NTL_Threads_ON
 #ifdef _MSC_VER
@@ -21,7 +24,7 @@ namespace osuCrypto
 	
 	static const u8 mMiniPolySlices(2); //2*128 
 
-	static const u64 stepSize(1 << 8);
+	static const u64 stepSize(1 << 6);
 	static const u64 stepSizeMaskSent(1<<11);
 //	static const u8 numSuperBlocks(4); //wide of T (or field size) 
 	static const u8 numSuperBlocks(3); //wide of T (or field size)  =3 for HD-PSI
@@ -96,6 +99,77 @@ namespace osuCrypto
 			numChosen = 18;
 		}
 	}
+
+
+
+	inline void getBestExpParams(u64 setSize, u64& numSeeds, u64& numChosen, u64& boundCoeff)
+	{
+
+		if (setSize <= (1 << 8))
+		{
+			numSeeds = 1<<3;
+			numChosen = 8;
+			boundCoeff = 1 << 14;
+
+		}
+		else if (setSize <= (1 << 10))
+		{
+			numSeeds = 1 << 4;
+			numChosen = 11;
+			boundCoeff = 1 << 9;
+		}
+		else if (setSize <= (1 << 12))
+		{
+			numSeeds = 1 << 5;
+			numChosen = 14;
+			boundCoeff = 1 << 6;
+		}
+		else if (setSize <= (1 << 14))
+		{
+			numSeeds = 1 << 6;
+			numChosen = 11;
+			boundCoeff = 1 << 7;
+		}
+		else if (setSize <= (1 << 16))
+		{
+			numSeeds = 1 << 8;
+			numChosen = 13;
+			boundCoeff = 1 << 4;
+		}
+		else if (setSize <= (1 << 18))
+		{
+			numSeeds = 1 << 10;
+			numChosen = 15;
+			boundCoeff = 1 << 1;
+		}
+		else if (setSize <= (1 << 20))
+		{
+			numSeeds = 1 << 12;
+			numChosen = 11;
+			boundCoeff = 1 << 1;
+		}
+		else if (setSize <= (1 << 22))
+		{
+			numSeeds = 1 << 14;
+			numChosen = 11;
+			boundCoeff = 1 << 1;
+		}
+		else if (setSize <= (1 << 24))
+		{
+			numSeeds = 1 << 15;
+			numChosen = 10;
+			boundCoeff = 1 << 1;
+		}
+	}
+
+
+	inline const char* tostr(int x)
+	{
+			std::stringstream str;
+			str << x;
+			return str.str().c_str();
+	}
+
 
 	inline u64 getFieldSizeInBits(u64 setSize)
 	{

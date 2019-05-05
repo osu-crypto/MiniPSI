@@ -14,5 +14,5 @@ namespace tests_libOTe
 	void schnorrZKDL();
 	void MiniPSI_malicious_impl();
 	void JL10PSI_subsetsum_malicious_impl();
-
+	void evalExp();
 }

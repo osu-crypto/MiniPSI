@@ -83,7 +83,7 @@ namespace tests_libOTe
 
 		});
 
-		sender.outputBigPoly(sendSet.size(), recvSet.size(), 40,  prng0, sendSet, sendChls);
+		sender.outputBigPoly(sendSet.size(), recvSet.size(), 40, prng0, sendSet, sendChls);
 
 		thrd.join();
 
@@ -121,7 +121,7 @@ namespace tests_libOTe
 
 	}
 
-	
+
 	void MiniPSI_hasing_impl()
 	{
 		setThreadName("EchdSender");
@@ -338,11 +338,11 @@ namespace tests_libOTe
 
 		auto thrd = std::thread([&]() {
 			gTimer.setTimePoint("r start ");
-			recv.sendInput(recvSet.size(), 40, prng1.get<block>(),recvSet, recvChls, curveType);
+			recv.sendInput(recvSet.size(), 40, prng1.get<block>(), recvSet, recvChls, curveType);
 
 		});
 
-		sender.sendInput(sendSet.size(), 40, prng0.get<block>(),sendSet, sendChls, curveType);
+		sender.sendInput(sendSet.size(), 40, prng0.get<block>(), sendSet, sendChls, curveType);
 
 
 		thrd.join();
@@ -424,7 +424,7 @@ namespace tests_libOTe
 
 		auto thrd = std::thread([&]() {
 			gTimer.setTimePoint("r start ");
-			recv.startPsi(recvSet.size(), sendSet.size(), 40, prng1.get<block>(),recvSet, recvChls);
+			recv.startPsi(recvSet.size(), sendSet.size(), 40, prng1.get<block>(), recvSet, recvChls);
 
 		});
 
@@ -649,8 +649,8 @@ namespace tests_libOTe
 		EllipticCurve curve(p256k1, ZeroBlock);
 		curve.getMiracl().IOBASE = 10;
 
-		 auto& g = curve.getGenerator();
-		
+		auto& g = curve.getGenerator();
+
 		std::cout << g << std::endl;
 
 		std::vector<EccNumber> mSeeds;
@@ -696,8 +696,151 @@ namespace tests_libOTe
 		return sss;
 	}
 
+
+	void evalExp()
+	{
+		PRNG prng(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
+		EllipticCurve mCurve(k283, OneBlock);
+		EccPoint mG(mCurve);
+		mG = mCurve.getGenerator();
+		u64 mMyInputSize = 1 << 10;
+
+		//////============clasic g^ri==========
+		{
+			gTimer.reset();
+			gTimer.setTimePoint("clasic g^ri starts");
+
+			for (u64 i = 0; i < mMyInputSize; i++)
+			{
+				EccPoint g_r(mCurve);
+				EccNumber r(mCurve);
+				r.randomize(prng);
+				g_r = mG*r;
+			}
+			gTimer.setTimePoint("clasic g^ri done");
+			std::cout << gTimer << "\n";
+		}
+
+		//////============HSS g^ri==========
+		{	gTimer.reset();
+		gTimer.setTimePoint("HSS g^ri starts");
+
+		u64 mSetSeedsSize, mChoseSeedsSize, mBoundCoeffs;
+		getBestExpParams(mMyInputSize, mSetSeedsSize, mChoseSeedsSize, mBoundCoeffs);
+
+		std::vector<EccNumber> nSeeds;
+		std::vector<EccPoint> pG_seeds;
+		nSeeds.reserve(mSetSeedsSize);
+		pG_seeds.reserve(mSetSeedsSize);
+
+
+		//seeds
+		for (u64 i = 0; i < mSetSeedsSize; i++)
+		{
+			// get a random value from Z_p
+			nSeeds.emplace_back(mCurve);
+			nSeeds[i].randomize(prng);
+
+			pG_seeds.emplace_back(mCurve);
+			pG_seeds[i] = mG * nSeeds[i];  //g^ri
+		}
+		gTimer.setTimePoint("HSS g^seed done");
+
+
+		std::vector<u64> indices(mSetSeedsSize);
+
+		for (u64 i = 0; i < mMyInputSize; i++)
+		{
+			std::iota(indices.begin(), indices.end(), 0);
+			std::random_shuffle(indices.begin(), indices.end()); //random permutation and get 1st K indices
+			EccPoint g_sum(mCurve);
+
+			if (mBoundCoeffs == 2)
+			{
+				for (u64 j = 0; j < mChoseSeedsSize; j++)
+				{
+					if (rand() % mBoundCoeffs)
+						g_sum = g_sum + pG_seeds[indices[j]]; //g^sum
+				}
+			}
+			else
+			{
+				for (u64 j = 0; j < mChoseSeedsSize; j++)
+				{
+					int rnd = rand() % mBoundCoeffs;
+					EccNumber ci(mCurve, rnd);
+					g_sum = g_sum + pG_seeds[indices[j]] * ci; //g^sum
+				}
+			}
+		}
+
+		gTimer.setTimePoint("HDD g^ri done");
+		std::cout << gTimer << "\n";
+		}
+
+		//////============recursive HSS g^ri==========
+		{
+			gTimer.reset();
+		gTimer.setTimePoint("Recursive HSS g^ri starts");
+
+		u64 mSetSeedsSize, mChoseSeedsSize, mBoundCoeffs;
+		getBestExpParams(mMyInputSize, mSetSeedsSize, mChoseSeedsSize, mBoundCoeffs);
+
+		std::vector<EccNumber> nSeeds;
+		std::vector<EccPoint> pG_seeds;
+		nSeeds.reserve(mSetSeedsSize);
+		pG_seeds.reserve(mSetSeedsSize);
+
+
+		//seeds
+		for (u64 i = 0; i < mSetSeedsSize; i++)
+		{
+			// get a random value from Z_p
+			nSeeds.emplace_back(mCurve);
+			nSeeds[i].randomize(prng);
+
+			pG_seeds.emplace_back(mCurve);
+			pG_seeds[i] = mG * nSeeds[i];  //g^ri
+		}
+		gTimer.setTimePoint("HSS g^seed done");
+
+
+		std::vector<u64> indices(mSetSeedsSize);
+
+		for (u64 i = 0; i < mMyInputSize; i++)
+		{
+			std::iota(indices.begin(), indices.end(), 0);
+			std::random_shuffle(indices.begin(), indices.end()); //random permutation and get 1st K indices
+			EccPoint g_sum(mCurve);
+
+			if (mBoundCoeffs == 2)
+			{
+				for (u64 j = 0; j < mChoseSeedsSize; j++)
+				{
+					if (rand() % mBoundCoeffs)
+						g_sum = g_sum + pG_seeds[indices[j]]; //g^sum
+				}
+			}
+			else
+			{
+				for (u64 j = 0; j < mChoseSeedsSize; j++)
+				{
+					int rnd = rand() % mBoundCoeffs;
+					EccNumber ci(mCurve, rnd);
+					g_sum = g_sum + pG_seeds[indices[j]] * ci; //g^sum
+				}
+			}
+		}
+
+		gTimer.setTimePoint("HDD g^ri done");
+		std::cout << gTimer << "\n";
+		}
+
+
+	}
+
 	void subsetSum_test() {
-		
+
 		PRNG prng(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
 
 		EllipticCurve mCurve(k283, OneBlock);
@@ -747,12 +890,12 @@ namespace tests_libOTe
 				checkUnique.push_back(str_sum);
 			else
 			{
-				std::cout << "dupl. : " << str_sum <<"\n";
+				std::cout << "dupl. : " << str_sum << "\n";
 				cnt++;
 			}
 
 		}
-		std::cout << "cnt= " << cnt<<"\t checkUnique.size()= " << checkUnique.size()<<"\n";
+		std::cout << "cnt= " << cnt << "\t checkUnique.size()= " << checkUnique.size() << "\n";
 
 		for (int i = 0; i < checkUnique.size(); i++)
 		{
@@ -761,7 +904,7 @@ namespace tests_libOTe
 		}
 	}
 
-	
+
 
 	void subsetSum(vector<EccPoint>& g_sum) { //fail
 
@@ -828,7 +971,7 @@ namespace tests_libOTe
 			//std::cout << "checkUnique. : " << checkUnique[i] << "\n";
 
 		}
-		
+
 	}
 
 
@@ -851,8 +994,8 @@ namespace tests_libOTe
 		auto g_v = pG*nV;  //g^v
 
 		std::vector<u8*> challeger_bytes(3);
-			
-		challeger_bytes[0]= new u8[pG.sizeBytes()];
+
+		challeger_bytes[0] = new u8[pG.sizeBytes()];
 		pG.toBytes(challeger_bytes[0]);
 
 		challeger_bytes[1] = new u8[g_k.sizeBytes()];
@@ -871,7 +1014,7 @@ namespace tests_libOTe
 		block temp = ZeroBlock;
 		for (int i = 0; i < numSuperBlocks; i++)
 		{
-			memcpy((u8*)&temp, challeger_bytes[i]+i*sizeof(block), sizeof(block));
+			memcpy((u8*)&temp, challeger_bytes[i] + i * sizeof(block), sizeof(block));
 			challenger[i] = challenger[i] + temp;
 		}
 
@@ -880,7 +1023,7 @@ namespace tests_libOTe
 		u8* nC_bytes = new u8[nC.sizeBytes()];
 		memcpy(nC_bytes, cipher_challenger.data(), nC.sizeBytes());
 		nC.fromBytes(nC_bytes);
-		
+
 		EccNumber nR(mCurve);
 		nR = nV - nC*nK; //r=v-ck
 
@@ -895,7 +1038,7 @@ namespace tests_libOTe
 
 
 		auto thrd = std::thread([&]() { //prover
-			
+
 
 
 		});
@@ -908,7 +1051,7 @@ namespace tests_libOTe
 
 	}
 	/*void subsetSum_test() {
-		
+
 		vector<EccPoint> points;
 		subsetSum(points);
 		std::cout << "points: " << points.size() << "\n";
