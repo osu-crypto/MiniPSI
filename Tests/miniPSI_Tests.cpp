@@ -299,7 +299,7 @@ namespace tests_libOTe
 		setThreadName("EchdSender");
 		int curveType = 0;
 
-		u64 setSenderSize = 1 << 6, setRecvSize = 1 << 7, psiSecParam = 40, numThreads(1);
+		u64 setSenderSize = 1 << 6, setRecvSize = 1 << 8, psiSecParam = 40, numThreads(2);
 
 		PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
 		PRNG prng1(_mm_set_epi32(4253465, 3434565, 234435, 23987025));
@@ -338,11 +338,11 @@ namespace tests_libOTe
 
 		auto thrd = std::thread([&]() {
 			gTimer.setTimePoint("r start ");
-			recv.sendInput(recvSet.size(), setSenderSize, 40, prng1.get<block>(), recvSet, recvChls, curveType);
+			recv.sendInput(setRecvSize, setSenderSize, 40, prng1.get<block>(), recvSet, recvChls, curveType);
 
 		});
 
-		sender.sendInput(sendSet.size(), setRecvSize, 40, prng0.get<block>(), sendSet, sendChls, curveType);
+		sender.sendInput(setSenderSize, setRecvSize, 40, prng0.get<block>(), sendSet, sendChls, curveType);
 
 
 		thrd.join();

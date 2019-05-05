@@ -34,7 +34,7 @@ namespace osuCrypto
 		std::vector<block> thrdPrngBlock(chls.size());
 		std::vector<std::vector<u64>> localIntersections(chls.size() - 1);
 
-		u64 maskSizeByte = (40 + 2*log2(inputs.size()) + 7) / 8;
+		u64 maskSizeByte = (40 + log2(inputs.size()*mTheirInputSize) + 7) / 8;
 
 		auto curveParam = k283;
         auto RcSeed = mPrng.get<block>();

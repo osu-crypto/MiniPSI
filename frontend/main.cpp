@@ -1084,12 +1084,13 @@ void evalExp(int n)
 
 int main(int argc, char** argv)
 {
-	u64 n = 1 << 10;;
-	if (argv[1][0] == '-' && argv[1][1] == 'n') {
-		n= atoi(argv[2]);
-	}
-	evalExp(n);
-	return 0;
+	//u64 n = 1 << 10;;
+	//if (argv[1][0] == '-' && argv[1][1] == 'n') {
+	//	n= atoi(argv[2]);
+	//}
+	//evalExp(n);
+	//return 0;
+
 	//u64 curStepSize = 1 << 12;
 	//testExp(curStepSize);
 	//return 0;
@@ -1107,26 +1108,29 @@ int main(int argc, char** argv)
 	
 
 	string ipadrr = "localhost:1212";
-	u64 sendSetSize = 1 << 8, recvSetSize = 1 << 8, numThreads = 1;
+	u64 sendSetSize = 1 << 10, recvSetSize = 1 << 12, numThreads = 1;
 
 	PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
 
 
-	if (argc == 7 
+	if (argc == 9 
 		&& argv[3][0] == '-' && argv[3][1] == 'n'
-		&& argv[5][0] == '-' && argv[5][1] == 't')
+		&& argv[5][0] == '-' && argv[5][1] == 'm'
+		&& argv[7][0] == '-' && argv[7][1] == 't')
 	{
 		sendSetSize = 1 << atoi(argv[4]);
+		recvSetSize = 1 << atoi(argv[6]);
 		recvSetSize = sendSetSize;
-		numThreads = atoi(argv[6]);
+		numThreads = atoi(argv[8]);
 	}
 
 
-	if (argc == 5
-		&& argv[3][0] == '-' && argv[3][1] == 'n')
+	if (argc == 7
+		&& argv[3][0] == '-' && argv[3][1] == 'n'
+		&& argv[5][0] == '-' && argv[5][1] == 'm')
 	{
 		sendSetSize = 1 << atoi(argv[4]);
-		recvSetSize = sendSetSize;
+		recvSetSize = 1 << atoi(argv[6]);
 	}
 
 	std::vector<block> sendSet(sendSetSize), recvSet(recvSetSize);
@@ -1154,27 +1158,27 @@ int main(int argc, char** argv)
 		
 		std::thread thrd = std::thread([&]() {
 			EchdSender(sendSetSize, recvSetSize, "localhost:1214", numThreads);
-			JL10Sender(sendSetSize, recvSetSize,"localhost:1214", numThreads);
+			//JL10Sender(sendSetSize, recvSetSize,"localhost:1214", numThreads);
 		});
 
 		EchdReceiver(recvSetSize, sendSetSize, "localhost:1214", numThreads);
-		JL10Receiver(recvSetSize, sendSetSize, "localhost:1214", numThreads);
+		//JL10Receiver(recvSetSize, sendSetSize, "localhost:1214", numThreads);
 
 		thrd.join();
 
 	}
 	else if (argv[1][0] == '-' && argv[1][1] == 'r' && atoi(argv[2]) == 0) {
 
-		//EchdSender(sendSetSize, recvSetSize, ipadrr, numThreads);
+		EchdSender(sendSetSize, recvSetSize, ipadrr, numThreads);
 		//JL10Sender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
-		Mini19Sender(sendSetSize, recvSetSize, "localhost:1214", numThreads);
+		//Mini19Sender(sendSetSize, recvSetSize, "localhost:1214", numThreads);
 
 
 	}
 	else if (argv[1][0] == '-' && argv[1][1] == 'r' && atoi(argv[2]) == 1) {
-		//EchdReceiver(recvSetSize, sendSetSize, ipadrr, numThreads);
+		EchdReceiver(recvSetSize, sendSetSize, ipadrr, numThreads);
 		//JL10Receiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
-		Mini19Receiver(recvSetSize, sendSetSize, "localhost:1214", numThreads);
+		//Mini19Receiver(recvSetSize, sendSetSize, "localhost:1214", numThreads);
 
 	}
 	else {
