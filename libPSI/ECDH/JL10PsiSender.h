@@ -15,7 +15,8 @@ namespace osuCrypto
         JL10PsiSender();
         ~JL10PsiSender();
 
-		u64 stepSize = 1<< 11;
+		u64 myStepSize;
+		u64 theirStepSize;
 		Timer timer;
 
 		//u8* mK;

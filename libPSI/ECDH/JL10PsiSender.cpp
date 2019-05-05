@@ -37,6 +37,8 @@ namespace osuCrypto
 
 		mMyInputSize = myInputSize;
 		mTheirInputSize = theirInputSize;
+		myStepSize = myInputSize / numStep;
+		theirStepSize = mTheirInputSize / numStep;
 
 		mPrng.SetSeed(seed);
 		
@@ -90,6 +92,9 @@ namespace osuCrypto
 			u64 inputEndIdx = inputs.size() * (t + 1) / chls.size();
 			u64 subsetInputSize = inputEndIdx - inputStartIdx;
 
+			u64 theirInputStartIdx = mTheirInputSize * t / chls.size();
+			u64 theirInputEndIdx = mTheirInputSize * (t + 1) / chls.size();
+			u64 theirSubsetInputSize = theirInputEndIdx - theirInputStartIdx;
 
 			sendBuff_mask[t].resize(n1n2MaskBytes*subsetInputSize);
 			int idxSendMaskIter = 0;
@@ -107,9 +112,9 @@ namespace osuCrypto
 			u8* temp= new u8[xk.sizeBytes()];
 
 
-			for (u64 i = inputStartIdx; i < inputEndIdx; i += stepSize)  //yi=H(xi)*g^ri
+			for (u64 i = inputStartIdx; i < inputEndIdx; i += myStepSize)  //yi=H(xi)*g^ri
 			{
-				auto curStepSize = std::min(stepSize, inputEndIdx - i);
+				auto curStepSize = std::min(myStepSize, inputEndIdx - i);
 
 				//	std::cout << "send H(y)^b" << std::endl;
 
@@ -129,15 +134,20 @@ namespace osuCrypto
 
 #ifdef PRINT
 					if (i + k == 10 || i + k == 20)
-						std::cout << "s xk[" << i+k << "] " << xk << std::endl;
+						std::cout << "s xk[" << i + k << "] " << xk << std::endl;
 #endif
 					xk.toBytes(temp);
-					memcpy(sendBuff_mask[t].data()+ idxSendMaskIter, temp, n1n2MaskBytes);
+					memcpy(sendBuff_mask[t].data() + idxSendMaskIter, temp, n1n2MaskBytes);
 					idxSendMaskIter += n1n2MaskBytes;
 				}
 				//gTimer.setTimePoint("s online H(x)^k done ");
 
+			}
 
+			for (u64 i = theirInputStartIdx; i < theirInputEndIdx; i += theirStepSize)
+			{
+				auto curStepSize = std::min(theirStepSize, theirInputEndIdx - i);
+				
 				//receive yi=H(.)*g^ri
 				std::vector<u8> recvBuff(xk.sizeBytes() * curStepSize); //receiving yi^k = H(.)*g^ri
 
@@ -192,16 +202,13 @@ namespace osuCrypto
 		auto receiveMask = [&](u64 t)
 		{
 			auto& chl = chls[t]; //parallel along with inputs
-			u64 startIdx = mTheirInputSize * t / numThreads;
+			u64 startIdx = myInputSize * t / numThreads;
 			u64 tempEndIdx = mTheirInputSize* (t + 1) / numThreads;
-			u64 endIdx = std::min(tempEndIdx, mTheirInputSize);
+			u64 endIdx = std::min(tempEndIdx, myInputSize);
 			u64 subsetInputSize = endIdx - startIdx;
-
-
 
 			auto myMasks = sendBuff_mask[t].data();
 			//std::cout << "s toBlock(sendBuff_mask): " << t << " - " << toBlock(myMasks) << std::endl;
-
 			chl.asyncSend(std::move(sendBuff_mask[t]));
 
 
