@@ -869,7 +869,7 @@ void evalExp(int n)
 	EccPoint mG(mCurve);
 	mG = mCurve.getGenerator();
 	u64 mMyInputSize = 1<<n;
-#if 1
+#if 0
 	//////============clasic g^ri==========
 
 	{
@@ -935,15 +935,29 @@ void evalExp(int n)
 	}
 	gTimer.setTimePoint("HSS g^seed done");
 
-
 	std::vector<u64> indices(mSetSeedsSize);
 	std::vector<EccPoint> g_r;
 	g_r.reserve(mMyInputSize);
 
 	for (u64 i = 0; i < mMyInputSize; i++)
 	{
-		std::iota(indices.begin(), indices.end(), 0);
-		std::random_shuffle(indices.begin(), indices.end()); //random permutation and get 1st K indices
+		if (mMyInputSize < (1 << 9))
+		{
+			std::iota(indices.begin(), indices.end(), 0);
+			std::random_shuffle(indices.begin(), indices.end()); //random permutation and get 1st K indices
+		}
+		else
+		{
+			indices.resize(0);
+			while (indices.size() < mChoseSeedsSize)
+			{
+				int rnd = rand() % mSetSeedsSize;
+				if (std::find(indices.begin(), indices.end(), rnd) == indices.end())
+					indices.push_back(rnd);
+			}
+		}
+
+		
 		g_r.emplace_back(mCurve);
 
 		if (mBoundCoeffs == 2)
@@ -1035,8 +1049,24 @@ void evalExp(int n)
 
 			for (u64 i = 0; i < numNextLvlSeed; i++)
 			{
-				std::iota(indices.begin(), indices.end(), 0);
-				std::random_shuffle(indices.begin(), indices.end()); //random permutation and get 1st K indices
+				//std::iota(indices.begin(), indices.end(), 0);
+				//std::random_shuffle(indices.begin(), indices.end()); //random permutation and get 1st K indices
+
+				if (numNextLvlSeed < (1 << 9))
+				{
+					std::iota(indices.begin(), indices.end(), 0);
+					std::random_shuffle(indices.begin(), indices.end()); //random permutation and get 1st K indices
+				}
+				else
+				{
+					indices.resize(0);
+					while (indices.size() < mSeqParams[idxLvl].numChosen)
+					{
+						int rnd = rand() % mSeqParams[idxLvl].numSeeds;
+						if (std::find(indices.begin(), indices.end(), rnd) == indices.end())
+							indices.push_back(rnd);
+					}
+				}
 
 				pG_seeds[idxLvl + 1].emplace_back(mCurve);
 				
@@ -1122,8 +1152,25 @@ void evalExp(int n)
 
 		for (u64 i = 0; i < numNextLvlSeed; i++)
 		{
-			std::iota(indices.begin(), indices.end(), 0);
-			std::random_shuffle(indices.begin(), indices.end()); //random permutation and get 1st K indices
+			//std::iota(indices.begin(), indices.end(), 0);
+			//std::random_shuffle(indices.begin(), indices.end()); //random permutation and get 1st K indices
+
+			if (numNextLvlSeed < (1 << 9))
+			{
+				std::iota(indices.begin(), indices.end(), 0);
+				std::random_shuffle(indices.begin(), indices.end()); //random permutation and get 1st K indices
+			}
+			else
+			{
+				indices.resize(0);
+				while (indices.size() < mSeqParams[idxLvl].numChosen)
+				{
+					int rnd = rand() % mSeqParams[idxLvl].numSeeds;
+					if (std::find(indices.begin(), indices.end(), rnd) == indices.end())
+						indices.push_back(rnd);
+				}
+			}
+
 
 			pG_seeds[idxLvl + 1].emplace_back(mCurve);
 
