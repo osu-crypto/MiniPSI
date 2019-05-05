@@ -696,13 +696,14 @@ void testExp(u64 curStepSize)
 }
 
 
-void evalExp()
+void evalExp(int n)
 {
 	PRNG prng(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
 	EllipticCurve mCurve(k283, OneBlock);
 	EccPoint mG(mCurve);
 	mG = mCurve.getGenerator();
-	u64 mMyInputSize = 1 << 16;
+	u64 mMyInputSize = n;
+	std::cout << "SetSize: " << mMyInputSize << "\n";
 
 	//////============clasic g^ri==========
 	{
@@ -720,6 +721,7 @@ void evalExp()
 		std::cout << gTimer << "\n";
 	}
 
+#if 0
 	//////============clasic g^ri==========
 	{
 		u64 mSetSeedsSize, mChoseSeedsSize, mBoundCoeffs;
@@ -738,68 +740,9 @@ void evalExp()
 		gTimer.setTimePoint("clasic small g^ri done");
 		std::cout << gTimer << "\n";
 	}
+#endif
 
 	//////============HSS g^ri==========
-	gTimer.reset();
-	gTimer.setTimePoint("HSS g^ri starts");
-
-	u64 mSetSeedsSize, mChoseSeedsSize, mBoundCoeffs;
-	getBestExpParams(mMyInputSize, mSetSeedsSize, mChoseSeedsSize, mBoundCoeffs);
-
-	std::vector<EccNumber> nSeeds;
-	std::vector<EccPoint> pG_seeds;
-	nSeeds.reserve(mSetSeedsSize);
-	pG_seeds.reserve(mSetSeedsSize);
-
-
-	//seeds
-	for (u64 i = 0; i < mSetSeedsSize; i++)
-	{
-		// get a random value from Z_p
-		nSeeds.emplace_back(mCurve);
-		nSeeds[i].randomize(prng);
-
-		pG_seeds.emplace_back(mCurve);
-		pG_seeds[i] = mG * nSeeds[i];  //g^ri
-	}
-	gTimer.setTimePoint("HSS g^seed done");
-
-
-	std::vector<u64> indices(mSetSeedsSize);
-
-	for (u64 i = 0; i < mMyInputSize; i++)
-	{
-		//std::iota(indices.begin(), indices.end(), 0);
-		//std::random_shuffle(indices.begin(), indices.end()); //random permutation and get 1st K indices
-		EccPoint g_sum(mCurve);
-
-		if (mBoundCoeffs == 2)
-		{
-			for (u64 j = 0; j < mChoseSeedsSize; j++)
-			{
-				if (rand() % mBoundCoeffs)
-					g_sum = g_sum + pG_seeds[indices[j]]; //g^sum
-			}
-		}
-		else
-		{
-			for (u64 j = 0; j < mChoseSeedsSize; j++)
-			{
-				int rnd = rand() % mBoundCoeffs;
-				EccNumber ci(mCurve, rnd);
-				auto gci = pG_seeds[indices[j]] * ci;
-				g_sum = g_sum + gci; //g^sum
-			}
-		}
-	}
-
-	gTimer.setTimePoint("HDD g^ri done");
-	std::cout << gTimer << "\n";
-
-
-
-	//////============HSS g^ri==========
-	{
 	gTimer.reset();
 	gTimer.setTimePoint("HSS g^ri starts");
 
@@ -846,10 +789,68 @@ void evalExp()
 			for (u64 j = 0; j < mChoseSeedsSize; j++)
 			{
 				int rnd = rand() % mBoundCoeffs;
+				EccNumber ci(mCurve, rnd);
+				g_sum = g_sum + (pG_seeds[indices[j]] * ci); //g^sum
+			}
+		}
+	}
+
+	gTimer.setTimePoint("HDD g^ri done");
+	std::cout << gTimer << "\n";
+
+
+
+	//////============HSS g^ri===no shuttl;e=======
+#if 0
+	{
+	gTimer.reset();
+	gTimer.setTimePoint("HSS g^ri starts");
+
+	u64 mSetSeedsSize, mChoseSeedsSize, mBoundCoeffs;
+	getBestExpParams(mMyInputSize, mSetSeedsSize, mChoseSeedsSize, mBoundCoeffs);
+
+	std::vector<EccNumber> nSeeds;
+	std::vector<EccPoint> pG_seeds;
+	nSeeds.reserve(mSetSeedsSize);
+	pG_seeds.reserve(mSetSeedsSize);
+
+
+	//seeds
+	for (u64 i = 0; i < mSetSeedsSize; i++)
+	{
+		// get a random value from Z_p
+		nSeeds.emplace_back(mCurve);
+		nSeeds[i].randomize(prng);
+
+		pG_seeds.emplace_back(mCurve);
+		pG_seeds[i] = mG * nSeeds[i];  //g^ri
+	}
+	gTimer.setTimePoint("HSS g^seed done");
+
+
+	std::vector<u64> indices(mSetSeedsSize);
+
+	for (u64 i = 0; i < mMyInputSize; i++)
+	{
+		//std::iota(indices.begin(), indices.end(), 0);
+		//std::random_shuffle(indices.begin(), indices.end()); //random permutation and get 1st K indices
+		EccPoint g_sum(mCurve);
+
+		if (mBoundCoeffs == 2)
+		{
+			for (u64 j = 0; j < mChoseSeedsSize; j++)
+			{
+				if (rand() % mBoundCoeffs)
+					g_sum = g_sum + pG_seeds[indices[j]]; //g^sum
+			}
+		}
+		else
+		{
+			for (u64 j = 0; j < mChoseSeedsSize; j++)
+			{
+				int rnd = rand() % mBoundCoeffs;
 				EccNumber ci(mCurve);
-				ci=rnd;
-				auto gci = pG_seeds[indices[j]] * ci;
-				g_sum = g_sum + gci; //g^sum
+				g_sum = g_sum + (pG_seeds[indices[j]] * ci); //g^sum
 			}
 		}
 	}
@@ -857,12 +858,16 @@ void evalExp()
 	gTimer.setTimePoint("HDD g^ri done");
 	std::cout << gTimer << "\n";
 }
-
+#endif
 }
 
 int main(int argc, char** argv)
 {
-	evalExp();
+	u64 n = 1 << 10;;
+	if (argv[1][0] == '-' && argv[1][1] == 'n') {
+		n= 1 << atoi(argv[2]);
+	}
+	evalExp(n);
 	return 0;
 	//u64 curStepSize = 1 << 12;
 	//testExp(curStepSize);

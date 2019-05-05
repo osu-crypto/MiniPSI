@@ -107,34 +107,34 @@ namespace osuCrypto
 
 		if (setSize <= (1 << 8))
 		{
-			numSeeds = 1<<3;
-			numChosen = 8;
-			boundCoeff = 1 << 14;
+			numSeeds = 1<<5;
+			numChosen = 19;
+			boundCoeff = 1 << 4;
 
 		}
 		else if (setSize <= (1 << 10))
 		{
-			numSeeds = 1 << 4;
-			numChosen = 11;
-			boundCoeff = 1 << 9;
+			numSeeds = 1 << 7;
+			numChosen = 24;
+			boundCoeff = 1 << 1;
 		}
 		else if (setSize <= (1 << 12))
 		{
-			numSeeds = 1 << 5;
-			numChosen = 14;
-			boundCoeff = 1 << 6;
+			numSeeds = 1 << 7;
+			numChosen = 25;
+			boundCoeff = 1 << 1;
 		}
 		else if (setSize <= (1 << 14))
 		{
-			numSeeds = 1 << 6;
-			numChosen = 11;
-			boundCoeff = 1 << 7;
+			numSeeds = 1 << 8;
+			numChosen = 20;
+			boundCoeff = 1 << 1;
 		}
 		else if (setSize <= (1 << 16))
 		{
-			numSeeds = 1 << 8;
-			numChosen = 13;
-			boundCoeff = 1 << 4;
+			numSeeds = 1 << 9;
+			numChosen = 17;
+			boundCoeff = 1 << 1;
 		}
 		else if (setSize <= (1 << 18))
 		{
@@ -144,7 +144,7 @@ namespace osuCrypto
 		}
 		else if (setSize <= (1 << 20))
 		{
-			numSeeds = 1 << 12;
+			numSeeds = 1 << 13;
 			numChosen = 11;
 			boundCoeff = 1 << 1;
 		}
