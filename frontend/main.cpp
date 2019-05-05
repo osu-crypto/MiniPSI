@@ -958,17 +958,18 @@ void evalExp(int n)
 		}
 
 		
-		g_r.emplace_back(mCurve);
 
 		if (mBoundCoeffs == 2)
 		{
-			for (u64 j = 0; j < mChoseSeedsSize; j++)
-			{
+			g_r.emplace_back(pG_seeds[indices[0]]);
+			
+			for (u64 j = 1; j < mChoseSeedsSize; j++)
 				g_r[i] = g_r[i] + pG_seeds[indices[j]]; //g^sum //h=2   ci=1
-			}
+
 		}
 		else
 		{
+			g_r.emplace_back(mCurve);
 			for (u64 j = 0; j < mChoseSeedsSize; j++)
 			{
 				int rnd = 1+rand() % (mBoundCoeffs-1);
@@ -981,7 +982,7 @@ void evalExp(int n)
 	gTimer.setTimePoint("HDD g^ri done");
 	std::cout << gTimer << "\n";
 
-
+#ifdef DOUBLE-CHECK
 	int cnt = 0;
 	std::vector<string> checkUnique;
 
@@ -1001,6 +1002,8 @@ void evalExp(int n)
 		}
 	}
 	std::cout << "cnt= " << cnt << "\t checkUnique.size()= " << checkUnique.size() << "\n\n";
+
+#endif // DOUBLE-CHECK
 
 
 	}
@@ -1049,8 +1052,6 @@ void evalExp(int n)
 
 			for (u64 i = 0; i < numNextLvlSeed; i++)
 			{
-				//std::iota(indices.begin(), indices.end(), 0);
-				//std::random_shuffle(indices.begin(), indices.end()); //random permutation and get 1st K indices
 
 				if (numNextLvlSeed < (1 << 9))
 				{
@@ -1068,9 +1069,9 @@ void evalExp(int n)
 					}
 				}
 
-				pG_seeds[idxLvl + 1].emplace_back(mCurve);
-				
-				for (u64 j = 0; j < mSeqParams[idxLvl].numChosen; j++)
+			    pG_seeds[idxLvl + 1].emplace_back(pG_seeds[idxLvl][indices[0]]);
+
+				for (u64 j = 1; j < mSeqParams[idxLvl].numChosen; j++)
 					{
 						pG_seeds[idxLvl + 1][i] = pG_seeds[idxLvl + 1][i] + pG_seeds[idxLvl][indices[j]]; //\sum g^ri
 					}
@@ -1080,6 +1081,8 @@ void evalExp(int n)
 
 		gTimer.setTimePoint("Recursive h=2 HDD g^ri done");
 		std::cout << gTimer << "\n";
+
+#ifdef DOUBLE-CHECK
 		int lvlLast = mSeqParams.size();
 		int cnt = 0;
 		std::vector<string> checkUnique;
@@ -1106,7 +1109,8 @@ void evalExp(int n)
 		std::cout << "checkUnique. : " << checkUnique[i] << "\n";
 
 		}*/
-	}
+#endif	
+}
 
 	//////============recursive h>2 HSS g^ri==========
 	{
@@ -1183,14 +1187,12 @@ void evalExp(int n)
 				for (u64 j = 0; j < mSeqParams[idxLvl].numChosen; j++)
 				{
 					int ci = 1+rand() % (mSeqParams[idxLvl].boundCoeff-1);
-					EccPoint gG_temp(mCurve);
 
 					for (u64 idxRep = 0; idxRep < ci; idxRep++) //repeat ci time
 					{
-						gG_temp = gG_temp + pG_seeds[idxLvl][indices[j]]; // (g^ri)^ci
+						pG_seeds[idxLvl + 1][i] = pG_seeds[idxLvl + 1][i] + pG_seeds[idxLvl][indices[j]]; // (g^ri)^ci
 					}
 
-					pG_seeds[idxLvl + 1][i] = pG_seeds[idxLvl + 1][i] + gG_temp;
 				}
 			else
 			{
@@ -1209,6 +1211,9 @@ void evalExp(int n)
 
 	gTimer.setTimePoint("Recursive h>2 HDD g^ri done");
 	std::cout << gTimer << "\n";
+
+//#ifdef DOUBLE-CHECK
+#if 1
 	int lvlLast = mSeqParams.size();
 
 	std::cout << "pG_seeds[lvlLast].size()=" << pG_seeds[lvlLast].size() << "\n";
@@ -1238,7 +1243,8 @@ void evalExp(int n)
 	std::cout << "checkUnique. : " << checkUnique[i] << "\n";
 
 	}*/
-	}
+#endif	
+}
 
 }
 
