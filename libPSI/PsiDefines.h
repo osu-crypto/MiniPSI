@@ -162,6 +162,180 @@ namespace osuCrypto
 		}
 	}
 
+	struct RecExpParams
+	{
+		u32 numSeeds;
+		u32 numChosen;
+		u32 boundCoeff;
+		u64 numNewSeeds;
+	};
+
+	inline void getBestH1RecurrExpParams(u64 setSize, std::vector<RecExpParams>& mSeq)
+	{
+		if (setSize <= (1 << 8))
+		{
+			mSeq.resize(1);
+			mSeq[0] = { 1 << 7, 23, 1 << 1,setSize }; 
+		}
+		else if (setSize <= (1 << 10))
+		{
+			mSeq.resize(2);
+			mSeq[0] = { 1 << 7, 23, 1 << 1,setSize };
+			mSeq[1] = { 1 << 8, 19, 1 << 1,setSize };
+		}
+		else if (setSize <= (1 << 12))
+		{
+			mSeq.resize(2);
+			mSeq[0] = { 1 << 7, 24, 1 << 1,setSize };
+			mSeq[1] = { 1 << 9, 16, 1 << 1,setSize };
+		}
+		else if (setSize <= (1 << 14))
+		{
+			mSeq.resize(3);
+			mSeq[0] = { 1 << 7, 25, 1 << 1,setSize };
+			mSeq[1] = { 1 << 8, 20, 1 << 1,setSize };
+			mSeq[2] = { 1 << 11, 13, 1 << 1,setSize };
+		}
+		else if (setSize <= (1 << 16))
+		{
+			mSeq.resize(3);
+			mSeq[0] = { 1 << 7, 26, 1 << 1,setSize };
+			mSeq[1] = { 1 << 10, 15, 1 << 1,setSize };
+			mSeq[2] = { 1 << 13, 11, 1 << 1,setSize };
+		}
+		else if (setSize <= (1 << 18))
+		{
+			mSeq.resize(4);
+			mSeq[0] = { 1 << 7, 25, 1 << 1,setSize };
+			mSeq[1] = { 1 << 9, 17, 1 << 1,setSize };
+			mSeq[2] = { 1 << 12, 12, 1 << 1,setSize };
+			mSeq[3] = { 1 << 15, 10, 1 << 1,setSize };
+		}
+		else if (setSize <= (1 << 20))
+		{
+			mSeq.resize(4);
+			mSeq[0] = { 1 << 7, 26, 1 << 1,setSize };
+			mSeq[1] = { 1 << 10, 15, 1 << 1,setSize };
+			mSeq[2] = { 1 << 13, 11, 1 << 1,setSize };
+			mSeq[3] = { 1 << 16, 9, 1 << 1,setSize };
+		}
+		else if (setSize <= (1 << 22))
+		{
+			mSeq.resize(5);
+			mSeq[0] = { 1 << 7, 26, 1 << 1,setSize };
+			mSeq[1] = { 1 << 10, 15, 1 << 1,setSize };
+			mSeq[2] = { 1 << 13, 11, 1 << 1,setSize };
+			mSeq[3] = { 1 << 16, 9, 1 << 1,setSize };
+			mSeq[4] = { 1 << 19, 8, 1 << 1,setSize };
+		}
+		else if (setSize <= (1 << 24))
+		{
+			mSeq.resize(5);
+			mSeq[0] = { 1 << 7, 26, 1 << 1,setSize };
+			mSeq[1] = { 1 << 10, 15, 1 << 1,setSize };
+			mSeq[2] = { 1 << 13, 11, 1 << 1,setSize };
+			mSeq[3] = { 1 << 16, 9, 1 << 1,setSize };
+			mSeq[4] = { 1 << 19, 8, 1 << 1,setSize };
+		}
+	}
+
+
+	inline void getBestRecurrExpParams(u64 setSize, std::vector<RecExpParams>& mSeq)
+	{
+		if (setSize <= (1 << 8))
+		{
+			mSeq.resize(3);
+			//mSeq[0] = { 1 << 1, 1, 1 << 104,setSize }; //numSeeds,numChosen,boundCoeff
+			mSeq[0] = { 1 << 1, 1, 1 << 10,setSize }; //implement 1<<128, instead of 1 << 104
+			mSeq[1] = { 1 << 6, 25, 1 << 2,setSize };
+			mSeq[2] = { 1 << 7, 24, 1 << 1,setSize };
+		}
+		else if (setSize <= (1 << 10))
+		{
+			mSeq.resize(4);
+			//mSeq[0] = { 1 << 1, 1, 1 << 104,setSize }; //numSeeds,numChosen,boundCoeff
+			mSeq[0] = { 1 << 1, 1, 1 << 10,setSize }; //numSeeds,numChosen,boundCoeff
+			mSeq[1] = { 1 << 6, 25, 1 << 2,setSize };
+			mSeq[2] = { 1 << 7, 24, 1 << 1,setSize };
+			mSeq[3] = { 1 << 8, 19, 1 << 1,setSize };
+		}
+		else if (setSize <= (1 << 12))
+		{
+			mSeq.resize(4);
+			//mSeq[0] = { 1 << 1, 1, 1 << 106,setSize }; //numSeeds,numChosen,boundCoeff
+			mSeq[0] = { 1 << 1, 1, 1 << 10,setSize }; //numSeeds,numChosen,boundCoeff
+			mSeq[1] = { 1 << 6, 25, 1 << 2,setSize };
+			mSeq[2] = { 1 << 7, 25, 1 << 1,setSize };
+			mSeq[3] = { 1 << 9, 17, 1 << 1,setSize };
+		}
+		else if (setSize <= (1 << 14))
+		{
+			mSeq.resize(5);
+			//mSeq[0] = { 1 << 1, 1, 1 << 106,setSize }; //numSeeds,numChosen,boundCoeff
+			mSeq[0] = { 1 << 1, 1, 1 << 10,setSize }; //numSeeds,numChosen,boundCoeff
+			mSeq[1] = { 1 << 6, 25, 1 << 2,setSize };
+			mSeq[2] = { 1 << 7, 25, 1 << 1,setSize };
+			mSeq[3] = { 1 << 8, 20, 1 << 1,setSize };
+			mSeq[4] = { 1 << 11, 13, 1 << 1,setSize };
+		}
+		else if (setSize <= (1 << 16))
+		{
+			mSeq.resize(5);
+			//mSeq[0] = { 1 << 1, 1, 1 << 106,setSize }; //numSeeds,numChosen,boundCoeff
+			mSeq[0] = { 1 << 1, 1, 1 << 10,setSize }; //numSeeds,numChosen,boundCoeff
+			mSeq[1] = { 1 << 6, 25, 1 << 2,setSize };
+			mSeq[2] = { 1 << 7, 26, 1 << 1,setSize };
+			mSeq[3] = { 1 << 10, 15, 1 << 1,setSize };
+			mSeq[4] = { 1 << 13, 11, 1 << 1,setSize };
+		}
+		else if (setSize <= (1 << 18))
+		{
+			mSeq.resize(6);
+		//	mSeq[0] = { 1 << 1, 1, 1 << 106,setSize }; //numSeeds,numChosen,boundCoeff
+			mSeq[0] = { 1 << 1, 1, 1 << 10,setSize }; //numSeeds,numChosen,boundCoeff
+			mSeq[1] = { 1 << 6, 25, 1 << 2,setSize };
+			mSeq[2] = { 1 << 7, 25, 1 << 1,setSize };
+			mSeq[3] = { 1 << 9, 17, 1 << 1,setSize };
+			mSeq[4] = { 1 << 12, 12, 1 << 1,setSize };
+			mSeq[5] = { 1 << 15, 10, 1 << 1,setSize };
+		}
+		else if (setSize <= (1 << 20))
+		{
+			mSeq.resize(6);
+			//mSeq[0] = { 1 << 1, 1, 1 << 106,setSize }; //numSeeds,numChosen,boundCoeff
+			mSeq[0] = { 1 << 1, 1, 1 << 10,setSize }; //numSeeds,numChosen,boundCoeff
+			mSeq[1] = { 1 << 6, 25, 1 << 2,setSize };
+			mSeq[2] = { 1 << 7, 26, 1 << 1,setSize };
+			mSeq[3] = { 1 << 10, 15, 1 << 1,setSize };
+			mSeq[4] = { 1 << 13, 11, 1 << 1,setSize };
+			mSeq[5] = { 1 << 16, 9, 1 << 1,setSize };
+		}
+		else if (setSize <= (1 << 22))
+		{
+			mSeq.resize(7);
+			//mSeq[0] = { 1 << 1, 1, 1 << 106,setSize }; //numSeeds,numChosen,boundCoeff
+			mSeq[0] = { 1 << 1, 1, 1 << 10,setSize }; //numSeeds,numChosen,boundCoeff
+			mSeq[1] = { 1 << 6, 25, 1 << 2,setSize };
+			mSeq[2] = { 1 << 7, 26, 1 << 1,setSize };
+			mSeq[3] = { 1 << 10, 15, 1 << 1,setSize };
+			mSeq[4] = { 1 << 13, 11, 1 << 1,setSize };
+			mSeq[5] = { 1 << 16, 9, 1 << 1,setSize };
+			mSeq[6] = { 1 << 19, 8, 1 << 1,setSize };
+		}
+		else if (setSize <= (1 << 24))
+		{
+			mSeq.resize(7);
+			//mSeq[0] = { 1 << 1, 1, 1 << 106,setSize }; //numSeeds,numChosen,boundCoeff
+			mSeq[0] = { 1 << 1, 1, 1 << 10,setSize }; //numSeeds,numChosen,boundCoeff
+			mSeq[1] = { 1 << 6, 25, 1 << 2,setSize };
+			mSeq[2] = { 1 << 7, 26, 1 << 1,setSize };
+			mSeq[3] = { 1 << 10, 15, 1 << 1,setSize };
+			mSeq[4] = { 1 << 13, 11, 1 << 1,setSize };
+			mSeq[5] = { 1 << 16, 9, 1 << 1,setSize };
+			mSeq[6] = { 1 << 19, 8, 1 << 1,setSize };
+		}
+	}
+
 
 	inline const char* tostr(int x)
 	{

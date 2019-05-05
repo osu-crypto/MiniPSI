@@ -704,7 +704,7 @@ namespace tests_libOTe
 		EccPoint mG(mCurve);
 		mG = mCurve.getGenerator();
 		u64 mMyInputSize = 1 << 10;
-
+#if 0
 		//////============clasic g^ri==========
 		{
 			gTimer.reset();
@@ -777,63 +777,134 @@ namespace tests_libOTe
 		gTimer.setTimePoint("HDD g^ri done");
 		std::cout << gTimer << "\n";
 		}
-
+#endif
 		//////============recursive HSS g^ri==========
 		{
 			gTimer.reset();
 		gTimer.setTimePoint("Recursive HSS g^ri starts");
 
-		u64 mSetSeedsSize, mChoseSeedsSize, mBoundCoeffs;
-		getBestExpParams(mMyInputSize, mSetSeedsSize, mChoseSeedsSize, mBoundCoeffs);
+		std::vector<RecExpParams> mSeqParams;
+		getBestRecurrExpParams(mMyInputSize, mSeqParams);
 
-		std::vector<EccNumber> nSeeds;
-		std::vector<EccPoint> pG_seeds;
-		nSeeds.reserve(mSetSeedsSize);
-		pG_seeds.reserve(mSetSeedsSize);
+		std::vector<std::vector<EccNumber>> nSeeds(mSeqParams.size()+1); //level
+		std::vector<std::vector<EccPoint>> pG_seeds(mSeqParams.size()+1);
+		nSeeds[0].reserve(mSeqParams[0].numSeeds);
+		pG_seeds[0].reserve(mSeqParams[0].numSeeds);
 
 
 		//seeds
-		for (u64 i = 0; i < mSetSeedsSize; i++)
+		for (u64 i = 0; i < mSeqParams[0].numSeeds; i++)
 		{
 			// get a random value from Z_p
-			nSeeds.emplace_back(mCurve);
-			nSeeds[i].randomize(prng);
+			nSeeds[0].emplace_back(mCurve);
+			nSeeds[0][i].randomize(prng);
 
-			pG_seeds.emplace_back(mCurve);
-			pG_seeds[i] = mG * nSeeds[i];  //g^ri
+			pG_seeds[0].emplace_back(mCurve);
+			pG_seeds[0][i] = mG * nSeeds[0][i];  //g^ri
 		}
 		gTimer.setTimePoint("HSS g^seed done");
 
+		
 
-		std::vector<u64> indices(mSetSeedsSize);
-
-		for (u64 i = 0; i < mMyInputSize; i++)
+		for (int idxLvl = 0; idxLvl < mSeqParams.size(); idxLvl++)
 		{
-			std::iota(indices.begin(), indices.end(), 0);
-			std::random_shuffle(indices.begin(), indices.end()); //random permutation and get 1st K indices
-			EccPoint g_sum(mCurve);
+			std::vector<u64> indices(mSeqParams[idxLvl].numSeeds);
 
-			if (mBoundCoeffs == 2)
-			{
-				for (u64 j = 0; j < mChoseSeedsSize; j++)
-				{
-					if (rand() % mBoundCoeffs)
-						g_sum = g_sum + pG_seeds[indices[j]]; //g^sum
-				}
-			}
+			bool isLast = (idxLvl + 1 == mSeqParams.size());
+			int numNextLvlSeed;
+
+			if (isLast)
+				numNextLvlSeed = mSeqParams[idxLvl].numNewSeeds;
 			else
+				numNextLvlSeed = mSeqParams[idxLvl + 1].numSeeds;
+
+			nSeeds[idxLvl+ 1].reserve(numNextLvlSeed);
+			pG_seeds[idxLvl + 1].reserve(numNextLvlSeed);
+
+			for (u64 i = 0; i < numNextLvlSeed; i++)
 			{
-				for (u64 j = 0; j < mChoseSeedsSize; j++)
+				std::iota(indices.begin(), indices.end(), 0);
+				std::random_shuffle(indices.begin(), indices.end()); //random permutation and get 1st K indices
+
+				nSeeds[idxLvl + 1].emplace_back(mCurve);
+				pG_seeds[idxLvl + 1].emplace_back(mCurve);
+
+				if (mSeqParams[idxLvl].boundCoeff== 2)
+					for (u64 j = 0; j < mSeqParams[idxLvl].numChosen; j++)
+					{
+						if (rand() % mSeqParams[idxLvl].boundCoeff)
+						{
+							nSeeds[idxLvl + 1][i] = nSeeds[idxLvl + 1][i] + nSeeds[idxLvl][indices[j]]; // \sum ri
+							pG_seeds[idxLvl + 1][i] = pG_seeds[idxLvl + 1][i] + pG_seeds[idxLvl][indices[j]]; //\sum g^ri
+						}
+
+					}
+				else if (mSeqParams[idxLvl].boundCoeff == (1 << 2))
+					for (u64 j = 0; j < mSeqParams[idxLvl].numChosen; j++)
+					{
+						int ci = rand() % mSeqParams[idxLvl].boundCoeff;
+						EccNumber nTemp(mCurve);
+						EccPoint gG_temp(mCurve);
+
+						for (u64 idxRep = 0; idxRep < ci; idxRep++) //repeat ci time
+						{
+							nTemp = nTemp+nSeeds[idxLvl][indices[j]]; //  ri*ci
+							gG_temp = gG_temp+ pG_seeds[idxLvl][indices[j]]; // (g^ri)^ci
+						}
+
+						nSeeds[idxLvl + 1][i] = nSeeds[idxLvl + 1][i] + nTemp;
+						pG_seeds[idxLvl + 1][i] = pG_seeds[idxLvl + 1][i] + gG_temp;
+					}
+				else
 				{
-					int rnd = rand() % mBoundCoeffs;
-					EccNumber ci(mCurve, rnd);
-					g_sum = g_sum + pG_seeds[indices[j]] * ci; //g^sum
+					for (u64 j = 0; j < mSeqParams[idxLvl].numChosen; j++)
+					{
+						//need <2^104 but implemnt 2^128
+						int rnd = rand() % mSeqParams[idxLvl].boundCoeff;
+						EccNumber ci(mCurve, prng);
+						nSeeds[idxLvl + 1][i] = nSeeds[idxLvl + 1][i] + nSeeds[idxLvl][indices[j]]*ci; // \sum ri
+						pG_seeds[idxLvl + 1][i] = pG_seeds[idxLvl + 1][i] + pG_seeds[idxLvl][indices[j]]*ci; //\sum g^ri
+					}
 				}
+
 			}
 		}
 
-		gTimer.setTimePoint("HDD g^ri done");
-		std::cout << gTimer << "\n";
+		
+			gTimer.setTimePoint("HDD g^ri done");
+			std::cout << gTimer << "\n";
+			int lvlLast = mSeqParams.size();
+
+			std::cout << "pG_seeds[lvlLast].size()=" << pG_seeds[lvlLast].size() << "\n";
+			
+			int cnt = 0; 
+			std::vector<string> checkUnique;
+		
+			
+			for (u64 i = 0; i < mMyInputSize; i++)
+			{
+				u8* temp = new u8[pG_seeds[lvlLast][i].sizeBytes()];
+				pG_seeds[lvlLast][i].toBytes(temp);
+
+				string str_sum = arrU8toString(temp, pG_seeds[lvlLast][i].sizeBytes());
+
+				if (std::find(checkUnique.begin(), checkUnique.end(), str_sum) == checkUnique.end())
+					checkUnique.push_back(str_sum);
+				else
+				{
+					std::cout << "dupl. : " << str_sum << "\n";
+					cnt++;
+				}
+
+			}
+			std::cout << "cnt= " << cnt << "\t checkUnique.size()= " << checkUnique.size() << "\n";
+
+		/*	for (int i = 0; i < checkUnique.size(); i++)
+			{
+				std::cout << "checkUnique. : " << checkUnique[i] << "\n";
+
+			}*/
+
 		}
 
 
