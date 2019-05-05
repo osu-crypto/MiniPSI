@@ -44,7 +44,8 @@ namespace osuCrypto
 
         const bool isMultiThreaded = chls.size() > 1;
 
-
+		myStepSize = mN / numStep;
+		theirStepSize = mTheirInputSize / numStep;
 		
 		
 		Timer timer;
@@ -59,6 +60,11 @@ namespace osuCrypto
 			u64 subsetInputSize = inputEndIdx - inputStartIdx;
 
 
+			u64 theirInputStartIdx = mTheirInputSize * t / chls.size();
+			u64 theirInputEndIdx = mTheirInputSize * (t + 1) / chls.size();
+			u64 theirSubsetInputSize = theirInputEndIdx - theirInputStartIdx;
+
+
 			auto& chl = chls[t];
 			auto& prng = thrdPrng[t];
 			u8 hashOut[SHA1::HashSize];
@@ -70,9 +76,9 @@ namespace osuCrypto
 			EccPoint yb(curve), yba(curve), point(curve), xa(curve), xab(curve);
 			b.randomize(RcSeed);
 			
-			 for (u64 i = inputStartIdx; i < inputEndIdx; i += stepSize)
+			 for (u64 i = inputStartIdx; i < inputEndIdx; i += myStepSize)
 			 {
-				 auto curStepSize = std::min(stepSize, inputEndIdx - i);
+				 auto curStepSize = std::min(myStepSize, inputEndIdx - i);
 
 				 std::vector<u8> sendBuff(yb.sizeBytes() * curStepSize);
 				 auto sendIter = sendBuff.data();
@@ -105,16 +111,15 @@ namespace osuCrypto
 
 				 chl.asyncSend(std::move(sendBuff));
 
-			// }
+			 }
 
 			/* auto ybTime = timer.setTimePoint("yb");
 			 auto ybTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(ybTime - start).count();*/
-			// std::cout << "compute H(y)^b:  " << ybTimeMs << "\n";
 
 
-			// for (u64 i = inputStartIdx; i < inputEndIdx; i += stepSize)
-			 //{
-			//	 auto curStepSize = std::min(stepSize, inputEndIdx - i);
+			 for (u64 i = theirInputStartIdx; i < theirInputEndIdx; i += theirStepSize)
+			 {
+				 auto curStepSize = std::min(theirStepSize, theirInputEndIdx - i);
 
 
 			 //recv H(x)^a
@@ -514,7 +519,7 @@ namespace osuCrypto
 
 	}
 
-	void EcdhPsiReceiver::sendInput(u64 n, u64 secParam, block seed,
+	void EcdhPsiReceiver::sendInput(u64 n, u64 theirInputSize, u64 secParam, block seed,
 		span<block> inputs,
 		span<Channel> chls, int curveType)
 	{
@@ -528,6 +533,7 @@ namespace osuCrypto
 		gTimer.reset();
 
 		mN = n;
+		mTheirInputSize = theirInputSize;
 		mSecParam = secParam;
 		mPrng.SetSeed(seed);
 		mIntersection.clear();

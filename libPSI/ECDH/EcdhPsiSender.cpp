@@ -38,11 +38,18 @@ namespace osuCrypto
 		std::vector<std::vector<u8>> sendBuff2(chls.size());
 
 
+		myStepSize = mN / numStep;
+		theirStepSize = mTheirInputSize / numStep;
+
         auto routine = [&](u64 t)
         {
             u64 inputStartIdx = inputs.size() * t / chls.size();
             u64 inputEndIdx = inputs.size() * (t + 1) / chls.size();
             u64 subsetInputSize = inputEndIdx - inputStartIdx;
+
+			u64 theirInputStartIdx = mTheirInputSize * t / chls.size();
+			u64 theirInputEndIdx = mTheirInputSize * (t + 1) / chls.size();
+			u64 theirSubsetInputSize = theirInputEndIdx - theirInputStartIdx;
 
 			
             auto& chl = chls[t];
@@ -54,12 +61,12 @@ namespace osuCrypto
 			EccPoint xa(curve), point(curve), yb(curve), yba(curve);
 			a.randomize(RsSeed);
 
-			sendBuff2[t].resize(maskSizeByte * subsetInputSize);
+			sendBuff2[t].resize(maskSizeByte * theirSubsetInputSize);
 			auto sendIter2 = sendBuff2[t].data();
 
-			for (u64 i = inputStartIdx; i < inputEndIdx; i += stepSize)
+			for (u64 i = inputStartIdx; i < inputEndIdx; i += myStepSize)
 			{
-				auto curStepSize = std::min(stepSize, inputEndIdx - i);
+				auto curStepSize = std::min(myStepSize, inputEndIdx - i);
 
 				std::vector<u8> sendBuff(xa.sizeBytes() * curStepSize);
 				auto sendIter = sendBuff.data();
@@ -84,14 +91,13 @@ namespace osuCrypto
 					sendIter += xa.sizeBytes();
 				}
 				chl.asyncSend(std::move(sendBuff));	//send H(x)^a
-			//}
+			}
 
 
-			//for (u64 i = inputStartIdx; i < inputEndIdx; i += stepSize)
-			//{
-				//auto curStepSize = std::min(stepSize, inputEndIdx - i);
+			for (u64 i = theirInputStartIdx; i < theirInputEndIdx; i += theirStepSize)
+			{
+				auto curStepSize = std::min(theirStepSize, theirInputEndIdx - i);
 
-			
 
 				std::vector<u8> recvBuff(yb.sizeBytes() * curStepSize);
 				std::vector<u8> temp(yba.sizeBytes());
@@ -319,7 +325,7 @@ namespace osuCrypto
 
 	}
 
-	void EcdhPsiSender::sendInput(u64 n, u64 secParam, block seed,span<block> inputs, span<Channel> chls, int curveType)
+	void EcdhPsiSender::sendInput(u64 n, u64 theirInputSize, u64 secParam, block seed,span<block> inputs, span<Channel> chls, int curveType)
 	{
 		for (u64 i = 0; i < chls.size(); ++i)
 		{
@@ -330,6 +336,7 @@ namespace osuCrypto
 		}
 		gTimer.reset();
 
+		mTheirInputSize = theirInputSize;
 		mN = n;
 		mSecParam = secParam;
 		mPrng.SetSeed(seed);

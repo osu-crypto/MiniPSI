@@ -152,7 +152,7 @@ void EchdSender(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numThre
 
 		
 		EcdhPsiSender sender;
-		sender.sendInput(inputs.size(), 40, prng0.get<block>(),inputs, sendChls, 0);
+		sender.sendInput(inputs.size(), theirSetSize, 40, prng0.get<block>(),inputs, sendChls, 0);
 		gTimer.setTimePoint("r psi done");
 		std::cout << gTimer << std::endl;
 
@@ -194,7 +194,7 @@ void EchdReceiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 				inputs[i] = prng1.get<block>();
 
 			EcdhPsiReceiver recv;
-			recv.sendInput(inputs.size(), 40, prng1.get<block>(),inputs, recvChls, 0);
+			recv.sendInput(inputs.size(), theirSetSize, 40, prng1.get<block>(),inputs, recvChls, 0);
 			gTimer.setTimePoint("r psi done");
 
 			std::cout << gTimer << std::endl;
@@ -693,172 +693,6 @@ void testExp(u64 curStepSize)
 
 	std::cout << gTimer << std::endl;
 
-}
-
-
-void evalExp2(int n)
-{
-	PRNG prng(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
-	EllipticCurve mCurve(k283, OneBlock);
-	EccPoint mG(mCurve);
-	mG = mCurve.getGenerator();
-	u64 mMyInputSize = n;
-	std::cout << "SetSize: " << mMyInputSize << "\n";
-
-	//////============clasic g^ri==========
-	{
-		gTimer.reset();
-		gTimer.setTimePoint("clasic g^ri starts");
-
-		for (u64 i = 0; i < mMyInputSize; i++)
-		{
-			EccPoint g_r(mCurve);
-			EccNumber r(mCurve);
-			r.randomize(prng);
-			g_r = mG*r;
-		}
-		gTimer.setTimePoint("clasic g^ri done");
-		std::cout << gTimer << "\n";
-	}
-
-#if 0
-	//////============clasic g^ri==========
-	{
-		u64 mSetSeedsSize, mChoseSeedsSize, mBoundCoeffs;
-		getBestExpParams(mMyInputSize, mSetSeedsSize, mChoseSeedsSize, mBoundCoeffs);
-
-		gTimer.reset();
-		gTimer.setTimePoint("clasic small g^ri starts");
-
-		for (u64 i = 0; i < mMyInputSize; i++)
-		{
-			EccPoint g_r(mCurve);
-			int rnd = rand() % mBoundCoeffs;
-			EccNumber ci(mCurve, rnd);
-			g_r = mG*ci;
-		}
-		gTimer.setTimePoint("clasic small g^ri done");
-		std::cout << gTimer << "\n";
-	}
-#endif
-
-	//////============HSS g^ri==========
-	gTimer.reset();
-	gTimer.setTimePoint("HSS g^ri starts");
-
-	u64 mSetSeedsSize, mChoseSeedsSize, mBoundCoeffs;
-	getBestExpParams(mMyInputSize, mSetSeedsSize, mChoseSeedsSize, mBoundCoeffs);
-
-	std::vector<EccNumber> nSeeds;
-	std::vector<EccPoint> pG_seeds;
-	nSeeds.reserve(mSetSeedsSize);
-	pG_seeds.reserve(mSetSeedsSize);
-
-
-	//seeds
-	for (u64 i = 0; i < mSetSeedsSize; i++)
-	{
-		// get a random value from Z_p
-		nSeeds.emplace_back(mCurve);
-		nSeeds[i].randomize(prng);
-
-		pG_seeds.emplace_back(mCurve);
-		pG_seeds[i] = mG * nSeeds[i];  //g^ri
-	}
-	gTimer.setTimePoint("HSS g^seed done");
-
-
-	std::vector<u64> indices(mSetSeedsSize);
-
-	for (u64 i = 0; i < mMyInputSize; i++)
-	{
-		std::iota(indices.begin(), indices.end(), 0);
-		std::random_shuffle(indices.begin(), indices.end()); //random permutation and get 1st K indices
-		EccPoint g_sum(mCurve);
-
-		if (mBoundCoeffs == 2)
-		{
-			for (u64 j = 0; j < mChoseSeedsSize; j++)
-			{
-				if (rand() % mBoundCoeffs)
-					g_sum = g_sum + pG_seeds[indices[j]]; //g^sum
-			}
-		}
-		else
-		{
-			for (u64 j = 0; j < mChoseSeedsSize; j++)
-			{
-				int rnd = rand() % mBoundCoeffs;
-				EccNumber ci(mCurve, rnd);
-				g_sum = g_sum + (pG_seeds[indices[j]] * ci); //g^sum
-			}
-		}
-	}
-
-	gTimer.setTimePoint("HDD g^ri done");
-	std::cout << gTimer << "\n";
-
-
-
-	//////============HSS g^ri===no shuttl;e=======
-#if 0
-	{
-	gTimer.reset();
-	gTimer.setTimePoint("HSS g^ri starts");
-
-	u64 mSetSeedsSize, mChoseSeedsSize, mBoundCoeffs;
-	getBestExpParams(mMyInputSize, mSetSeedsSize, mChoseSeedsSize, mBoundCoeffs);
-
-	std::vector<EccNumber> nSeeds;
-	std::vector<EccPoint> pG_seeds;
-	nSeeds.reserve(mSetSeedsSize);
-	pG_seeds.reserve(mSetSeedsSize);
-
-
-	//seeds
-	for (u64 i = 0; i < mSetSeedsSize; i++)
-	{
-		// get a random value from Z_p
-		nSeeds.emplace_back(mCurve);
-		nSeeds[i].randomize(prng);
-
-		pG_seeds.emplace_back(mCurve);
-		pG_seeds[i] = mG * nSeeds[i];  //g^ri
-	}
-	gTimer.setTimePoint("HSS g^seed done");
-
-
-	std::vector<u64> indices(mSetSeedsSize);
-
-	for (u64 i = 0; i < mMyInputSize; i++)
-	{
-		//std::iota(indices.begin(), indices.end(), 0);
-		//std::random_shuffle(indices.begin(), indices.end()); //random permutation and get 1st K indices
-		EccPoint g_sum(mCurve);
-
-		if (mBoundCoeffs == 2)
-		{
-			for (u64 j = 0; j < mChoseSeedsSize; j++)
-			{
-				if (rand() % mBoundCoeffs)
-					g_sum = g_sum + pG_seeds[indices[j]]; //g^sum
-			}
-		}
-		else
-		{
-			for (u64 j = 0; j < mChoseSeedsSize; j++)
-			{
-				int rnd = rand() % mBoundCoeffs;
-				EccNumber ci(mCurve);
-				g_sum = g_sum + (pG_seeds[indices[j]] * ci); //g^sum
-			}
-		}
-	}
-
-	gTimer.setTimePoint("HDD g^ri done");
-	std::cout << gTimer << "\n";
-}
-#endif
 }
 
 
