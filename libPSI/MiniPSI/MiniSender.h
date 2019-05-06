@@ -33,6 +33,7 @@ namespace osuCrypto {
 		u64 mMyInputSize, mTheirInputSize, mPolyBytes, mPolyDegree, mStepSize, mPsiSecParam, mFieldSize;
 		PRNG mPrng;
 		ZZ mPrime;
+		u8* mK_bytes;
 
 		void outputBigPoly(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG& prng, span<block> inputs, span<Channel> chls);
 		void outputHashing(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG& prng, span<block> inputs, span<Channel> chls);

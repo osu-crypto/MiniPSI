@@ -37,6 +37,7 @@ namespace osuCrypto
 
 		std::vector<u8> mG_K;
 		u8* tempToFromByteCurve;
+		u8* mK_bytes;
 
         u64 mN, mSecParam, mCurveByteSize;
         PRNG mPrng;

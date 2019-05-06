@@ -25,7 +25,7 @@ namespace osuCrypto
     {
     public:
      
-		u64 mSetSeedsSize, mChoseSeedsSize;
+		u64 mSetSeedsSize, mChoseSeedsSize, mCurveByteSize, mBoundCoeffs;
 		Ecc2mParams mCurveParam;
 		block mCurveSeed;
 		
@@ -36,12 +36,15 @@ namespace osuCrypto
 		bool mHasBase;
 		BalancedIndex mBalance;
 
+		std::vector<std::vector<int>> mIntCi;
 
 		u64 mMyInputSize, mTheirInputSize, mPolyBytes, mPolyDegree, mPsiSecParam;
 		std::vector<block> mS;
 		u64 mFieldSize;
 
 		block mTruncateBlk;
+		std::vector<u8*> mSeeds_Byte;
+		std::vector<u8*> pG_seeds_Byte;
 
 		PRNG mPrng;
 		ZZ mPrime;

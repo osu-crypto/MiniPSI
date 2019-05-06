@@ -31,7 +31,8 @@ namespace osuCrypto
 		mMyInputSize = myInputSize;
 		mTheirInputSize = theirInputSize;
 		mPrng.SetSeed(prng.get<block>());
-		getExpParams(mMyInputSize, mSetSeedsSize, mChoseSeedsSize);
+		getBestExpParams(mMyInputSize, mSetSeedsSize, mChoseSeedsSize, mBoundCoeffs);
+
 
 		std::cout << "r mSetSeedsSize= " << mMyInputSize << " - " << mSetSeedsSize << " - " << mChoseSeedsSize << "\n";
 
@@ -42,12 +43,12 @@ namespace osuCrypto
 		mFieldSize = mCurve.bitCount();
 		//std::cout << "r mFieldSize= " << mFieldSize << "\n";
 
-
 		EccPoint mG(mCurve);
 		mG = mCurve.getGenerator();
 		//std::cout << pG << std::endl;
 		mPolyBytes = mG.sizeBytes();
 		//std::cout << "r mPolyBytes= " << mPolyBytes << "\n";
+		mCurveByteSize = mG.sizeBytes();
 
 
 		std::vector<EccNumber> nSeeds;
@@ -55,6 +56,8 @@ namespace osuCrypto
 
 		nSeeds.reserve(mSetSeedsSize);
 		pG_seeds.reserve(mSetSeedsSize);
+		mSeeds_Byte.resize(mSetSeedsSize);
+		pG_seeds_Byte.resize(mSetSeedsSize);
 
 		//seeds
 		for (u64 i = 0; i < mSetSeedsSize; i++)
@@ -62,50 +65,68 @@ namespace osuCrypto
 			// get a random value from Z_p
 			nSeeds.emplace_back(mCurve);
 			nSeeds[i].randomize(prng);
+			mSeeds_Byte[i] = new u8[mCurveByteSize];
+			nSeeds[i].toBytes(mSeeds_Byte[i]);
 
 			//      pG_seeds[i] = g ^ mSeeds[i]
 			pG_seeds.emplace_back(mCurve);
 			pG_seeds[i] = mG * nSeeds[i];  //g^ri
 			//std::cout << mG_seeds[i] << std::endl;
+			pG_seeds_Byte[i] = new u8[mCurveByteSize];
+			pG_seeds[i].toBytes(pG_seeds_Byte[i]);
 		}
 		std::cout << "pG_seeds done" << std::endl;
 		gTimer.setTimePoint("r off pG_seeds done");
 
 		//generate all pairs from seeds
-		std::vector<std::pair<std::vector<u64>, EccPoint>> mG_pairs; //{index of sub ri}, g^(subsum ri)
+		std::vector<std::pair<std::vector<u64>, u8*>> mG_pairs; //{index of sub ri}, g^(subsum ri)
 		mG_pairs.reserve(myInputSize);
 
 		std::vector<u64> indices(mSetSeedsSize);
+		mIntCi.resize(mMyInputSize);
 
 		for (u64 i = 0; i < myInputSize; i++)
 		{
-			std::iota(indices.begin(), indices.end(), 0);
-			std::random_shuffle(indices.begin(), indices.end()); //random permutation and get 1st K indices
+		
+			if (mMyInputSize < (1 << 9))
+			{
+				std::iota(indices.begin(), indices.end(), 0);
+				std::random_shuffle(indices.begin(), indices.end()); //random permutation and get 1st K indices
+			}
+			else
+			{
+				indices.resize(0);
+				while (indices.size() < mChoseSeedsSize)
+				{
+					int rnd = rand() % mSetSeedsSize;
+					if (std::find(indices.begin(), indices.end(), rnd) == indices.end())
+						indices.push_back(rnd);
+				}
+			}
 
 			EccPoint g_sum(mCurve);
 
-			for (u64 j = 0; j < mChoseSeedsSize; j++)
-				g_sum = g_sum + pG_seeds[indices[j]]; //g^sum
+			if (mBoundCoeffs == 2)
+			{
+				for (u64 j = 0; j < mChoseSeedsSize; j++)
+					g_sum = g_sum + pG_seeds[indices[j]]; //g^sum //h=2   ci=1
+			}
+			else
+			{
+				mIntCi[i].resize(mChoseSeedsSize);
+
+				for (u64 j = 0; j < mChoseSeedsSize; j++)
+				{
+					mIntCi[i][j] = 1 + rand() % (mBoundCoeffs - 1);
+					EccNumber ci(mCurve, mIntCi[i][j]);
+					g_sum = g_sum + pG_seeds[indices[j]] * ci; //g^ci*sum
+				}
+			}
 
 			std::vector<u64> subIdx(indices.begin(), indices.begin() + mChoseSeedsSize);
-			mG_pairs.push_back(std::make_pair(subIdx, g_sum));
-
-
-			//std::cout << "r sum= " << mG_pairs[i].first[0]
-			//	<< " - " << g_sum.sizeBytes()
-			//	<< " - " << toBlock(mG_pairs[i].second)
-			//	<< " - " << toBlock(mG_pairs[i].second + sizeof(block))
-			//	<< " - " << toBlock(mG_pairs[i].second + g_sum.sizeBytes() - 2 * sizeof(block)) << std::endl;
-
-			//EccPoint g_sumTest(mCurve);
-			//g_sumTest.fromBytes(mG_pairs[i].second);
-			//std::cout << g_sum << "\n";
-			//std::cout << g_sumTest << "\n";
-
-			//u8* tempBlk = new u8[g_sum.sizeBytes()];
-			//tempBlk = mG_pairs[i].second;
-			//g_sumTest.fromBytes(tempBlk);
-			//std::cout << g_sumTest << "\n";
+			u8* temp = new u8[g_sum.sizeBytes()];
+			g_sum.toBytes(temp);
+			mG_pairs.push_back(std::make_pair(subIdx, temp));
 
 		}
 
@@ -149,33 +170,12 @@ namespace osuCrypto
 		{
 			ZZFromBytes(zz, (u8*)&inputs[idx], sizeof(block));
 			zzX[idx] = to_ZZ_p(zz);
-		}
-
-
-
-		for (u64 idx = 0; idx < inputs.size(); idx++)
-		{
+		
 			u8* yri = new u8[mPolyBytes];
 
-			u8* temp = new u8[mG_pairs[idx].second.sizeBytes()];
-			mG_pairs[idx].second.toBytes(temp);
-			ZZFromBytes(zz, temp, mPolyBytes);
+			ZZFromBytes(zz, mG_pairs[idx].second, mPolyBytes);
 			//std::cout << "r P(x)= " << idx << " - " << toBlock(mG_pairs[idx].second) << std::endl;
 			zzY[idx] = to_ZZ_p(zz);
-
-			//BytesFromZZ(yri, rep(zzY[idx]), mPolyBytes);
-			//std::cout << "rr P(x)= " << idx << " - " << toBlock(yri) << std::endl;
-
-			//EccPoint g_sumTest(mCurve);
-			//g_sumTest.fromBytes(mG_pairs[idx].second);
-			//std::cout << sizeof(mG_pairs[idx].second) << "\n";
-			//std::cout << g_sumTest << "\n";
-
-			////memcpy(yri, mG_pairs[idx].second, mFieldSize);
-			//g_sumTest.fromBytes(yri);
-			//std::cout << sizeof(yri) << "\n";
-			//std::cout << g_sumTest << "\n";
-
 		}
 
 
@@ -208,6 +208,7 @@ namespace osuCrypto
 		//compute seeds (g^K)^ri
 		std::vector<EccPoint> pgK_seeds;
 		pgK_seeds.reserve(mSetSeedsSize);
+		std::vector<u8*> mgK_seeds_bytes(mSetSeedsSize);
 
 
 		//seeds
@@ -216,7 +217,17 @@ namespace osuCrypto
 			pgK_seeds.emplace_back(mCurve);
 			pgK_seeds[i] = g_k * nSeeds[i];  //(g^k)^ri
 			//std::cout << mG_seeds[i] << std::endl;		
+
+			//mgK_seeds_bytes[i] = new u8[mCurveByteSize];
+			//pgK_seeds[i].toBytes(mgK_seeds_bytes[i]);
 		}
+
+		//if(isMultiThreaded)
+		//	for (u64 i = 0; i < mSetSeedsSize; i++)
+		//	{
+		//		mgK_seeds_bytes[i] = new u8[mCurveByteSize];
+		//		pgK_seeds[i].toBytes(mgK_seeds_bytes[i]);
+		//	}
 
 		//generate all pairs from seeds
 			std::unordered_map<u64, std::pair<block, u64>> localMasks;
@@ -227,8 +238,22 @@ namespace osuCrypto
 			{
 				EccPoint gk_sum(mCurve);
 
-				for (u64 j = 0; j < mG_pairs[i].first.size(); j++) //for all subset ri
-					gk_sum = gk_sum + pgK_seeds[mG_pairs[i].first[j]]; //(g^k)^(subsum ri)
+				if (mBoundCoeffs == 2)
+				{
+					for (u64 j = 0; j < mG_pairs[i].first.size(); j++) //for all subset ri
+					{
+						gk_sum = gk_sum + pgK_seeds[mG_pairs[i].first[j]]; //(g^k)^(subsum ri)
+					}
+				}
+				else
+				{
+					for (u64 j = 0; j < mG_pairs[i].first.size(); j++) //for all subset ri
+					{
+						EccNumber ci(mCurve, mIntCi[i][j]);
+						//tempCurve.fromBytes(mgK_seeds_bytes[mG_pairs[i].first[j]]);
+						gk_sum = gk_sum + pgK_seeds[mG_pairs[i].first[j]] *ci; //(g^k)^(subsum ri)
+					}
+				}
 
 
 				u8* gk_sum_byte = new u8[gk_sum.sizeBytes()];
@@ -240,8 +265,78 @@ namespace osuCrypto
 				localMasks.emplace(*(u64*)&temp, std::pair<block, u64>(temp, i));
 
 			}
-			std::cout << "r gkr done\n";
+#if 0
+			auto routine = [&](u64 t)
+			{
 
+				u64 inputStartIdx = inputs.size() * t / chls.size();
+				u64 inputEndIdx = inputs.size() * (t + 1) / chls.size();
+				u64 subsetInputSize = inputEndIdx - inputStartIdx;
+
+				EllipticCurve mCurve(k283, OneBlock);
+				EccPoint tempCurve(mCurve);
+
+				for (u64 i = inputStartIdx; i < inputEndIdx; i++)
+				{
+					EccPoint gk_sum(mCurve);
+
+					if (mBoundCoeffs == 2)
+					{
+						for (u64 j = 0; j < mG_pairs[i].first.size(); j++) //for all subset ri
+						{
+							if (isMultiThreaded)
+							{
+								tempCurve.fromBytes(mgK_seeds_bytes[mG_pairs[i].first[j]]);
+								gk_sum = gk_sum + tempCurve; //(g^k)^(subsum ri)
+							}
+							else
+								gk_sum = gk_sum + pgK_seeds[mG_pairs[i].first[j]]; //(g^k)^(subsum ri)
+						}
+					}
+					else
+					{
+						for (u64 j = 0; j < mG_pairs[i].first.size(); j++) //for all subset ri
+						{
+							EccNumber ci(mCurve, mIntCi[i][j]);
+							if (isMultiThreaded)
+							{
+								tempCurve.fromBytes(mgK_seeds_bytes[mG_pairs[i].first[j]]);
+								gk_sum = gk_sum + tempCurve*ci; //(g^k)^(subsum ri)
+							}
+							else
+								gk_sum = gk_sum + pgK_seeds[mG_pairs[i].first[j]] * ci; //(g^k)^(subsum ri)
+						}
+					}
+
+
+					u8* gk_sum_byte = new u8[gk_sum.sizeBytes()];
+					gk_sum.toBytes(gk_sum_byte);
+
+					//std::cout << "r gk_sum: " << i << " - " << gk_sum << std::endl;
+					//std::cout << "r toBlock(gk_sum_byte): " << i << " - " << toBlock(gk_sum_byte) << std::endl;
+					block temp = toBlock(gk_sum_byte);
+					if (isMultiThreaded)
+					{
+						std::lock_guard<std::mutex> lock(mtx);
+						localMasks.emplace(*(u64*)&temp, std::pair<block, u64>(temp, i));
+					}
+					else
+						localMasks.emplace(*(u64*)&temp, std::pair<block, u64>(temp, i));
+
+				}
+			};
+
+			for (u64 i = 0; i < u64(chls.size()); ++i)
+			{
+				thrds[i] = std::thread([=] {
+					routine(i);
+				});
+			}
+
+			for (auto& thrd : thrds)
+				thrd.join();
+#endif
+			std::cout << "r gkr done\n";
 			gTimer.setTimePoint("r_gkr done");
 
 

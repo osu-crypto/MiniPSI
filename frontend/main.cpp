@@ -379,7 +379,7 @@ void Mini19Sender(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 
 	std::cout << "\n";
 	//====================
-#if 1
+#if 0
 	for (u64 i = 0; i < numThreads; ++i)
 		sendChls[i] = ep1.addChannel("chl" + std::to_string(i + numThreads), "chl" + std::to_string(i + numThreads));
 
@@ -443,7 +443,8 @@ void Mini19Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 num
 		recvChls[i].close();
 
 
-	//====================JL psi startPsi_subsetsum
+	//====================outputHashing
+#if 0
 	std::cout << "\n";
 	for (u64 i = 0; i < numThreads; ++i)
 		recvChls[i] = ep0.addChannel("chl" + std::to_string(numThreads + i), "chl" + std::to_string(numThreads + i));
@@ -465,7 +466,7 @@ void Mini19Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 num
 	for (u64 i = 0; i < numThreads; ++i)
 		recvChls[i].close();
 
-
+#endif
 
 	ep0.stop(); ios.stop();
 }

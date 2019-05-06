@@ -45,6 +45,10 @@ namespace osuCrypto
 		EccNumber nK(mCurve);
 		EccPoint pG(mCurve);
 		nK.randomize(mPrng);
+
+		mK_bytes = new u8[nK.sizeBytes()];
+		nK.toBytes(mK_bytes);
+
 		pG = mCurve.getGenerator();
 		mPolyBytes = pG.sizeBytes();
 		//std::cout << "s mPolyBytes= " << mPolyBytes << "\n";
@@ -147,6 +151,12 @@ namespace osuCrypto
 			u64 startIdx = mMyInputSize * t / numThreads;
 			u64 tempEndIdx = mMyInputSize* (t + 1) / numThreads;
 			u64 endIdx = std::min(tempEndIdx, mMyInputSize);
+
+			EllipticCurve mCurve(k283, OneBlock);
+			EccPoint g_k(mCurve);
+			EccNumber nK(mCurve);
+			nK.fromBytes(mK_bytes);
+			g_k.fromBytes(mG_K); //g^k
 
 			//std::cout << startIdx << " vs  " << endIdx << " sssendIdx \n";
 
