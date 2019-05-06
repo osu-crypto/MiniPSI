@@ -33,6 +33,7 @@ namespace osuCrypto
 		std::vector<u8*> mSeeds_Byte;
 		std::vector<u8*> pG_seeds_Byte;
 		std::vector<u8*> pgK_seed_Byte;
+		std::vector<std::vector<int>> mIntCi;
 
 		std::vector<u8> mG_K;
 		u8* tempToFromByteCurve;
@@ -40,7 +41,7 @@ namespace osuCrypto
         u64 mN, mSecParam, mCurveByteSize;
         PRNG mPrng;
 
-		u64 mSetSeedsSize, mChoseSeedsSize, mMyInputSize, mTheirInputSize, mFieldSize;
+		u64 mSetSeedsSize, mChoseSeedsSize, mMyInputSize, mTheirInputSize, mFieldSize, mBoundCoeffs;
 		block mCurveSeed;
         std::vector<u64> mIntersection;
 

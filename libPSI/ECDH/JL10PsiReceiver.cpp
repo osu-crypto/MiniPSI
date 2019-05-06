@@ -372,7 +372,7 @@ namespace osuCrypto
 		mPrng.SetSeed(seed);
 		mIntersection.clear();
 		
-		getExpParams(mMyInputSize, mSetSeedsSize, mChoseSeedsSize);
+		getBestExpParams(mMyInputSize, mSetSeedsSize, mChoseSeedsSize, mBoundCoeffs);
 
 
 		std::cout << "startPsi_subsetsum r mSetSeedsSize= " << mMyInputSize << " - " << mSetSeedsSize << " - " << mChoseSeedsSize << "\n";
@@ -418,17 +418,45 @@ namespace osuCrypto
 		mG_pairs.reserve(myInputSize);
 
 		std::vector<u64> indices(mSetSeedsSize);
+		mIntCi.resize(mMyInputSize);
 
 		for (u64 i = 0; i < myInputSize; i++)
 		{
-			std::iota(indices.begin(), indices.end(), 0);
-			std::random_shuffle(indices.begin(), indices.end()); //random permutation and get 1st K indices
+			if (mMyInputSize < (1 << 9))
+			{
+				std::iota(indices.begin(), indices.end(), 0);
+				std::random_shuffle(indices.begin(), indices.end()); //random permutation and get 1st K indices
+			}
+			else
+			{
+				indices.resize(0);
+				while (indices.size() < mChoseSeedsSize)
+				{
+					int rnd = rand() % mSetSeedsSize;
+					if (std::find(indices.begin(), indices.end(), rnd) == indices.end())
+						indices.push_back(rnd);
+				}
+			}
 
 			EccPoint g_sum(mCurve);
 
-			for (u64 j = 0; j < mChoseSeedsSize; j++)
-				g_sum = g_sum + pG_seeds[indices[j]]; //g^sum
 
+			if (mBoundCoeffs == 2)
+			{
+				for (u64 j = 0; j < mChoseSeedsSize; j++)
+					g_sum = g_sum + pG_seeds[indices[j]]; //g^sum //h=2   ci=1
+			}
+			else
+			{
+				mIntCi[i].resize(mChoseSeedsSize);
+
+				for (u64 j = 0; j < mChoseSeedsSize; j++)
+				{
+					mIntCi[i][j] = 1 + rand() % (mBoundCoeffs - 1);
+					EccNumber ci(mCurve, mIntCi[i][j]);
+					g_sum = g_sum + pG_seeds[indices[j]] * ci; //g^ci*sum
+				}
+			}
 
 			std::vector<u64> subIdx(indices.begin(), indices.begin() + mChoseSeedsSize);
 			u8* temp = new u8[g_sum.sizeBytes()];
@@ -539,9 +567,22 @@ namespace osuCrypto
 				for (u64 k = 0; k < curStepSize; k++)
 				{
 					pgK_sum.emplace_back(mCurve);
-					for (u64 j = 0; j < mG_pairs[i + k].first.size(); j++) //for all subset ri
-						pgK_sum[idx_pgK] = pgK_sum[idx_pgK] + pgK_seeds[mG_pairs[i + k].first[j]]; //(g^k)^(subsum ri)
-				
+					
+					if (mBoundCoeffs == 2)
+					{
+						for (u64 j = 0; j < mG_pairs[i + k].first.size(); j++) //for all subset ri
+							pgK_sum[idx_pgK] = pgK_sum[idx_pgK] + pgK_seeds[mG_pairs[i + k].first[j]]; //(g^k)^(subsum ri)
+					}
+					else
+					{
+						for (u64 j = 0; j < mG_pairs[i + k].first.size(); j++) //for all subset ri
+						{
+							EccNumber ci(mCurve, mIntCi[i][j]);
+							pgK_sum[idx_pgK] = pgK_sum[idx_pgK] + pgK_seeds[mG_pairs[i + k].first[j]]*ci; //(g^k)^(subsum ri)
+						}
+					}
+
+
 					idx_pgK++;
 				}
 
