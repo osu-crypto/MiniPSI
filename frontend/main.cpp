@@ -300,7 +300,7 @@ void JL10Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 	for (u64 i = 0; i < numThreads; ++i)
 		recvChls[i] = ep0.addChannel("chl" + std::to_string(i), "chl" + std::to_string(i));
 
-	recv.startPsi(inputs.size(), theirSetSize, 40, prng1.get<block>(), inputs, recvChls);
+	recv.startPsi_gK(inputs.size(), theirSetSize, 40, prng1.get<block>(), inputs, recvChls);
 
 
 	std::cout << gTimer << std::endl;
@@ -325,7 +325,7 @@ void JL10Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 	for (u64 i = 0; i < numThreads; ++i)
 		recvChls[i] = ep0.addChannel("chl" + std::to_string(numThreads+i), "chl" + std::to_string(numThreads+i));
 
-	recv.startPsi_subsetsum(inputs.size(), theirSetSize, 40, prng1.get<block>(), inputs, recvChls);
+	recv.startPsi_subsetsum_gK(inputs.size(), theirSetSize, 40, prng1.get<block>(), inputs, recvChls);
 	std::cout << gTimer << std::endl;
 
 
