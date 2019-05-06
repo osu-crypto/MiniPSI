@@ -257,15 +257,16 @@ void JL10Sender(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numThre
 
 
 	//====================JL psi startPsi_subsetsum
+#if 0
 	for (u64 i = 0; i < numThreads; ++i)
 		sendChls[i] = ep1.addChannel("chl" + std::to_string(i+ numThreads), "chl" + std::to_string(i+ numThreads));
 
-	sender.startPsi_subsetsum(inputs.size(), theirSetSize, 40, prng0.get<block>(), inputs, sendChls);
+	//sender.startPsi_subsetsum(inputs.size(), theirSetSize, 40, prng0.get<block>(), inputs, sendChls);
 	std::cout << gTimer << std::endl;
 
 	for (u64 i = 0; i < numThreads; ++i)
 		sendChls[i].close();
-
+#endif
 
 
 	ep1.stop();	ios.stop();
@@ -319,10 +320,12 @@ void JL10Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 
 
 	//====================JL psi startPsi_subsetsum
+#if 0
+
 	for (u64 i = 0; i < numThreads; ++i)
 		recvChls[i] = ep0.addChannel("chl" + std::to_string(numThreads+i), "chl" + std::to_string(numThreads+i));
 
-	recv.startPsi_subsetsum(inputs.size(), theirSetSize, 40, prng1.get<block>(), inputs, recvChls);
+	//recv.startPsi_subsetsum(inputs.size(), theirSetSize, 40, prng1.get<block>(), inputs, recvChls);
 	std::cout << gTimer << std::endl;
 
 
@@ -337,7 +340,7 @@ void JL10Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 
 	for (u64 i = 0; i < numThreads; ++i)
 		recvChls[i].close();
-
+#endif
 
 
 	ep0.stop(); ios.stop();
@@ -376,6 +379,7 @@ void Mini19Sender(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 
 	std::cout << "\n";
 	//====================
+#if 1
 	for (u64 i = 0; i < numThreads; ++i)
 		sendChls[i] = ep1.addChannel("chl" + std::to_string(i + numThreads), "chl" + std::to_string(i + numThreads));
 
@@ -384,7 +388,7 @@ void Mini19Sender(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 
 	for (u64 i = 0; i < numThreads; ++i)
 		sendChls[i].close();
-
+#endif
 
 
 	ep1.stop();	ios.stop();
@@ -1082,13 +1086,42 @@ void evalExp(int n)
 
 }
 
+void testCurve(int n)
+{
+	PRNG prng(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
+	EllipticCurve mCurve(k283, OneBlock);
+	EccPoint mG(mCurve), gk(mCurve), gTemp(mCurve);
+	mG = mCurve.getGenerator();
+	EccNumber mk(mCurve);
+	mk.randomize(prng);
+
+	gk = mG*mk;
+
+	gTimer.reset();
+	gTimer.setTimePoint("start");
+	for (u64 i = 0; i < (1<<n); i++)
+	{
+		u8* temp = new u8[gk.sizeBytes()];
+		gk.toBytes(temp);
+		gTemp.fromBytes(temp);
+	}
+	gTimer.setTimePoint("end");
+	cout << gTimer << "\n";
+
+}
 int main(int argc, char** argv)
 {
+
+	
+
+
 	//u64 n = 1 << 10;;
 	//if (argv[1][0] == '-' && argv[1][1] == 'n') {
 	//	n= atoi(argv[2]);
 	//}
-	//evalExp(n);
+	//testCurve(n);
+
+	////evalExp(n);
 	//return 0;
 
 	//u64 curStepSize = 1 << 12;
@@ -1108,7 +1141,7 @@ int main(int argc, char** argv)
 	
 
 	string ipadrr = "localhost:1212";
-	u64 sendSetSize = 1 << 10, recvSetSize = 1 << 12, numThreads = 1;
+	u64 sendSetSize = 1 << 10, recvSetSize = 1 << 12, numThreads = 2;
 
 	PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
 
@@ -1120,7 +1153,6 @@ int main(int argc, char** argv)
 	{
 		sendSetSize = 1 << atoi(argv[4]);
 		recvSetSize = 1 << atoi(argv[6]);
-		recvSetSize = sendSetSize;
 		numThreads = atoi(argv[8]);
 	}
 
@@ -1157,27 +1189,28 @@ int main(int argc, char** argv)
 	if (argv[1][0] == '-' && argv[1][1] == 't') {
 		
 		std::thread thrd = std::thread([&]() {
-			EchdSender(sendSetSize, recvSetSize, "localhost:1214", numThreads);
-			//JL10Sender(sendSetSize, recvSetSize,"localhost:1214", numThreads);
+			//EchdSender(sendSetSize, recvSetSize, "localhost:1214", numThreads);
+			JL10Sender(sendSetSize, recvSetSize,"localhost:1214", numThreads);
 		});
 
-		EchdReceiver(recvSetSize, sendSetSize, "localhost:1214", numThreads);
-		//JL10Receiver(recvSetSize, sendSetSize, "localhost:1214", numThreads);
+		//EchdReceiver(recvSetSize, sendSetSize, "localhost:1214", numThreads);
+		JL10Receiver(recvSetSize, sendSetSize, "localhost:1214", numThreads);
 
 		thrd.join();
 
 	}
 	else if (argv[1][0] == '-' && argv[1][1] == 'r' && atoi(argv[2]) == 0) {
 
-		EchdSender(sendSetSize, recvSetSize, ipadrr, numThreads);
-		//JL10Sender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
+
+		//EchdSender(sendSetSize, recvSetSize, ipadrr, numThreads);
+		JL10Sender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
 		//Mini19Sender(sendSetSize, recvSetSize, "localhost:1214", numThreads);
 
 
 	}
 	else if (argv[1][0] == '-' && argv[1][1] == 'r' && atoi(argv[2]) == 1) {
-		EchdReceiver(recvSetSize, sendSetSize, ipadrr, numThreads);
-		//JL10Receiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
+		//EchdReceiver(recvSetSize, sendSetSize, ipadrr, numThreads);
+		JL10Receiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
 		//Mini19Receiver(recvSetSize, sendSetSize, "localhost:1214", numThreads);
 
 	}

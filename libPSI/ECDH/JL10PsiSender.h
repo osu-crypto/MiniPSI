@@ -19,8 +19,11 @@ namespace osuCrypto
 		u64 theirStepSize;
 		Timer timer;
 
-		//u8* mK;
+		/*u8* mK;*/
 		//u8* mG_K;
+
+		u8* mgK_byte;
+		u8* mN_byte;
         u64 mSecParam;
         PRNG mPrng;
 

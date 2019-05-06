@@ -49,14 +49,17 @@ namespace osuCrypto
 		EccNumber nK(mCurve);
 		EccPoint pG(mCurve);
 		nK.randomize(mPrng);
+		mN_byte= new u8[nK.sizeBytes()];
+		nK.toBytes(mN_byte);
+
 		pG = mCurve.getGenerator();
 
 		auto g_k = pG*nK;
 
-		u8* mG_K = new u8[g_k.sizeBytes()];
-		g_k.toBytes(mG_K); //g^k
+		mgK_byte = new u8[g_k.sizeBytes()];
+		g_k.toBytes(mgK_byte); //g^k
 		std::vector<u8> tempSend(g_k.sizeBytes());
-		memcpy(tempSend.data(), mG_K, g_k.sizeBytes());
+		memcpy(tempSend.data(), mgK_byte, g_k.sizeBytes());
     
 		//####################### online #########################
 		gTimer.setTimePoint("s online start ");
@@ -65,7 +68,7 @@ namespace osuCrypto
 		chls[0].asyncSend(std::move(tempSend));
 
 
-		//std::cout << "\nr chls[0].send(mG_K)" << g_k<< std::endl;
+		//std::cout << "s g_k= " << g_k<< std::endl;
 
 
 		u64 numThreads(chls.size());
@@ -82,7 +85,7 @@ namespace osuCrypto
 
 
 		//##################### compute H(x*)^k. compute/send yi^k#####################
-#if 1
+
 		//auto start = timer.setTimePoint("start");
 
 		auto routine = [&](u64 t)
@@ -99,16 +102,16 @@ namespace osuCrypto
 			sendBuff_mask[t].resize(n1n2MaskBytes*subsetInputSize);
 			int idxSendMaskIter = 0;
 
-
 			auto& chl = chls[t];
 			u8 hashOut[SHA1::HashSize];
 
-			//EllipticCurve curve(p256k1, thrdPrng[t].get<block>());
 
 			RandomOracle inputHasher(sizeof(block));
-			//EllipticCurve mCurve(k283, OneBlock);
+			
+			EllipticCurve mCurve(k283, OneBlock);
 			EccPoint point(mCurve), yik(mCurve), yi(mCurve), xk(mCurve);
-
+			EccNumber nK(mCurve);
+			nK.fromBytes(mN_byte);
 			u8* temp= new u8[xk.sizeBytes()];
 
 
@@ -119,7 +122,7 @@ namespace osuCrypto
 				//	std::cout << "send H(y)^b" << std::endl;
 
 				//gTimer.setTimePoint("s online H(x)^k start ");
-
+#if 1
 		//compute H(x)^k
 				for (u64 k = 0; k < curStepSize; ++k)
 				{
@@ -132,6 +135,7 @@ namespace osuCrypto
 													   //std::cout << "sp  " << point << "  " << toBlock(hashOut) << std::endl;
 					xk = (point * nK); //H(x)^k
 
+					
 #ifdef PRINT
 					if (i + k == 10 || i + k == 20)
 						std::cout << "s xk[" << i + k << "] " << xk << std::endl;
@@ -141,9 +145,10 @@ namespace osuCrypto
 					idxSendMaskIter += n1n2MaskBytes;
 				}
 				//gTimer.setTimePoint("s online H(x)^k done ");
-
+#endif
 			}
 
+#if 1
 			for (u64 i = theirInputStartIdx; i < theirInputEndIdx; i += theirStepSize)
 			{
 				auto curStepSize = std::min(theirStepSize, theirInputEndIdx - i);
@@ -158,7 +163,7 @@ namespace osuCrypto
 					std::cout << "error @ " << (LOCATION) << std::endl;
 					throw std::runtime_error(LOCATION);
 				}
-#if 1
+
 				auto recvIter = recvBuff.data();
 
 				std::vector<u8> sendBuff_yik(yik.sizeBytes() * curStepSize);
@@ -169,6 +174,12 @@ namespace osuCrypto
 				for (u64 k = 0; k < curStepSize; ++k)
 				{
 					yi.fromBytes(recvIter); recvIter += yi.sizeBytes();
+
+#ifdef PRINT
+					if (i + k == 10)
+						std::cout << "s yi[" << i + k << "] " << yi << std::endl;
+#endif
+
 					yik = yi*nK; //yi^k
 					yik.toBytes(sendIter_yik);
 					sendIter_yik += yik.sizeBytes();
@@ -176,9 +187,9 @@ namespace osuCrypto
 				//gTimer.setTimePoint("s online yi^k start ");
 
 				chl.asyncSend(std::move(sendBuff_yik));  //sending yi^k
-#endif
+
 			}
-		
+#endif
 
 		};
 
@@ -193,7 +204,7 @@ namespace osuCrypto
 		for (auto& thrd : thrds)
 			thrd.join();
 
-#endif
+
 		gTimer.setTimePoint("s exp done");
 
 		//#####################Send Mask #####################

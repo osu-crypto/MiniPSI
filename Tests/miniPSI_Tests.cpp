@@ -436,11 +436,11 @@ namespace tests_libOTe
 
 
 		std::cout << "recv.mIntersection.size(): " << recv.mIntersection.size() << std::endl;
-		for (u64 i = 0; i < recv.mIntersection.size(); ++i)//thrds.size()
-		{
-			std::cout << "#id: " << recv.mIntersection[i] <<
-				"\t" << recvSet[recv.mIntersection[i]] << std::endl;
-		}
+		//for (u64 i = 0; i < recv.mIntersection.size(); ++i)//thrds.size()
+		//{
+		///*	std::cout << "#id: " << recv.mIntersection[i] <<
+		//		"\t" << recvSet[recv.mIntersection[i]] << std::endl;*/
+		//}
 
 		u64 dataSent = 0, dataRecv(0);
 		for (u64 g = 0; g < recvChls.size(); ++g)

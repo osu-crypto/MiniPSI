@@ -30,7 +30,11 @@ namespace osuCrypto
 		u64 myStepSize;
 		u64 theirStepSize;
 
-        u64 mN, mSecParam;
+		std::vector<u8*> mSeeds_Byte;
+		std::vector<u8*> pG_seeds_Byte;
+		std::vector<u8> mG_K;
+
+        u64 mN, mSecParam, mCurveByteSize;
         PRNG mPrng;
 
 		u64 mSetSeedsSize, mChoseSeedsSize, mMyInputSize, mTheirInputSize, mFieldSize;

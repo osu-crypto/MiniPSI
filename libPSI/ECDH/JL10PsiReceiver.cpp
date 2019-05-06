@@ -53,12 +53,16 @@ namespace osuCrypto
 
 		EccPoint mG(mCurve);
 		mG = mCurve.getGenerator();
+		mCurveByteSize = mG.sizeBytes();
+		u8* tempToFromByteCurve = new u8[mCurveByteSize];
 
 		std::vector<EccNumber> nSeeds;
 		std::vector<EccPoint> pG_seeds;
 
 		nSeeds.reserve(mSetSeedsSize);
 		pG_seeds.reserve(mSetSeedsSize);
+		mSeeds_Byte.resize(mSetSeedsSize);
+		pG_seeds_Byte.resize(mSetSeedsSize);
 
 		//compute g^ri
 		for (u64 i = 0; i < mSetSeedsSize; i++)
@@ -66,26 +70,24 @@ namespace osuCrypto
 			// get a random value from Z_p
 			nSeeds.emplace_back(mCurve);
 			nSeeds[i].randomize(mPrng);
+			mSeeds_Byte[i] = new u8[mCurveByteSize];
+			nSeeds[i].toBytes(mSeeds_Byte[i]);
 
 			pG_seeds.emplace_back(mCurve);
 			pG_seeds[i] = mG * nSeeds[i];  //g^ri
+
+			pG_seeds_Byte[i] = new u8[mCurveByteSize];
+			pG_seeds[i].toBytes(pG_seeds_Byte[i]);
 		}
 		std::cout << "g^ri done" << std::endl;
 
-		std::vector<EccPoint> pgK_seeds;
-		pgK_seeds.reserve(inputs.size());
-		for (u64 k = 0; k < inputs.size(); k++)
-		{
-			pgK_seeds.emplace_back(mCurve);
-			//pgK_seeds[k].randomize(mPrng);
-		}
-
+	
 
 		//####################### online #########################
 		gTimer.setTimePoint("r online start ");
 
 		EccPoint g_k(mCurve);
-		std::vector<u8> mG_K; chls[0].recv(mG_K);
+		chls[0].recv(mG_K);
 		g_k.fromBytes(mG_K.data()); //receiving g^k
 
 		//std::cout << "r g^k= " << g_k << std::endl;
@@ -104,10 +106,11 @@ namespace osuCrypto
 
 		//##################### compute/send yi=H(x)*(g^ri). recv yi^k, comp. H(x)^k  #####################
 
-#if 1
+
 		
 		auto routine = [&](u64 t)
 		{
+			//EccPoint g_k_thread(mCurve, g_k);
 
 			u64 inputStartIdx = inputs.size() * t / chls.size();
 			u64 inputEndIdx = inputs.size() * (t + 1) / chls.size();
@@ -118,15 +121,23 @@ namespace osuCrypto
 			u64 theirSubsetInputSize = theirInputEndIdx - theirInputStartIdx;
 
 			auto& chl = chls[t];
-
-			//EllipticCurve curve(p256k1, thrdPrng[t].get<block>());
-
 			RandomOracle inputHasher(sizeof(block));
-			EccPoint point(mCurve), yik(mCurve), yi(mCurve), xk(mCurve), gri(mCurve), xab(mCurve);
 
-			//std::vector<EccPoint> yi; //yi=H(xi)*g^ri
-			//yi.reserve(subsetInputSize);
-			int idxYi = 0;
+
+			EllipticCurve mCurve(k283, OneBlock);
+			std::vector<EccPoint> pgK_seeds;
+
+			EccPoint point(mCurve), yik(mCurve), yi(mCurve), xk(mCurve), g_k(mCurve), gri(mCurve), pG_seed(mCurve);
+			EccNumber nSeed(mCurve);
+			g_k.fromBytes(mG_K.data()); //receiving g^k
+
+			//std::cout << "r g^k= " << g_k << std::endl;
+
+			pgK_seeds.reserve(subsetInputSize);
+			for (u64 k = 0; k < subsetInputSize; k++)
+				pgK_seeds.emplace_back(mCurve);
+
+			int idx_pgK = 0;
 
 			for (u64 i = inputStartIdx; i < inputEndIdx; i += myStepSize)  //yi=H(xi)*g^ri
 			{
@@ -141,15 +152,15 @@ namespace osuCrypto
 				//gTimer.setTimePoint("r online g^k^ri start ");
 				//compute  (g^K)^ri
 
-
 				for (u64 k = 0; k < curStepSize; k++)
 				{
-					pgK_seeds[i + k] = g_k * nSeeds[i + k];  //(g^k)^ri
-					//pgK_seeds[i+k].randomize(mPrng);
+					nSeed.fromBytes(mSeeds_Byte[i + k]);
+					pgK_seeds[idx_pgK++] =  g_k * nSeed;
 														 //std::cout << mG_seeds[i] << std::endl;		
 				}
 				//gTimer.setTimePoint("r online g^k^ri done ");
 
+#if 1
 
 				//send H(y)^b
 				for (u64 k = 0; k < curStepSize; ++k)
@@ -163,11 +174,14 @@ namespace osuCrypto
 					//std::cout << "sp  " << point << "  " << toBlock(hashOut) << std::endl;
 
 					//yi.emplace_back(mCurve);
-					yi = (point + pG_seeds[i + k]); //H(x) *g^ri
+					pG_seed.fromBytes(pG_seeds_Byte[i + k]);
+					yi = (point + pG_seed); //H(x) *g^ri
+
+					
 
 #ifdef PRINT
 					if (i + k == 10)
-						std::cout << "r yi[" << idxYi << "] " << yi[idxYi] << std::endl;
+						std::cout << "r yi[" << i + k << "] " << yi << std::endl;
 #endif
 					yi.toBytes(sendIter);
 					sendIter += yi.sizeBytes();
@@ -175,16 +189,17 @@ namespace osuCrypto
 				//gTimer.setTimePoint("r online H(x) g^k done ");
 
 				chl.asyncSend(std::move(sendBuff));  //sending yi=H(xi)*g^ri
-
+#endif
 			}
-
+#if 1
+			idx_pgK = 0;
 			for (u64 i = inputStartIdx; i < inputEndIdx; i += myStepSize)
 			{
 				auto curStepSize = std::min(myStepSize, inputEndIdx - i);
 				std::vector<u8> recvBuff(yi.sizeBytes() * curStepSize); //receiving yi^k = H(x)^k *g^ri^k
 				u8* xk_byte = new u8[yi.sizeBytes()];
 				block temp;
-#if 1				
+				
 				chl.recv(recvBuff); //recv yi^k
 
 				if (recvBuff.size() != curStepSize * yi.sizeBytes())
@@ -199,10 +214,11 @@ namespace osuCrypto
 				for (u64 k = 0; k < curStepSize; ++k)
 				{
 					yik.fromBytes(recvIter); recvIter += yik.sizeBytes();
-					xk = yik - pgK_seeds[i+k]; //H(x)^k
+					xk = yik - pgK_seeds[idx_pgK++]; //H(x)^k
 					xk.toBytes(xk_byte);
 					temp = toBlock(xk_byte); //H(x)^k
 
+					
 #ifdef PRINT
 					if (i + k == 10 || i + k == 20)
 						std::cout << "xk[" << i+k << "] " << xk << std::endl;
@@ -221,8 +237,9 @@ namespace osuCrypto
 				//gTimer.setTimePoint("r online H(x)^k done");
 
 
-#endif
+
 			}
+#endif
 
 		};
 
@@ -236,7 +253,7 @@ namespace osuCrypto
 
 		for (auto& thrd : thrds)
 			thrd.join();
-#endif
+
 		gTimer.setTimePoint("r exp done");
 
 #if 1

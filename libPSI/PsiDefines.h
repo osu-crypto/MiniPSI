@@ -25,7 +25,7 @@ namespace osuCrypto
 	static const u8 mMiniPolySlices(2); //2*128 
 
 	static const u64 stepSize(1 << 6);
-	static const u64 numStep(1 << 3);
+	static const u64 numStep(1 << 1);
 	static const u64 stepSizeMaskSent(1<<11);
 //	static const u8 numSuperBlocks(4); //wide of T (or field size) 
 	static const u8 numSuperBlocks(3); //wide of T (or field size)  =3 for HD-PSI
