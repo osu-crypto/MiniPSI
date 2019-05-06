@@ -56,8 +56,8 @@ namespace osuCrypto
 
 		nSeeds.reserve(mSetSeedsSize);
 		pG_seeds.reserve(mSetSeedsSize);
-		mSeeds_Byte.resize(mSetSeedsSize);
-		pG_seeds_Byte.resize(mSetSeedsSize);
+	/*	mSeeds_Byte.resize(mSetSeedsSize);
+		pG_seeds_Byte.resize(mSetSeedsSize);*/
 
 		//seeds
 		for (u64 i = 0; i < mSetSeedsSize; i++)
@@ -65,15 +65,15 @@ namespace osuCrypto
 			// get a random value from Z_p
 			nSeeds.emplace_back(mCurve);
 			nSeeds[i].randomize(prng);
-			mSeeds_Byte[i] = new u8[mCurveByteSize];
-			nSeeds[i].toBytes(mSeeds_Byte[i]);
+			//mSeeds_Byte[i] = new u8[mCurveByteSize];
+			//nSeeds[i].toBytes(mSeeds_Byte[i]);
 
 			//      pG_seeds[i] = g ^ mSeeds[i]
 			pG_seeds.emplace_back(mCurve);
 			pG_seeds[i] = mG * nSeeds[i];  //g^ri
 			//std::cout << mG_seeds[i] << std::endl;
-			pG_seeds_Byte[i] = new u8[mCurveByteSize];
-			pG_seeds[i].toBytes(pG_seeds_Byte[i]);
+	/*		pG_seeds_Byte[i] = new u8[mCurveByteSize];
+			pG_seeds[i].toBytes(pG_seeds_Byte[i]);*/
 		}
 		std::cout << "pG_seeds done" << std::endl;
 		gTimer.setTimePoint("r off pG_seeds done");

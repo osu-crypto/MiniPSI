@@ -43,8 +43,8 @@ namespace osuCrypto
 		u64 mFieldSize;
 
 		block mTruncateBlk;
-		std::vector<u8*> mSeeds_Byte;
-		std::vector<u8*> pG_seeds_Byte;
+		/*std::vector<u8*> mSeeds_Byte;
+		std::vector<u8*> pG_seeds_Byte;*/
 
 		PRNG mPrng;
 		ZZ mPrime;
