@@ -32,7 +32,10 @@ namespace osuCrypto
 
 		std::vector<u8*> mSeeds_Byte;
 		std::vector<u8*> pG_seeds_Byte;
+		std::vector<u8*> pgK_seed_Byte;
+
 		std::vector<u8> mG_K;
+		u8* tempToFromByteCurve;
 
         u64 mN, mSecParam, mCurveByteSize;
         PRNG mPrng;

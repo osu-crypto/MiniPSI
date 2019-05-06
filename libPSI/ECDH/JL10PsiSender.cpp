@@ -259,6 +259,8 @@ namespace osuCrypto
 
 		mMyInputSize = myInputSize;
 		mTheirInputSize = theirInputSize;
+		myStepSize = myInputSize / numStep;
+		theirStepSize = mTheirInputSize / numStep;
 
 		mPrng.SetSeed(seed);
 
@@ -309,6 +311,9 @@ namespace osuCrypto
 			u64 inputEndIdx = inputs.size() * (t + 1) / chls.size();
 			u64 subsetInputSize = inputEndIdx - inputStartIdx;
 
+			u64 theirInputStartIdx = mTheirInputSize * t / chls.size();
+			u64 theirInputEndIdx = mTheirInputSize * (t + 1) / chls.size();
+			u64 theirSubsetInputSize = theirInputEndIdx - theirInputStartIdx;
 
 			sendBuff_mask[t].resize(n1n2MaskBytes*subsetInputSize);
 			int idxSendMaskIter = 0;
@@ -326,9 +331,9 @@ namespace osuCrypto
 			u8* temp = new u8[xk.sizeBytes()];
 
 
-			for (u64 i = inputStartIdx; i < inputEndIdx; i += stepSize)  //yi=H(xi)*g^ri
+			for (u64 i = inputStartIdx; i < inputEndIdx; i += myStepSize)  //yi=H(xi)*g^ri
 			{
-				auto curStepSize = std::min(stepSize, inputEndIdx - i);
+				auto curStepSize = std::min(myStepSize, inputEndIdx - i);
 
 				//	std::cout << "send H(y)^b" << std::endl;
 
@@ -351,7 +356,11 @@ namespace osuCrypto
 					memcpy(sendBuff_mask[t].data() + idxSendMaskIter, temp, n1n2MaskBytes);
 					idxSendMaskIter += n1n2MaskBytes;
 				}
+			}
 
+			for (u64 i = theirInputStartIdx; i < theirInputEndIdx; i += theirStepSize)
+			{
+				auto curStepSize = std::min(theirStepSize, theirInputEndIdx - i);
 #if 1
 				//receive yi=H(.)*g^ri
 				std::vector<u8> recvBuff(xk.sizeBytes() * curStepSize); //receiving yi^k = H(.)*g^ri

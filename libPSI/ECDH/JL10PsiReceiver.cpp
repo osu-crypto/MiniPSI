@@ -54,7 +54,7 @@ namespace osuCrypto
 		EccPoint mG(mCurve);
 		mG = mCurve.getGenerator();
 		mCurveByteSize = mG.sizeBytes();
-		u8* tempToFromByteCurve = new u8[mCurveByteSize];
+		tempToFromByteCurve = new u8[mCurveByteSize];
 
 		std::vector<EccNumber> nSeeds;
 		std::vector<EccPoint> pG_seeds;
@@ -366,6 +366,9 @@ namespace osuCrypto
 		mSecParam = secParam;
 		mMyInputSize = myInputSize;
 		mTheirInputSize = theirInputSize;
+		myStepSize = myInputSize / numStep;
+		theirStepSize = mTheirInputSize / numStep;
+
 		mPrng.SetSeed(seed);
 		mIntersection.clear();
 		
@@ -378,16 +381,20 @@ namespace osuCrypto
 		EllipticCurve mCurve(k283, OneBlock);
 		//mCurve.getMiracl().IOBASE = 10;
 		mFieldSize = mCurve.bitCount();
-
+		
 
 		EccPoint mG(mCurve);
 		mG = mCurve.getGenerator();
+		mCurveByteSize = mG.sizeBytes();
+		tempToFromByteCurve = new u8[mCurveByteSize];
 
 		std::vector<EccNumber> nSeeds;
 		std::vector<EccPoint> pG_seeds;
 
 		nSeeds.reserve(mSetSeedsSize);
 		pG_seeds.reserve(mSetSeedsSize);
+		mSeeds_Byte.resize(mSetSeedsSize);
+		pG_seeds_Byte.resize(mSetSeedsSize);
 
 		//compute seed and g^seed
 		for (u64 i = 0; i < mSetSeedsSize; i++)
@@ -395,15 +402,19 @@ namespace osuCrypto
 			// get a random value from Z_p
 			nSeeds.emplace_back(mCurve);
 			nSeeds[i].randomize(mPrng);
+			mSeeds_Byte[i] = new u8[mCurveByteSize];
+			nSeeds[i].toBytes(mSeeds_Byte[i]);
 
 			pG_seeds.emplace_back(mCurve);
 			pG_seeds[i] = mG * nSeeds[i];  //g^ri
+			pG_seeds_Byte[i] = new u8[mCurveByteSize];
+			pG_seeds[i].toBytes(pG_seeds_Byte[i]);
 		}
 		//std::cout << "g^seed done" << std::endl;
 
 		gTimer.setTimePoint("r offline g^seed done ");
 
-		std::vector<std::pair<std::vector<u64>, EccPoint>> mG_pairs; //{index of sub ri}, g^(subsum ri)
+		std::vector<std::pair<std::vector<u64>, u8*>> mG_pairs; //{index of sub ri}, g^(subsum ri)
 		mG_pairs.reserve(myInputSize);
 
 		std::vector<u64> indices(mSetSeedsSize);
@@ -420,7 +431,9 @@ namespace osuCrypto
 
 
 			std::vector<u64> subIdx(indices.begin(), indices.begin() + mChoseSeedsSize);
-			mG_pairs.push_back(std::make_pair(subIdx, g_sum));
+			u8* temp = new u8[g_sum.sizeBytes()];
+			g_sum.toBytes(temp);
+			mG_pairs.push_back(std::make_pair(subIdx, temp));
 		}
 
 		//std::cout << "mG_pairs done" << std::endl;
@@ -443,6 +456,7 @@ namespace osuCrypto
 		{
 			pgK_seeds.emplace_back(mCurve);
 			pgK_seeds[i] = g_k * nSeeds[i];  //(g^k)^seeds
+			
 		}
 
 		u64 numThreads(chls.size());
@@ -466,21 +480,28 @@ namespace osuCrypto
 			u64 inputEndIdx = inputs.size() * (t + 1) / chls.size();
 			u64 subsetInputSize = inputEndIdx - inputStartIdx;
 
+			u64 theirInputStartIdx = mTheirInputSize * t / chls.size();
+			u64 theirInputEndIdx = mTheirInputSize * (t + 1) / chls.size();
+			u64 theirSubsetInputSize = theirInputEndIdx - theirInputStartIdx;
+
+
 			auto& chl = chls[t];
 
-			//EllipticCurve curve(p256k1, thrdPrng[t].get<block>());
 
 			RandomOracle inputHasher(sizeof(block));
-			EccPoint point(mCurve), yik(mCurve), xk(mCurve), gri(mCurve), xab(mCurve);
+			EccPoint point(mCurve), yik(mCurve), xk(mCurve), gri(mCurve), xab(mCurve), tempCurve(mCurve);
+			std::vector<EccPoint> pgK_sum;
+			pgK_sum.reserve(subsetInputSize);
+			int idx_pgK = 0;
 
 			std::vector<EccPoint> yi; //yi=H(xi)*g^ri
 			yi.reserve(subsetInputSize);
 			int idxYi = 0;
 
-			for (u64 i = inputStartIdx; i < inputEndIdx; i += stepSize)  //yi=H(xi)*g^ri
+			for (u64 i = inputStartIdx; i < inputEndIdx; i += myStepSize)  //yi=H(xi)*g^ri
 			{
 
-				auto curStepSize = std::min(stepSize, inputEndIdx - i);
+				auto curStepSize = std::min(myStepSize, inputEndIdx - i);
 
 				std::vector<u8> sendBuff(yik.sizeBytes() * curStepSize);
 				auto sendIter = sendBuff.data();
@@ -498,7 +519,8 @@ namespace osuCrypto
 													   //std::cout << "sp  " << point << "  " << toBlock(hashOut) << std::endl;
 
 					yi.emplace_back(mCurve);
-					yi[idxYi] = (point + mG_pairs[i + k].second); //H(x) *g^ri
+					tempCurve.fromBytes(mG_pairs[i + k].second);
+					yi[idxYi] = (point + tempCurve); //H(x) *g^ri
 
 #ifdef PRINT
 					if (i + k == 10)
@@ -512,17 +534,25 @@ namespace osuCrypto
 
 
 				 //compute  (g^K)^ri from seeds
-				std::vector<EccPoint> pgK_sum;
-				pgK_sum.reserve(curStepSize);
+				
 
 				for (u64 k = 0; k < curStepSize; k++)
 				{
 					pgK_sum.emplace_back(mCurve);
-					for (u64 j = 0; j < mG_pairs[i+k].first.size(); j++) //for all subset ri
-						pgK_sum[k] = pgK_sum[k] + pgK_seeds[mG_pairs[i+k].first[j]]; //(g^k)^(subsum ri)
+					for (u64 j = 0; j < mG_pairs[i + k].first.size(); j++) //for all subset ri
+						pgK_sum[idx_pgK] = pgK_sum[idx_pgK] + pgK_seeds[mG_pairs[i + k].first[j]]; //(g^k)^(subsum ri)
+				
+					idx_pgK++;
 				}
 
+			}
+			
+			idx_pgK = 0;
 
+			for (u64 i = inputStartIdx; i < inputEndIdx; i += myStepSize)  //yi=H(xi)*g^ri
+			{
+
+				auto curStepSize = std::min(myStepSize, inputEndIdx - i);
 
 				std::vector<u8> recvBuff(yi[0].sizeBytes() * curStepSize); //receiving yi^k = H(x)^k *g^ri^k
 				u8* xk_byte = new u8[yi[0].sizeBytes()];
@@ -540,7 +570,7 @@ namespace osuCrypto
 				for (u64 k = 0; k < curStepSize; ++k)
 				{
 					yik.fromBytes(recvIter); recvIter += yik.sizeBytes();
-					xk = yik - pgK_sum[k]; //H(x)^k
+					xk = yik - pgK_sum[idx_pgK++]; //H(x)^k
 					xk.toBytes(xk_byte);
 					temp = toBlock(xk_byte); //H(x)^k
 
@@ -584,9 +614,9 @@ namespace osuCrypto
 		auto receiveMask = [&](u64 t)
 		{
 			auto& chl = chls[t]; //parallel along with inputs
-			u64 startIdx = mTheirInputSize * t / numThreads;
-			u64 tempEndIdx = mTheirInputSize* (t + 1) / numThreads;
-			u64 endIdx = std::min(tempEndIdx, mTheirInputSize);
+			u64 theirStartIdx = mTheirInputSize * t / numThreads;
+			u64 tempTheirEndIdx = mTheirInputSize* (t + 1) / numThreads;
+			u64 theirEndIdx = std::min(tempTheirEndIdx, mTheirInputSize);
 
 			std::vector<u8> recvBuffs;
 			chl.recv(recvBuffs); //receive Hash
@@ -594,9 +624,9 @@ namespace osuCrypto
 			//std::cout << "r toBlock(recvBuffs): " << t << " - " << toBlock(theirMasks) << std::endl;
 
 
-			for (u64 i = startIdx; i < endIdx; i += stepSizeMaskSent)
+			for (u64 i = theirStartIdx; i < tempTheirEndIdx; i += stepSizeMaskSent)
 			{
-				auto curStepSize = std::min(stepSizeMaskSent, endIdx - i);
+				auto curStepSize = std::min(stepSizeMaskSent, theirEndIdx - i);
 
 				if (n1n2MaskBytes >= sizeof(u64)) //unordered_map only work for key >= 64 bits. i.e. setsize >=2^12
 				{

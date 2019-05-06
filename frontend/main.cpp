@@ -249,7 +249,7 @@ void JL10Sender(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numThre
 	for (u64 i = 0; i < numThreads; ++i)
 		sendChls[i] = ep1.addChannel("chl" + std::to_string(i), "chl" + std::to_string(i));
 
-	sender.startPsi(inputs.size(), theirSetSize, 40, prng0.get<block>(), inputs, sendChls);
+	sender.startPsi_subsetsum(inputs.size(), theirSetSize, 40, prng0.get<block>(), inputs, sendChls);
 	std::cout << gTimer << std::endl;
 
 	for (u64 i = 0; i < numThreads; ++i)
@@ -300,7 +300,7 @@ void JL10Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 	for (u64 i = 0; i < numThreads; ++i)
 		recvChls[i] = ep0.addChannel("chl" + std::to_string(i), "chl" + std::to_string(i));
 
-	recv.startPsi(inputs.size(), theirSetSize, 40, prng1.get<block>(), inputs, recvChls);
+	recv.startPsi_subsetsum(inputs.size(), theirSetSize, 40, prng1.get<block>(), inputs, recvChls);
 
 
 	std::cout << gTimer << std::endl;
@@ -1141,7 +1141,7 @@ int main(int argc, char** argv)
 	
 
 	string ipadrr = "localhost:1212";
-	u64 sendSetSize = 1 << 10, recvSetSize = 1 << 12, numThreads = 2;
+	u64 sendSetSize = 1 << 10, recvSetSize = 1 << 12, numThreads = 1;
 
 	PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
 
