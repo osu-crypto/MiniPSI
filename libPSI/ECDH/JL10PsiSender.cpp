@@ -273,6 +273,9 @@ namespace osuCrypto
 		nK.randomize(mPrng);
 		pG = mCurve.getGenerator();
 
+		mN_byte = new u8[nK.sizeBytes()];
+		nK.toBytes(mN_byte); //g^k
+
 		auto g_k = pG*nK;
 
 		u8* mG_K = new u8[g_k.sizeBytes()];
@@ -323,10 +326,10 @@ namespace osuCrypto
 			RandomOracle inputHasher(sizeof(block));
 			block hashOut;
 
-			//EllipticCurve curve(p256k1, thrdPrng[t].get<block>());
-
-			//EllipticCurve mCurve(k283, OneBlock);
+			EllipticCurve mCurve(k283, OneBlock);
 			EccPoint point(mCurve), yik(mCurve), yi(mCurve), xk(mCurve);
+			EccNumber nK(mCurve);
+			nK.fromBytes(mN_byte); //g^k
 
 			u8* temp = new u8[xk.sizeBytes()];
 

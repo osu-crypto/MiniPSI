@@ -471,7 +471,7 @@ namespace tests_libOTe
 	void JL10PSI_subsetsum_impl()
 	{
 		setThreadName("EchdSender");
-		u64 setSenderSize = 1 << 8, setRecvSize = 1 <<9, psiSecParam = 40, numThreads(1);
+		u64 setSenderSize = 1 << 7, setRecvSize = 1 <<8, psiSecParam = 40, numThreads(1);
 
 		PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
 		PRNG prng1(_mm_set_epi32(4253465, 3434565, 234435, 23987025));

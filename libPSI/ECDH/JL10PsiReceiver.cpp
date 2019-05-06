@@ -477,13 +477,18 @@ namespace osuCrypto
 
 		//compute seeds (g^k)^ri
 		std::vector<EccPoint> pgK_seeds;
+		std::vector<u8*> mgK_seeds_bytes;
 		pgK_seeds.reserve(mSetSeedsSize);
+		mgK_seeds_bytes.resize(mSetSeedsSize);
 
 		//seeds //todo: paralel
 		for (u64 i = 0; i < mSetSeedsSize; i++)
 		{
 			pgK_seeds.emplace_back(mCurve);
 			pgK_seeds[i] = g_k * nSeeds[i];  //(g^k)^seeds
+
+			mgK_seeds_bytes[i] = new u8[mCurveByteSize];
+			pgK_seeds[i].toBytes(mgK_seeds_bytes[i]);
 			
 		}
 
@@ -512,11 +517,10 @@ namespace osuCrypto
 			u64 theirInputEndIdx = mTheirInputSize * (t + 1) / chls.size();
 			u64 theirSubsetInputSize = theirInputEndIdx - theirInputStartIdx;
 
-
 			auto& chl = chls[t];
-
-
 			RandomOracle inputHasher(sizeof(block));
+			
+			EllipticCurve mCurve(k283, OneBlock);
 			EccPoint point(mCurve), yik(mCurve), xk(mCurve), gri(mCurve), xab(mCurve), tempCurve(mCurve);
 			std::vector<EccPoint> pgK_sum;
 			pgK_sum.reserve(subsetInputSize);
@@ -571,17 +575,20 @@ namespace osuCrypto
 					if (mBoundCoeffs == 2)
 					{
 						for (u64 j = 0; j < mG_pairs[i + k].first.size(); j++) //for all subset ri
-							pgK_sum[idx_pgK] = pgK_sum[idx_pgK] + pgK_seeds[mG_pairs[i + k].first[j]]; //(g^k)^(subsum ri)
+						{
+							tempCurve.fromBytes(mgK_seeds_bytes[mG_pairs[i + k].first[j]]);
+							pgK_sum[idx_pgK] = pgK_sum[idx_pgK] + tempCurve; //(g^k)^(subsum ri)
+						}
 					}
 					else
 					{
 						for (u64 j = 0; j < mG_pairs[i + k].first.size(); j++) //for all subset ri
 						{
 							EccNumber ci(mCurve, mIntCi[i][j]);
-							pgK_sum[idx_pgK] = pgK_sum[idx_pgK] + pgK_seeds[mG_pairs[i + k].first[j]]*ci; //(g^k)^(subsum ri)
+							tempCurve.fromBytes(mgK_seeds_bytes[mG_pairs[i + k].first[j]]);
+							pgK_sum[idx_pgK] = pgK_sum[idx_pgK] + tempCurve*ci; //(g^k)^(subsum ri)
 						}
 					}
-
 
 					idx_pgK++;
 				}
@@ -713,7 +720,15 @@ namespace osuCrypto
 							//std::cout << "r myMasks: " << i + k << " - " << match->second.first << std::endl;
 
 							if (memcmp(theirMasks, &match->second.first, n1n2MaskBytes) == 0) // check full mask
-								mIntersection.push_back(match->second.second);
+								if (isMultiThreaded)
+								{
+									std::lock_guard<std::mutex> lock(mtx);
+									mIntersection.push_back(match->second.second);
+								}
+								else
+								{
+									mIntersection.push_back(match->second.second);
+								}
 						}
 						theirMasks += n1n2MaskBytes;
 

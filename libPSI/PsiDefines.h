@@ -106,7 +106,7 @@ namespace osuCrypto
 	inline void getBestExpParams(u64 setSize, u64& numSeeds, u64& numChosen, u64& boundCoeff)
 	{
 
-		if (setSize <= (1 << 8))
+		if (setSize <= (1 << 5))
 		{
 			numSeeds = 1<<5;
 			numChosen = 19;
