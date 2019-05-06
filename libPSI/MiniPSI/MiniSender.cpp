@@ -36,6 +36,7 @@ namespace osuCrypto
 		simple.init(mTheirInputSize, recvMaxBinSize, recvNumDummies);
 
 		EllipticCurve mCurve(k283, OneBlock);
+		//EllipticCurve mCurve(k283, OneBlock);
 		mFieldSize = mCurve.bitCount();
 
 		//std::cout << "s mFieldSize= " << mFieldSize << "\n";
@@ -81,18 +82,27 @@ namespace osuCrypto
 		//=====================Poly=====================
 		u64 degree = mTheirInputSize - 1;
 		
+			int numEvalPoint = std::max(mMyInputSize, mTheirInputSize);//since the multipoint evalution require |X|>= |degree| => paadding (TODO: optimze it!)
+
 			mPrime = mPrime264;
 			ZZ_p::init(ZZ(mPrime));
 
-			ZZ_p* zzX = new ZZ_p[inputs.size()];
-			ZZ_p* zzY = new ZZ_p[inputs.size()];
+			ZZ_p* zzX = new ZZ_p[numEvalPoint]; 
+			ZZ_p* zzY = new ZZ_p[numEvalPoint];
 			ZZ zz;
 
-			for (u64 idx = 0; idx < inputs.size(); idx++)
+			for (u64 idx = 0; idx < mMyInputSize; idx++)
 			{
 				ZZFromBytes(zz, (u8*)&inputs[idx], sizeof(block));
 				zzX[idx] = to_ZZ_p(zz);
 			}
+
+			for (u64 idx = mMyInputSize; idx < numEvalPoint; idx++)
+			{
+				zzX[idx] = random_ZZ_p();
+			}
+
+
 
 			ZZ_pX* p_tree = new ZZ_pX[degree * 2 + 1];
 			ZZ_pX* reminders = new ZZ_pX[degree * 2 + 1];
@@ -137,6 +147,8 @@ namespace osuCrypto
 			u64 startIdx = mMyInputSize * t / numThreads;
 			u64 tempEndIdx = mMyInputSize* (t + 1) / numThreads;
 			u64 endIdx = std::min(tempEndIdx, mMyInputSize);
+
+			//std::cout << startIdx << " vs  " << endIdx << " sssendIdx \n";
 
 			for (u64 i = startIdx; i < endIdx; i += stepSizeMaskSent)
 			{

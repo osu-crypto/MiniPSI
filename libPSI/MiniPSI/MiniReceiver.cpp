@@ -255,6 +255,7 @@ namespace osuCrypto
 				u64 tempEndIdx = mTheirInputSize* (t + 1) / numThreads;
 				u64 endIdx = std::min(tempEndIdx, mTheirInputSize);
 
+				//std::cout << startIdx << " vs  " << endIdx << " rrrendIdx \n";
 
 				for (u64 i = startIdx; i < endIdx; i += stepSizeMaskSent)
 				{
@@ -311,7 +312,15 @@ namespace osuCrypto
 								//std::cout << "r myMasks: " << i + k << " - " << match->second.first << std::endl;
 
 								if (memcmp(theirMasks, &match->second.first, n1n2MaskBytes) == 0) // check full mask
-									mIntersection.push_back(match->second.second);
+									if (isMultiThreaded)
+									{
+										std::lock_guard<std::mutex> lock(mtx);
+										mIntersection.push_back(match->second.second);
+									}
+									else
+									{
+										mIntersection.push_back(match->second.second);
+									}
 							}
 							theirMasks += n1n2MaskBytes;
 

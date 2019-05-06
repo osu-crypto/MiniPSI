@@ -39,7 +39,7 @@ namespace tests_libOTe
 	void MiniPSI_impl2()
 	{
 		setThreadName("EchdSender");
-		u64 setSenderSize = 1 << 6, setRecvSize = 1 << 6, psiSecParam = 40, numThreads(1);
+		u64 setSenderSize = 1 << 6, setRecvSize = 1 << 7, psiSecParam = 40, numThreads(1);
 
 		PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
 		PRNG prng1(_mm_set_epi32(4253465, 3434565, 234435, 23987025));
@@ -53,7 +53,7 @@ namespace tests_libOTe
 			recvSet[i] = prng0.get<block>();
 
 
-		for (u64 i = 0; i < setSenderSize; ++i)
+		for (u64 i = 0; i < 10; ++i)
 		{
 			sendSet[i] = recvSet[i];
 			//std::cout << "intersection: " <<sendSet[i] << "\n";
