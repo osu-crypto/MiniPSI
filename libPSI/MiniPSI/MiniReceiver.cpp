@@ -459,7 +459,7 @@ namespace osuCrypto
 			mMyInputSize = myInputSize;
 			mTheirInputSize = theirInputSize;
 			mPrng.SetSeed(prng.get<block>());
-			getExpParams(mMyInputSize, mSetSeedsSize, mChoseSeedsSize);
+			getBestExpParams(mMyInputSize, mSetSeedsSize, mChoseSeedsSize, mBoundCoeffs);
 
 			std::cout << "MiniReceiver::outputHashing r mSetSeedsSize= " << mMyInputSize << " - " << mSetSeedsSize << " - " << mChoseSeedsSize << "\n";
 
@@ -500,41 +500,53 @@ namespace osuCrypto
 			gTimer.setTimePoint("r off pG_seeds done");
 
 			//generate all pairs from seeds
-			std::vector<std::pair<std::vector<u64>, EccPoint>> mG_pairs; //{index of sub ri}, g^(subsum ri)
+			std::vector<std::pair<std::vector<u64>, u8*>> mG_pairs; //{index of sub ri}, g^(subsum ri)
 			mG_pairs.reserve(myInputSize);
 
 			std::vector<u64> indices(mSetSeedsSize);
 
 			for (u64 i = 0; i < myInputSize; i++)
 			{
-				std::iota(indices.begin(), indices.end(), 0);
-				std::random_shuffle(indices.begin(), indices.end()); //random permutation and get 1st K indices
+				if (mMyInputSize < (1 << 9))
+				{
+					std::iota(indices.begin(), indices.end(), 0);
+					std::random_shuffle(indices.begin(), indices.end()); //random permutation and get 1st K indices
+				}
+				else
+				{
+					indices.resize(0);
+					while (indices.size() < mChoseSeedsSize)
+					{
+						int rnd = rand() % mSetSeedsSize;
+						if (std::find(indices.begin(), indices.end(), rnd) == indices.end())
+							indices.push_back(rnd);
+					}
+				}
 
 				EccPoint g_sum(mCurve);
 
-				for (u64 j = 0; j < mChoseSeedsSize; j++)
-					g_sum = g_sum + pG_seeds[indices[j]]; //g^sum
+
+				if (mBoundCoeffs == 2)
+				{
+					for (u64 j = 0; j < mChoseSeedsSize; j++)
+						g_sum = g_sum + pG_seeds[indices[j]]; //g^sum //h=2   ci=1
+				}
+				else
+				{
+					mIntCi[i].resize(mChoseSeedsSize);
+
+					for (u64 j = 0; j < mChoseSeedsSize; j++)
+					{
+						mIntCi[i][j] = 1 + rand() % (mBoundCoeffs - 1);
+						EccNumber ci(mCurve, mIntCi[i][j]);
+						g_sum = g_sum + pG_seeds[indices[j]] * ci; //g^ci*sum
+					}
+				}
 
 				std::vector<u64> subIdx(indices.begin(), indices.begin() + mChoseSeedsSize);
-				mG_pairs.push_back(std::make_pair(subIdx, g_sum));
-
-
-				//std::cout << "r sum= " << mG_pairs[i].first[0]
-				//	<< " - " << g_sum.sizeBytes()
-				//	<< " - " << toBlock(mG_pairs[i].second)
-				//	<< " - " << toBlock(mG_pairs[i].second + sizeof(block))
-				//	<< " - " << toBlock(mG_pairs[i].second + g_sum.sizeBytes() - 2 * sizeof(block)) << std::endl;
-
-				//EccPoint g_sumTest(mCurve);
-				//g_sumTest.fromBytes(mG_pairs[i].second);
-				//std::cout << g_sum << "\n";
-				//std::cout << g_sumTest << "\n";
-
-				//u8* tempBlk = new u8[g_sum.sizeBytes()];
-				//tempBlk = mG_pairs[i].second;
-				//g_sumTest.fromBytes(tempBlk);
-				//std::cout << g_sumTest << "\n";
-
+				u8* temp = new u8[g_sum.sizeBytes()];
+				g_sum.toBytes(temp);
+				mG_pairs.push_back(std::make_pair(subIdx, temp));
 			}
 			mBalance.init(mMyInputSize, recvMaxBinSize, recvNumDummies);
 
@@ -579,6 +591,21 @@ namespace osuCrypto
 												 //std::cout << mG_seeds[i] << std::endl;		
 			}
 
+			std::vector<block> mG_sum_blk;
+			mG_sum_blk.resize(mMyInputSize);
+			EccPoint g_sum(mCurve);
+			u8* tempByte = new u8[g_sum.sizeBytes()];
+			//compute (g^k)^sum ri
+			for (u64 i = 0; i< mMyInputSize; ++i)
+			{
+
+				for (u64 j = 0; j < mG_pairs[i].first.size(); j++) //for all subset ri
+					g_sum = g_sum + pgK_seeds[mG_pairs[i].first[j]]; //(g^k)^(subsum ri)
+
+				g_sum.toBytes(tempByte);
+				mG_sum_blk[i] = toBlock(tempByte);
+			}
+
 
 			//=====================Poly=====================
 			auto routine = [&](u64 t)
@@ -612,7 +639,8 @@ namespace osuCrypto
 								listGRi[idx][j] = ZeroBlock; //init
 
 							u8* temp = new u8[mPolyBytes];
-							mG_pairs[mBalance.mBins[bIdx].idxs[idx]].second.toBytes(temp);
+							memcpy(temp, mG_pairs[mBalance.mBins[bIdx].idxs[idx]].second, mPolyBytes);
+							//mG_pairs[mBalance.mBins[bIdx].idxs[idx]].second.toBytes(temp);
 							memcpy((u8*)&listGRi[idx], temp, mPolyBytes);
 						}
 													
@@ -663,23 +691,11 @@ namespace osuCrypto
 					for (u64 k = 0; k < curStepSize; ++k)
 					{
 						u64 bIdx = i + k;
-					
 						for (u64 idx = 0; idx < mBalance.mBins[bIdx].cnt; ++idx)
 						{
-							EccPoint gk_sum(mCurve);
 							int idxItem = mBalance.mBins[bIdx].idxs[idx];
 							int idxItemHash = mBalance.mBins[bIdx].hashIdxs[idx];
-
-							for (u64 j = 0; j < mG_pairs[idxItem].first.size(); j++) //for all subset ri
-								gk_sum = gk_sum + pgK_seeds[mG_pairs[idxItem].first[j]]; //(g^k)^(subsum ri)
-
-							u8* gk_sum_byte = new u8[gk_sum.sizeBytes()];
-							gk_sum.toBytes(gk_sum_byte);
-
-							//std::cout << "r gk_sum: " << i << " - " << gk_sum << std::endl;
-							//std::cout << "r toBlock(gk_sum_byte): " << i << " - " << toBlock(gk_sum_byte) << std::endl;
-							block temp = toBlock(gk_sum_byte);
-							localMasks[idxItemHash].emplace(*(u64*)&temp, std::pair<block, u64>(temp, idxItem));
+							localMasks[idxItemHash].emplace(*(u64*)&mG_sum_blk[idxItem], std::pair<block, u64>(mG_sum_blk[idxItem], idxItem));
 						}
 					}
 				}

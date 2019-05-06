@@ -379,7 +379,7 @@ void Mini19Sender(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 
 	std::cout << "\n";
 	//====================
-#if 0
+#if 1
 	for (u64 i = 0; i < numThreads; ++i)
 		sendChls[i] = ep1.addChannel("chl" + std::to_string(i + numThreads), "chl" + std::to_string(i + numThreads));
 
@@ -444,7 +444,7 @@ void Mini19Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 num
 
 
 	//====================outputHashing
-#if 0
+#if 1
 	std::cout << "\n";
 	for (u64 i = 0; i < numThreads; ++i)
 		recvChls[i] = ep0.addChannel("chl" + std::to_string(numThreads + i), "chl" + std::to_string(numThreads + i));
@@ -1142,7 +1142,7 @@ int main(int argc, char** argv)
 	
 
 	string ipadrr = "localhost:1212";
-	u64 sendSetSize = 1 << 9, recvSetSize = 1 << 10, numThreads = 2;
+	u64 sendSetSize = 1 << 8, recvSetSize = 1 << 9, numThreads = 2;
 
 	PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
 
