@@ -758,6 +758,7 @@ namespace osuCrypto
 	
 	void JL10PsiReceiver::startPsi_gK(u64 myInputSize, u64 theirInputSize, u64 secParam, block seed, span<block> inputs, span<Channel> chls)
 	{
+		int cntDataSendRecv = 0;
 		for (u64 i = 0; i < chls.size(); ++i)
 		{
 			u8 dummy[1];
@@ -845,6 +846,9 @@ namespace osuCrypto
 		chls[0].recv(mG_K);
 		g_k.fromBytes(mG_K.data()); //receiving g^k
 
+
+		cntDataSendRecv += g_k.sizeBytes();
+
 		mCurveByteSize = g_k.sizeBytes();
 		tempToFromByteCurve = new u8[mCurveByteSize];
 
@@ -928,6 +932,11 @@ namespace osuCrypto
 				auto curStepSize = std::min(myStepSize, inputEndIdx - i);
 
 				std::vector<u8> sendBuff(yik.sizeBytes() * curStepSize);
+
+				std::lock_guard<std::mutex> lock(mtx);
+				cntDataSendRecv += yik.sizeBytes() * curStepSize;
+
+
 				auto sendIter = sendBuff.data();
 				//	std::cout << "send H(y)^b" << std::endl;
 
@@ -972,6 +981,9 @@ namespace osuCrypto
 				block temp;
 
 				chl.recv(recvBuff); //recv yi^k
+
+				std::lock_guard<std::mutex> lock(mtx);
+				cntDataSendRecv += curStepSize * yi.sizeBytes();
 
 				if (recvBuff.size() != curStepSize * yi.sizeBytes())
 				{
@@ -1038,9 +1050,23 @@ namespace osuCrypto
 			u64 theirStartIdx = mTheirInputSize * t / numThreads;
 			u64 tempTheirEndIdx = mTheirInputSize* (t + 1) / numThreads;
 			u64 theirEndIdx = std::min(tempTheirEndIdx, mTheirInputSize);
+			u64 theirSubsetInputSize = theirEndIdx - theirStartIdx;
+
 
 			std::vector<u8> recvBuffs;
 			chl.recv(recvBuffs); //receive Hash
+
+
+			std::lock_guard<std::mutex> lock(mtx);
+			cntDataSendRecv += n1n2MaskBytes*theirSubsetInputSize;
+
+			if (recvBuffs.size() != n1n2MaskBytes*theirSubsetInputSize)
+			{
+				std::cout << "error @ " << (LOCATION) << std::endl;
+				throw std::runtime_error(LOCATION);
+			}
+
+
 			auto theirMasks = recvBuffs.data();
 			//std::cout << "r toBlock(recvBuffs): " << t << " - " << toBlock(theirMasks) << std::endl;
 
@@ -1115,6 +1141,7 @@ namespace osuCrypto
 			thrd.join();
 
 		gTimer.setTimePoint("r psi done");
+		std::cout << cntDataSendRecv << " r cntDataSendRecv bytes\n";
 		//std::cout << "r gkr done\n";
 
 #endif

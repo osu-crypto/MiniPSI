@@ -25,9 +25,9 @@ namespace osuCrypto
 
         auto curveParam = k283;
 
-        u64 theirInputSize = inputs.size();
-
 		u64 maskSizeByte = (40 + log2(inputs.size()*mTheirInputSize) + 7) / 8;
+		std::cout << "s maskSizeByte = " << maskSizeByte <<"\n";
+
 
         std::vector<PRNG> thrdPrng(chls.size());
         for (u64 i = 0; i < thrdPrng.size(); i++)
@@ -337,7 +337,7 @@ namespace osuCrypto
 		gTimer.reset();
 
 		mTheirInputSize = theirInputSize;
-		mN = n;
+		mN = inputs.size();
 		mSecParam = secParam;
 		mPrng.SetSeed(seed);
 

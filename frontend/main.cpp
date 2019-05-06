@@ -328,6 +328,7 @@ void JL10Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 	recv.startPsi_subsetsum_gK(inputs.size(), theirSetSize, 40, prng1.get<block>(), inputs, recvChls);
 	std::cout << gTimer << std::endl;
 
+	dataSent = 0, dataRecv = 0;
 
 	for (u64 g = 0; g < recvChls.size(); ++g)
 	{
@@ -453,7 +454,7 @@ void Mini19Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 num
 
 	std::cout << gTimer << std::endl;
 
-
+	dataSent = 0, dataRecv=0;
 	for (u64 g = 0; g < recvChls.size(); ++g)
 	{
 		dataSent += recvChls[g].getTotalDataSent();

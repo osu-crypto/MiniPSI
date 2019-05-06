@@ -214,7 +214,7 @@ namespace osuCrypto
 		{
 			auto& chl = chls[t]; //parallel along with inputs
 			u64 startIdx = myInputSize * t / numThreads;
-			u64 tempEndIdx = mTheirInputSize* (t + 1) / numThreads;
+			u64 tempEndIdx = myInputSize* (t + 1) / numThreads;
 			u64 endIdx = std::min(tempEndIdx, myInputSize);
 			u64 subsetInputSize = endIdx - startIdx;
 
@@ -298,6 +298,7 @@ namespace osuCrypto
 
 		u64 n1n2MaskBits = (40 + log2(mTheirInputSize*mMyInputSize));
 		u64 n1n2MaskBytes = (n1n2MaskBits + 7) / 8;
+		std::cout << "s n1n2MaskBytes = " << n1n2MaskBytes << "\n";
 
 
 		std::vector<std::vector<u8>> sendBuff_mask(chls.size()); //H(x)^k
@@ -361,6 +362,7 @@ namespace osuCrypto
 				}
 			}
 
+
 			for (u64 i = theirInputStartIdx; i < theirInputEndIdx; i += theirStepSize)
 			{
 				auto curStepSize = std::min(theirStepSize, theirInputEndIdx - i);
@@ -414,9 +416,9 @@ namespace osuCrypto
 		auto receiveMask = [&](u64 t)
 		{
 			auto& chl = chls[t]; //parallel along with inputs
-			u64 startIdx = mTheirInputSize * t / numThreads;
-			u64 tempEndIdx = mTheirInputSize* (t + 1) / numThreads;
-			u64 endIdx = std::min(tempEndIdx, mTheirInputSize);
+			u64 startIdx = myInputSize * t / numThreads;
+			u64 tempEndIdx = myInputSize* (t + 1) / numThreads;
+			u64 endIdx = std::min(tempEndIdx, myInputSize);
 			u64 subsetInputSize = endIdx - startIdx;
 
 
