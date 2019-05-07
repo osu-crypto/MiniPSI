@@ -1984,7 +1984,7 @@ namespace osuCrypto
 		getBestExpParams(mMyInputSize, mSetSeedsSize, mChoseSeedsSize, mBoundCoeffs);
 
 
-		std::cout << "startPsi_subsetsum r mSetSeedsSize= " << mMyInputSize << " - " << mSetSeedsSize << " - " << mChoseSeedsSize << "\n";
+		std::cout << "startPsi_subsetsum_asyn r mSetSeedsSize= " << mMyInputSize << " - " << mSetSeedsSize << " - " << mChoseSeedsSize << "\n";
 
 		mCurveSeed = mPrng.get<block>();
 		EllipticCurve mCurve(myEccpParams, OneBlock);
@@ -2268,7 +2268,8 @@ namespace osuCrypto
 
 		std::cout<<"r exp done\n";
 		gTimer.setTimePoint("r exp done");
-#if 1
+
+#if 0
 		//#####################Receive Mask #####################
 
 

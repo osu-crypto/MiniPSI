@@ -262,7 +262,7 @@ void JL10Sender(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numThre
 	for (u64 i = 0; i < numThreads; ++i)
 		sendChls[i] = ep1.addChannel("chl" + std::to_string(i+ numThreads), "chl" + std::to_string(i+ numThreads));
 
-	sender.startPsi_subsetsum(inputs.size(), theirSetSize, 40, prng0.get<block>(), inputs, sendChls);
+	sender.startPsi_subsetsum_asyn(inputs.size(), theirSetSize, 40, prng0.get<block>(), inputs, sendChls);
 	std::cout << gTimer << std::endl;
 
 	for (u64 i = 0; i < numThreads; ++i)
@@ -327,7 +327,7 @@ void JL10Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 	for (u64 i = 0; i < numThreads; ++i)
 		recvChls[i] = ep0.addChannel("chl" + std::to_string(numThreads+i), "chl" + std::to_string(numThreads+i));
 
-	recv.startPsi_subsetsum_gK(inputs.size(), theirSetSize, 40, prng1.get<block>(), inputs, recvChls);
+	recv.startPsi_subsetsum_asyn(inputs.size(), theirSetSize, 40, prng1.get<block>(), inputs, recvChls);
 	std::cout << gTimer << std::endl;
 
 	dataSent = 0, dataRecv = 0;
@@ -1182,16 +1182,16 @@ int main(int argc, char** argv)
 
 	std::cout << "SetSize: " << sendSetSize << " vs " << recvSetSize << "   |  numThreads: " << numThreads << "\n";
 	
-#if 0
+#if 1
 	std::thread thrd = std::thread([&]() {
 		//EchdSender(sendSetSize, recvSetSize, ipadrr, numThreads);
-		//JL10Sender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
-		Mini19Sender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
+		JL10Sender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
+		//Mini19Sender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
 	});
 
 	//EchdReceiver(recvSetSize, sendSetSize, ipadrr, numThreads);
-	//JL10Receiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
-	Mini19Receiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
+	JL10Receiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
+	//Mini19Receiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
 
 	thrd.join();
 	return 0;
@@ -1218,16 +1218,16 @@ int main(int argc, char** argv)
 	else if (argv[1][0] == '-' && argv[1][1] == 'r' && atoi(argv[2]) == 0) {
 
 
-		EchdSender(sendSetSize, recvSetSize, ipadrr, numThreads);
+		//EchdSender(sendSetSize, recvSetSize, ipadrr, numThreads);
 		JL10Sender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
-		Mini19Sender(sendSetSize, recvSetSize, "localhost:1214", numThreads);
+		//Mini19Sender(sendSetSize, recvSetSize, "localhost:1214", numThreads);
 
 
 	}
 	else if (argv[1][0] == '-' && argv[1][1] == 'r' && atoi(argv[2]) == 1) {
-		EchdReceiver(recvSetSize, sendSetSize, ipadrr, numThreads);
+		//EchdReceiver(recvSetSize, sendSetSize, ipadrr, numThreads);
 		JL10Receiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
-		Mini19Receiver(recvSetSize, sendSetSize, "localhost:1214", numThreads);
+		//Mini19Receiver(recvSetSize, sendSetSize, "localhost:1214", numThreads);
 
 	}
 	else {

@@ -869,10 +869,11 @@ namespace osuCrypto
 		for (auto& thrd : thrds)
 			thrd.join();
 
+		std::cout << "s before sending mask done\n";
 
 		//#####################Send Mask #####################
 
-#if 1
+#if 0
 		auto receiveMask = [&](u64 t)
 		{
 			auto& chl = chls[t]; //parallel along with inputs
