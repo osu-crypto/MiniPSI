@@ -2073,7 +2073,7 @@ namespace osuCrypto
 			mG_pairs.push_back(std::make_pair(subIdx, temp));
 		}
 
-		//std::cout << "mG_pairs done" << std::endl;
+		std::cout << "r mG_pairs done" << std::endl;
 
 		//####################### online #########################
 		gTimer.setTimePoint("r online start ");
@@ -2126,6 +2126,7 @@ namespace osuCrypto
 			pgK_sum.toBytes(pgK_sum_bytes[k]);
 		}
 
+		std::cout << "r g^k^ri done" << std::endl;
 		gTimer.setTimePoint("r g^k^ri done");
 
 
@@ -2265,6 +2266,7 @@ namespace osuCrypto
 		for (auto& thrd : thrds)
 			thrd.join();
 
+		std::cout<<"r exp done\n";
 		gTimer.setTimePoint("r exp done");
 #if 1
 		//#####################Receive Mask #####################
