@@ -42,7 +42,7 @@ namespace osuCrypto
 
 		mPrng.SetSeed(seed);
 		
-		EllipticCurve mCurve(k283, OneBlock);
+		EllipticCurve mCurve(myEccpParams, OneBlock);
 		mFieldSize = mCurve.bitCount();
 
 
@@ -108,7 +108,7 @@ namespace osuCrypto
 
 			RandomOracle inputHasher(sizeof(block));
 			
-			EllipticCurve mCurve(k283, OneBlock);
+			EllipticCurve mCurve(myEccpParams, OneBlock);
 			EccPoint point(mCurve), yik(mCurve), yi(mCurve), xk(mCurve);
 			EccNumber nK(mCurve);
 			nK.fromBytes(mN_byte);
@@ -264,7 +264,7 @@ namespace osuCrypto
 
 		mPrng.SetSeed(seed);
 
-		EllipticCurve mCurve(k283, OneBlock);
+		EllipticCurve mCurve(myEccpParams, OneBlock);
 		mFieldSize = mCurve.bitCount();
 
 
@@ -327,7 +327,7 @@ namespace osuCrypto
 			RandomOracle inputHasher(sizeof(block));
 			block hashOut;
 
-			EllipticCurve mCurve(k283, OneBlock);
+			EllipticCurve mCurve(myEccpParams, OneBlock);
 			EccPoint point(mCurve), yik(mCurve), yi(mCurve), xk(mCurve);
 			EccNumber nK(mCurve);
 			nK.fromBytes(mN_byte); //g^k
@@ -447,6 +447,7 @@ namespace osuCrypto
 
 	}
 
+
 	bool JL10PsiSender::startPsi_subsetsum_malicious(u64 myInputSize, u64 theirInputSize, u64 secParam, block seed, span<block> inputs, span<Channel> chls)
 	{
 		for (u64 i = 0; i < chls.size(); ++i)
@@ -468,7 +469,7 @@ namespace osuCrypto
 
 		mPrng.SetSeed(seed);
 
-		EllipticCurve mCurve(k283, OneBlock);
+		EllipticCurve mCurve(myEccpParams, OneBlock);
 		mFieldSize = mCurve.bitCount();
 
 
@@ -522,7 +523,7 @@ namespace osuCrypto
 
 			//EllipticCurve curve(p256k1, thrdPrng[t].get<block>());
 
-			//EllipticCurve mCurve(k283, OneBlock);
+			//EllipticCurve mCurve(myEccpParams, OneBlock);
 			EccPoint point(mCurve), yik(mCurve), yi(mCurve), xk(mCurve);
 
 			u8* temp = new u8[xk.sizeBytes()];
@@ -698,5 +699,210 @@ namespace osuCrypto
 		return true;
 
 	}
+
+	void JL10PsiSender::startPsi_subsetsum_asyn(u64 myInputSize, u64 theirInputSize, u64 secParam, block seed, span<block> inputs, span<Channel> chls)
+	{
+		for (u64 i = 0; i < chls.size(); ++i)
+		{
+			u8 dummy[1];
+			chls[i].recv(dummy, 1);
+			chls[i].asyncSend(dummy, 1);
+			chls[i].resetStats();
+		}
+		//####################### offline #########################
+		gTimer.reset();
+		gTimer.setTimePoint("s offline start ");
+
+		mSecParam = secParam;
+		mPrng.SetSeed(seed);
+
+		mMyInputSize = myInputSize;
+		mTheirInputSize = theirInputSize;
+		myStepSize = myInputSize / numStep;
+		theirStepSize = mTheirInputSize / numStep;
+
+		mPrng.SetSeed(seed);
+
+		EllipticCurve mCurve(myEccpParams, OneBlock);
+		mFieldSize = mCurve.bitCount();
+
+
+		EccNumber nK(mCurve);
+		EccPoint pG(mCurve);
+		nK.randomize(mPrng);
+		pG = mCurve.getGenerator();
+
+		mN_byte = new u8[nK.sizeBytes()];
+		nK.toBytes(mN_byte); //g^k
+
+		auto g_k = pG*nK;
+
+		u8* mG_K = new u8[g_k.sizeBytes()];
+		g_k.toBytes(mG_K); //g^k
+
+		std::vector<u8> tempSend(g_k.sizeBytes());
+		memcpy(tempSend.data(), mG_K, g_k.sizeBytes());
+
+
+		//####################### online #########################
+		gTimer.setTimePoint("s online start ");
+
+		chls[0].asyncSend(std::move(tempSend));//send g^k
+
+		u64 numThreads(chls.size());
+		const bool isMultiThreaded = numThreads > 1;
+		std::vector<std::thread> thrds(numThreads);
+		std::mutex mtx;
+
+
+		u64 n1n2MaskBits = (40 + log2(mTheirInputSize*mMyInputSize));
+		u64 n1n2MaskBytes = (n1n2MaskBits + 7) / 8;
+		std::cout << "s n1n2MaskBytes = " << n1n2MaskBytes << "\n";
+
+
+		std::vector<std::vector<u8>> sendBuff_mask(chls.size()); //H(x)^k
+
+
+																 //##################### compute H(x*)^k. compute/send yi^k#####################
+
+		auto start = timer.setTimePoint("start");
+
+		auto routine = [&](u64 t)
+		{
+
+			u64 inputStartIdx = inputs.size() * t / chls.size();
+			u64 inputEndIdx = inputs.size() * (t + 1) / chls.size();
+			u64 subsetInputSize = inputEndIdx - inputStartIdx;
+
+			u64 theirInputStartIdx = mTheirInputSize * t / chls.size();
+			u64 theirInputEndIdx = mTheirInputSize * (t + 1) / chls.size();
+			u64 theirSubsetInputSize = theirInputEndIdx - theirInputStartIdx;
+
+			sendBuff_mask[t].resize(n1n2MaskBytes*theirSubsetInputSize);
+			auto sendIter2 = sendBuff_mask[t].data();
+
+
+			auto& chl = chls[t];
+			RandomOracle inputHasher(sizeof(block));
+			block hashOut;
+
+			EllipticCurve mCurve(myEccpParams, OneBlock);
+			EccPoint point(mCurve), yik(mCurve), yi(mCurve), xk(mCurve);
+			EccNumber nK(mCurve);
+			nK.fromBytes(mN_byte); //g^k
+
+			u8* temp = new u8[xk.sizeBytes()];
+
+
+			for (u64 i = inputStartIdx; i < inputEndIdx; i += myStepSize)  //yi=H(xi)*g^ri
+			{
+				auto curStepSize = std::min(myStepSize, inputEndIdx - i);
+
+				std::vector<u8> sendBuff(xk.sizeBytes() * curStepSize);
+				auto sendIter = sendBuff.data();
+
+				//	std::cout << "send H(y)^b" << std::endl;
+
+				//compute H(x)^k
+				for (u64 k = 0; k < curStepSize; ++k)
+				{
+
+					inputHasher.Reset();
+					inputHasher.Update(inputs[i + k]);
+					inputHasher.Final(hashOut);
+					point.randomize(hashOut); //H(x)
+											  //std::cout << "sp  " << point << "  " << toBlock(hashOut) << std::endl;
+					xk = (point * nK); //H(x)^k
+
+#ifdef PRINT
+					if (i + k == 10 || i + k == 20)
+						std::cout << "s xk[" << i + k << "] " << xk << std::endl;
+#endif
+					xk.toBytes(sendIter);
+					sendIter += xk.sizeBytes();
+				}
+				chl.asyncSend(std::move(sendBuff));	//send H(x)^a
+			}
+
+
+			for (u64 i = theirInputStartIdx; i < theirInputEndIdx; i += theirStepSize)
+			{
+				auto curStepSize = std::min(theirStepSize, theirInputEndIdx - i);
+#if 1
+				//receive yi=H(.)*g^ri
+				std::vector<u8> recvBuff(xk.sizeBytes() * curStepSize); //receiving yi^k = H(.)*g^ri
+				u8* temp=new u8(yik.sizeBytes());
+
+				chl.recv(recvBuff); //recv yi^k
+
+				if (recvBuff.size() != curStepSize * yi.sizeBytes())
+				{
+					std::cout << "error @ " << (LOCATION) << std::endl;
+					throw std::runtime_error(LOCATION);
+				}
+
+				auto recvIter = recvBuff.data();
+
+				for (u64 k = 0; k < curStepSize; ++k)
+				{
+					yi.fromBytes(recvIter); recvIter += yi.sizeBytes();
+					yik = yi*nK; //yi^k
+					yik.toBytes(temp);
+					memcpy(sendIter2, temp, n1n2MaskBytes);
+
+					sendIter2 += n1n2MaskBytes;
+				}
+#endif
+			}
+
+
+		};
+
+
+		for (u64 i = 0; i < numThreads; ++i)
+		{
+			thrds[i] = std::thread([=] {
+				routine(i);
+			});
+		}
+
+		for (auto& thrd : thrds)
+			thrd.join();
+
+
+		//#####################Send Mask #####################
+
+#if 1
+		auto receiveMask = [&](u64 t)
+		{
+			auto& chl = chls[t]; //parallel along with inputs
+			u64 startIdx = theirInputSize * t / numThreads;
+			u64 tempEndIdx = theirInputSize* (t + 1) / numThreads;
+			u64 endIdx = std::min(tempEndIdx, theirInputSize);
+			u64 subsetInputSize = endIdx - startIdx;
+
+			//std::cout << "s toBlock(sendBuff_mask): " << t << " - " << toBlock(myMasks) << std::endl;
+
+			chl.asyncSend(std::move(sendBuff_mask[t])); //sending truncate of (H(their x)*g^ri)^k
+
+
+		};
+
+		for (u64 i = 0; i < thrds.size(); ++i)//thrds.size()
+		{
+			thrds[i] = std::thread([=] {
+				receiveMask(i);
+			});
+		}
+
+		for (auto& thrd : thrds)
+			thrd.join();
+#endif
+		gTimer.setTimePoint("s Psi done");
+		std::cout << "s gkr done\n";
+
+
+	}
+
 
 }

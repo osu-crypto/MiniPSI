@@ -15,4 +15,5 @@ namespace tests_libOTe
 	void MiniPSI_malicious_impl();
 	void JL10PSI_subsetsum_malicious_impl();
 	void evalExp();
+	void curveTest();
 }

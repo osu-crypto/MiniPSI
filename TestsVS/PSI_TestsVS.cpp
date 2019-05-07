@@ -115,6 +115,13 @@ namespace tests_libOTe
 			evalExp();
 		}
 
+		TEST_METHOD(curve_TestVS)
+		{
+			InitDebugPrinting();
+			curveTest();
+		}
+
+
 	};
 }
 #endif

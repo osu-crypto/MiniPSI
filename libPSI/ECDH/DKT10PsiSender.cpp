@@ -28,7 +28,7 @@ namespace osuCrypto
 
 		mPrng.SetSeed(seed);
 		
-		EllipticCurve mCurve(k283, OneBlock);
+		EllipticCurve mCurve(myEccpParams, OneBlock);
 		mFieldSize = mCurve.bitCount();
 
 
@@ -83,7 +83,7 @@ namespace osuCrypto
 			//EllipticCurve curve(p256k1, thrdPrng[t].get<block>());
 
 			SHA1 inputHasher;
-			//EllipticCurve mCurve(k283, OneBlock);
+			//EllipticCurve mCurve(myEccpParams, OneBlock);
 			EccPoint point(mCurve), yik(mCurve), yi(mCurve), xk(mCurve);
 
 			u8* temp= new u8[xk.sizeBytes()];
@@ -210,7 +210,7 @@ namespace osuCrypto
 
 		mPrng.SetSeed(seed);
 
-		EllipticCurve mCurve(k283, OneBlock);
+		EllipticCurve mCurve(myEccpParams, OneBlock);
 		mFieldSize = mCurve.bitCount();
 
 
@@ -265,7 +265,7 @@ namespace osuCrypto
 			//EllipticCurve curve(p256k1, thrdPrng[t].get<block>());
 
 			SHA1 inputHasher;
-			//EllipticCurve mCurve(k283, OneBlock);
+			//EllipticCurve mCurve(myEccpParams, OneBlock);
 			EccPoint point(mCurve), yik(mCurve), yi(mCurve), xk(mCurve);
 
 			u8* temp = new u8[xk.sizeBytes()];
@@ -392,7 +392,7 @@ namespace osuCrypto
 
 		mPrng.SetSeed(seed);
 
-		EllipticCurve mCurve(k283, OneBlock);
+		EllipticCurve mCurve(myEccpParams, OneBlock);
 		mFieldSize = mCurve.bitCount();
 
 
@@ -446,7 +446,7 @@ namespace osuCrypto
 
 			//EllipticCurve curve(p256k1, thrdPrng[t].get<block>());
 
-			//EllipticCurve mCurve(k283, OneBlock);
+			//EllipticCurve mCurve(myEccpParams, OneBlock);
 			EccPoint point(mCurve), yik(mCurve), yi(mCurve), xk(mCurve);
 
 			u8* temp = new u8[xk.sizeBytes()];

@@ -244,6 +244,7 @@ void JL10Sender(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numThre
 
 	JL10PsiSender sender;
 
+#if 0
 	
 	//====================JL psi
 	for (u64 i = 0; i < numThreads; ++i)
@@ -254,7 +255,7 @@ void JL10Sender(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numThre
 
 	for (u64 i = 0; i < numThreads; ++i)
 		sendChls[i].close();
-
+#endif
 
 	//====================JL psi startPsi_subsetsum
 #if 1
@@ -295,8 +296,10 @@ void JL10Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 
 
 	JL10PsiReceiver recv;
+	u64 dataSent = 0, dataRecv(0);
 
 	//====================JL psi
+#if 0
 	for (u64 i = 0; i < numThreads; ++i)
 		recvChls[i] = ep0.addChannel("chl" + std::to_string(i), "chl" + std::to_string(i));
 
@@ -305,7 +308,6 @@ void JL10Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 
 	std::cout << gTimer << std::endl;
 
-	u64 dataSent = 0, dataRecv(0);
 	for (u64 g = 0; g < recvChls.size(); ++g)
 	{
 		dataSent += recvChls[g].getTotalDataSent();
@@ -317,7 +319,7 @@ void JL10Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 
 	for (u64 i = 0; i < numThreads; ++i)
 		recvChls[i].close();
-
+#endif
 
 	//====================JL psi startPsi_subsetsum
 #if 1
@@ -573,7 +575,7 @@ void subsetSum_test() {
 
 	PRNG prng(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
 
-	EllipticCurve mCurve(k283, OneBlock);
+	EllipticCurve mCurve(myEccpParams, OneBlock);
 	EccPoint mG(mCurve);
 	mG = mCurve.getGenerator();
 
@@ -635,7 +637,7 @@ void subsetSum_test() {
 
 void testExp(u64 curStepSize)
 {
-	EllipticCurve mCurve(k283, OneBlock);
+	EllipticCurve mCurve(myEccpParams, OneBlock);
 	PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
 
 	EccNumber nK(mCurve);
@@ -705,7 +707,7 @@ void testExp(u64 curStepSize)
 void evalExp(int n)
 {
 	PRNG prng(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
-	EllipticCurve mCurve(k283, OneBlock);
+	EllipticCurve mCurve(myEccpParams, OneBlock);
 	EccPoint mG(mCurve);
 	mG = mCurve.getGenerator();
 	u64 mMyInputSize = 1<<n;
@@ -1091,7 +1093,7 @@ void evalExp(int n)
 void testCurve(int n)
 {
 	PRNG prng(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
-	EllipticCurve mCurve(k283, OneBlock);
+	EllipticCurve mCurve(myEccpParams, OneBlock);
 	EccPoint mG(mCurve), gk(mCurve), gTemp(mCurve);
 	mG = mCurve.getGenerator();
 	EccNumber mk(mCurve);
@@ -1165,6 +1167,15 @@ int main(int argc, char** argv)
 	{
 		sendSetSize = 1 << atoi(argv[4]);
 		recvSetSize = 1 << atoi(argv[6]);
+	}
+
+	if (argc == 7
+		&& argv[3][0] == '-' && argv[3][1] == 'n'
+		&& argv[5][0] == '-' && argv[5][1] == 't')
+	{
+		sendSetSize = 1 << atoi(argv[4]);
+		recvSetSize = sendSetSize;
+		numThreads = atoi(argv[6]);
 	}
 
 	std::vector<block> sendSet(sendSetSize), recvSet(recvSetSize);

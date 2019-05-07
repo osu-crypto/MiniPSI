@@ -1,6 +1,7 @@
 #pragma once
 #include <cryptoTools/Common/Defines.h>
 #include <cryptoTools/Common/Log.h>
+#include <cryptoTools/Crypto/Curve.h>
 #define NTL_Threads
 #define  DEBUG
 #include "PsiDefines.h"
@@ -17,13 +18,32 @@ using namespace NTL;
 //#define PSI_PRINT
 //#define PRINT
 #endif
-
+#define PASS_MIRACL
 
 namespace osuCrypto
 {
 	
-	static const u8 mMiniPolySlices(2); //2*128 
+	static const ZZ mPrime128 = to_ZZ("340282366920938463463374607431768211507");
+	static const ZZ mPrime160 = to_ZZ("1461501637330902918203684832716283019655932542983");  //nextprime(2^160)
+	static const ZZ mPrime164 = to_ZZ("23384026197294446691258957323460528314494920687733");  //nextprime(2^164)
+	static const ZZ mPrime168 = to_ZZ("374144419156711147060143317175368453031918731001943");  //nextprime(2^168)
+	static const ZZ mPrime172 = to_ZZ("5986310706507378352962293074805895248510699696029801");  //nextprime(2^172)
+	static const ZZ mPrime176 = to_ZZ("95780971304118053647396689196894323976171195136475563");  //nextprime(2^176)
+	static const ZZ mPrime180 = to_ZZ("1532495540865888858358347027150309183618739122183602191");  //nextprime(2^180)
+	static const ZZ mPrime184 = to_ZZ("24519928653854221733733552434404946937899825954937634843");  //nextprime(2^184)
+	static const ZZ mPrime188 = to_ZZ("392318858461667547739736838950479151006397215279002157113");  //nextprime(2^188)
+	static const ZZ mPrime264 = to_ZZ("29642774844752946028434172162224104410437116074403984394101141506025761187823791");  //nextprime(2^264)
+	static const ZZ mPrime255_19 = to_ZZ("57896044618658097711785492504343953926634992332820282019728792003956564819949");  //nextprime(2^264)
+	static const ZZ mPrime256 = to_ZZ("115792089237316195423570985008687907853269984665640564039457584007913129640233");  //nextprime(2^264)
+	static const ZZ mPrime224 = to_ZZ("26959946667150639794667015087019630673637144422540572481103610249951");  //nextprime(2^264)
 
+
+	//static const Ecc2mParams myEccpParams = k283;
+	static const EccpParams myEccpParams = Curve25519;
+	static const ZZ myPrime= mPrime264;
+
+
+	static const u8 mMiniPolySlices(2); //2*128 
 	static const u64 stepSize(1 << 6);
 	static const u64 numStep(1 << 1);
 	static const u64 stepSizeMaskSent(1<<11);
@@ -40,17 +60,7 @@ namespace osuCrypto
 
 	static const u64 bIdxForDebug(3), iIdxForDebug(0), hIdxForDebug(0);
 
-	static const ZZ mPrime128 = to_ZZ("340282366920938463463374607431768211507");
-	static const ZZ mPrime160 = to_ZZ("1461501637330902918203684832716283019655932542983");  //nextprime(2^160)
-	static const ZZ mPrime164 = to_ZZ("23384026197294446691258957323460528314494920687733");  //nextprime(2^164)
-	static const ZZ mPrime168 = to_ZZ("374144419156711147060143317175368453031918731001943");  //nextprime(2^168)
-	static const ZZ mPrime172 = to_ZZ("5986310706507378352962293074805895248510699696029801");  //nextprime(2^172)
-	static const ZZ mPrime176 = to_ZZ("95780971304118053647396689196894323976171195136475563");  //nextprime(2^176)
-	static const ZZ mPrime180 = to_ZZ("1532495540865888858358347027150309183618739122183602191");  //nextprime(2^180)
-	static const ZZ mPrime184 = to_ZZ("24519928653854221733733552434404946937899825954937634843");  //nextprime(2^184)
-	static const ZZ mPrime188 = to_ZZ("392318858461667547739736838950479151006397215279002157113");  //nextprime(2^188)
-	static const ZZ mPrime264 = to_ZZ("29642774844752946028434172162224104410437116074403984394101141506025761187823791");  //nextprime(2^264)
-
+		
 	inline void getExpParams(u64 setSize, u64& numSeeds, u64& numChosen)
 	{
 

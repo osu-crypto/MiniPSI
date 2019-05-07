@@ -38,7 +38,7 @@ namespace osuCrypto
 
 		//seed for subset-sum exp
 		mCurveSeed = mPrng.get<block>();
-		EllipticCurve mCurve(k283, OneBlock);
+		EllipticCurve mCurve(myEccpParams, OneBlock);
 		//mCurve.getMiracl().IOBASE = 10;
 		mFieldSize = mCurve.bitCount();
 		//std::cout << "r mFieldSize= " << mFieldSize << "\n";
@@ -154,7 +154,7 @@ namespace osuCrypto
 		
 
 		//=====================Poly=====================
-		mPrime = mPrime264;
+		mPrime = myPrime;
 		ZZ_p::init(ZZ(mPrime));
 
 		u64 degree = inputs.size() - 1;
@@ -372,7 +372,7 @@ namespace osuCrypto
 
 		//seed for subset-sum exp
 		mCurveSeed = mPrng.get<block>();
-		EllipticCurve mCurve(k283, OneBlock);
+		EllipticCurve mCurve(myEccpParams, OneBlock);
 		//mCurve.getMiracl().IOBASE = 10;
 		mFieldSize = mCurve.bitCount();
 		//std::cout << "r mFieldSize= " << mFieldSize << "\n";
@@ -453,6 +453,7 @@ namespace osuCrypto
 			std::vector<u64> subIdx(indices.begin(), indices.begin() + mChoseSeedsSize);
 			u8* temp = new u8[g_sum.sizeBytes()];
 			g_sum.toBytes(temp);
+
 			mG_pairs.push_back(std::make_pair(subIdx, temp));
 		}
 		mBalance.init(mMyInputSize, recvMaxBinSize, recvNumDummies);
@@ -501,11 +502,15 @@ namespace osuCrypto
 		std::vector<block> mG_sum_blk;
 		mG_sum_blk.resize(mMyInputSize);
 		//compute (g^k)^sum ri
+
+		int sizesss = 0;
 		for (u64 i = 0; i < mMyInputSize; ++i)
 		{
 			
 			EccPoint g_sum(mCurve);
 			u8* tempByte = new u8[g_sum.sizeBytes()];
+
+			sizesss = g_sum.sizeBytes();
 
 			if (mBoundCoeffs == 2)
 				for (u64 j = 0; j < mG_pairs[i].first.size(); j++) //for all subset ri
@@ -521,6 +526,8 @@ namespace osuCrypto
 			mG_sum_blk[i] = toBlock(tempByte);
 		}
 
+		//std::cout << " g_sum.sizeBytes()= " << sizesss << "\n";
+		//std::cout << " mPolyBytes= " << mPolyBytes << "\n";
 		std::cout << " r g^ri^k done\n";
 
 		//=====================Poly=====================
@@ -555,11 +562,20 @@ namespace osuCrypto
 							listGRi[idx][j] = ZeroBlock; //init
 
 						u8* temp = new u8[mPolyBytes];
+					
+#ifdef PASS_MIRACL
+						block rndblk = mPrng.get < block>();
+						memcpy(temp, (u8*)&rndblk, sizeof(block));
+#else
 						memcpy(temp, mG_pairs[mBalance.mBins[bIdx].idxs[idx]].second, mPolyBytes);
+#endif // PASS_MIRACL
+
 						//mG_pairs[mBalance.mBins[bIdx].idxs[idx]].second.toBytes(temp);
+
 						memcpy((u8*)&listGRi[idx], temp, mPolyBytes);
 					}
 
+					//std::cout << "r xi, yi" << bIdx << std::endl;
 
 					//=====================Pack=====================
 					u64 degree = mBalance.mMaxBinSize - 1;
@@ -574,6 +590,9 @@ namespace osuCrypto
 						memcpy(sendBuff.data() + iterSend, (u8*)&coeffs[c], mPolyBytes);
 						iterSend += mPolyBytes;
 					}
+
+					//std::cout << "r Coef" << bIdx << std::endl;
+
 
 					//std::vector<std::array<block, numSuperBlocks>> YRi_bytes(mBalance.mBins[bIdx].blks.size());
 					//poly.evalSuperPolynomial(coeffs, mBalance.mBins[bIdx].blks, YRi_bytes); //P(x)
@@ -611,6 +630,7 @@ namespace osuCrypto
 					{
 						int idxItem = mBalance.mBins[bIdx].idxs[idx];
 						int idxItemHash = mBalance.mBins[bIdx].hashIdxs[idx];
+						std::lock_guard<std::mutex> lock(mtx);
 						localMasks[idxItemHash].emplace(*(u64*)&mG_sum_blk[idxItem], std::pair<block, u64>(mG_sum_blk[idxItem], idxItem));
 					}
 				}
@@ -755,7 +775,7 @@ namespace osuCrypto
 
 		//seed for subset-sum exp
 		mCurveSeed = mPrng.get<block>();
-		EllipticCurve mCurve(k283, OneBlock);
+		EllipticCurve mCurve(myEccpParams, OneBlock);
 		//mCurve.getMiracl().IOBASE = 10;
 		mFieldSize = mCurve.bitCount();
 		//std::cout << "r mFieldSize= " << mFieldSize << "\n";
@@ -920,7 +940,7 @@ namespace osuCrypto
 		u64 n1n2MaskBytes = (n1n2MaskBits + 7) / 8;
 
 		//=====================Poly=====================
-		mPrime = mPrime264;
+		mPrime = myPrime;
 		ZZ_p::init(ZZ(mPrime));
 
 		u64 degree = inputs.size() - 1;

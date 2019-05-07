@@ -36,6 +36,129 @@ using namespace osuCrypto;
 namespace tests_libOTe
 {
 
+	void curveTest()
+	{
+		u64 setSenderSize = 1 << 4;
+		EllipticCurve mCurve(Curve25519, OneBlock);
+
+
+		ZZ mPrime = mPrime264;
+
+
+		PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
+
+		EccPoint mG(mCurve);
+		mG = mCurve.getGenerator();
+		EccNumber nK(mCurve);
+		nK.randomize(prng0);
+		
+		u64 mPolyBytes = mG.sizeBytes();// mCurve.bitCount() / 8;
+
+		std::cout << "r mFieldSize= " << mCurve.bitCount() << " => byte = " <<  mPolyBytes << "\n";
+
+
+		std::vector<block> inputs(setSenderSize), theirInputs(setSenderSize);
+		for (u64 i = 0; i < setSenderSize; ++i)
+		{
+			inputs[i] = prng0.get<block>();
+			theirInputs[i] = prng0.get<block>();
+
+			//if (i < 2)
+				theirInputs[i] = inputs[i];
+		}
+
+		ZZ_p::init(ZZ(mPrime));
+
+		u64 degree = inputs.size() - 1;
+		ZZ_p* zzX = new ZZ_p[inputs.size()];
+		ZZ_p* zzY = new ZZ_p[inputs.size()];
+
+		ZZ zz;
+		ZZ_pX *M = new ZZ_pX[degree * 2 + 1];;
+		ZZ_p *a = new ZZ_p[degree + 1];;
+		ZZ_pX* temp = new ZZ_pX[degree * 2 + 1];
+		ZZ_pX Polynomial;
+		std::vector<u8> sendBuff;
+		std::vector<EccPoint> yi_curve;
+		yi_curve.reserve(inputs.size());
+
+
+
+		for (u64 idx = 0; idx < inputs.size(); idx++)
+		{
+			ZZFromBytes(zz, (u8*)&inputs[idx], sizeof(block));
+			zzX[idx] = to_ZZ_p(zz);
+
+			u8* yri = new u8[mPolyBytes];
+
+			yi_curve.emplace_back(mCurve);
+			yi_curve[idx].randomize(prng0);
+
+			//std::cout << "r yi_curve[idx]= " << yi_curve[idx] << " \n";
+
+			u8* yi_byte = new u8[yi_curve[idx].sizeBytes()];
+			yi_curve[idx].toBytes(yi_byte);
+
+			block lastblk = ZeroBlock;
+			memcpy((u8*)&lastblk, yi_byte + 2 * sizeof(block), mPolyBytes - 2 * sizeof(block));
+
+			std::cout << "y[ " << idx << "] = " << toBlock(yi_byte)
+				<< " - " << toBlock(yi_byte + sizeof(block))
+				<< " - " << lastblk << std::endl;
+
+			ZZFromBytes(zz, yi_byte, mPolyBytes);
+			//std::cout << "r P(x)= " << idx << " - " << toBlock(mG_pairs[idx].second) << std::endl;
+			zzY[idx] = to_ZZ_p(zz);
+		}
+
+
+		prepareForInterpolate(zzX, degree, M, a, 1, mPrime);
+		iterative_interpolate_zp(Polynomial, temp, zzY, a, M, degree * 2 + 1, 1, mPrime);
+
+
+		/////////////////////eval
+		ZZ_p* zzX_their = new ZZ_p[theirInputs.size()];
+		ZZ_p* zzY_their = new ZZ_p[theirInputs.size()];
+
+		for (u64 idx = 0; idx < theirInputs.size(); idx++)
+		{
+			ZZFromBytes(zz, (u8*)&theirInputs[idx], sizeof(block));
+			zzX_their[idx] = to_ZZ_p(zz);
+		}
+
+		ZZ_pX* p_tree = new ZZ_pX[degree * 2 + 1];
+		ZZ_pX* reminders = new ZZ_pX[degree * 2 + 1];
+
+		build_tree(p_tree, zzX_their, degree * 2 + 1, 1, mPrime);
+		evaluate(Polynomial, p_tree, reminders, degree * 2 + 1, zzY_their, 1, mPrime);
+
+
+		for (u64 idx = 0; idx < theirInputs.size(); idx++)
+		{
+
+			u8* yi_bytes = new u8[mG.sizeBytes()];
+			BytesFromZZ(yi_bytes, rep(zzY_their[idx]), mPolyBytes);
+
+			//if (idx < 4)
+
+			block lastblk = ZeroBlock;
+			memcpy((u8*)&lastblk, yi_bytes + 2 * sizeof(block), mPolyBytes - 2 * sizeof(block));
+
+			std::cout << "y[ " << idx << "] = " << toBlock(yi_bytes)
+					<< " - " << toBlock(yi_bytes + sizeof(block)) 
+					<< " - " << lastblk << std::endl;
+
+			EccPoint point_ri(mCurve);
+			point_ri.fromBytes(yi_bytes);
+			
+			//if (idx < 4)
+				std::cout << "point_ri[ " <<idx <<"] = " << point_ri << std::endl;
+
+			std::cout << "\n";
+		}
+
+	}
+
 	void MiniPSI_impl2()
 	{
 		setThreadName("EchdSender");
@@ -53,7 +176,7 @@ namespace tests_libOTe
 			recvSet[i] = prng0.get<block>();
 
 
-		for (u64 i = 0; i < 10; ++i)
+		for (u64 i = 0; i < setSenderSize; ++i)
 		{
 			sendSet[i] = recvSet[i];
 			//std::cout << "intersection: " <<sendSet[i] << "\n";
@@ -313,7 +436,7 @@ namespace tests_libOTe
 			recvSet[i] = prng0.get<block>();
 
 
-		for (u64 i = 0; i < setSenderSize; ++i)
+		for (u64 i = 0; i < 10; ++i)
 		{
 			sendSet[i] = recvSet[i];
 			//std::cout << "intersection: " <<sendSet[i] << "\n";
@@ -385,7 +508,7 @@ namespace tests_libOTe
 	void JL10PSI_impl()
 	{
 		setThreadName("EchdSender");
-		u64 setSenderSize = 1 << 6, setRecvSize = 1 <<8, psiSecParam = 40, numThreads(1);
+		u64 setSenderSize = 1 << 6, setRecvSize = 1 <<8, psiSecParam = 40, numThreads(2);
 
 		PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
 		PRNG prng1(_mm_set_epi32(4253465, 3434565, 234435, 23987025));
@@ -399,7 +522,7 @@ namespace tests_libOTe
 			recvSet[i] = prng0.get<block>();
 
 
-		for (u64 i = 0; i < setSenderSize; ++i)
+		for (u64 i = 0; i < 10; ++i)
 		{
 			sendSet[i] = recvSet[i];
 			//std::cout << "intersection: " <<sendSet[i] << "\n";
@@ -471,7 +594,7 @@ namespace tests_libOTe
 	void JL10PSI_subsetsum_impl()
 	{
 		setThreadName("EchdSender");
-		u64 setSenderSize = 1 << 7, setRecvSize = 1 <<8, psiSecParam = 40, numThreads(1);
+		u64 setSenderSize = 1 <<6, setRecvSize = 1 <<7, psiSecParam = 40, numThreads(2);
 
 		PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
 		PRNG prng1(_mm_set_epi32(4253465, 3434565, 234435, 23987025));
@@ -485,7 +608,7 @@ namespace tests_libOTe
 			recvSet[i] = prng0.get<block>();
 
 
-		for (u64 i = 0; i < setSenderSize; ++i)
+		for (u64 i = 0; i < 10; ++i)
 		{
 			sendSet[i] = recvSet[i];
 			//std::cout << "intersection: " <<sendSet[i] << "\n";
@@ -510,11 +633,11 @@ namespace tests_libOTe
 
 		auto thrd = std::thread([&]() {
 			gTimer.setTimePoint("r start ");
-			recv.startPsi_subsetsum(recvSet.size(), sendSet.size(), 40, prng1.get<block>(), recvSet, recvChls);
+			recv.startPsi_subsetsum_asyn(recvSet.size(), sendSet.size(), 40, prng1.get<block>(), recvSet, recvChls);
 
 		});
 
-		sender.startPsi_subsetsum(sendSet.size(), recvSet.size(), 40, prng1.get<block>(), sendSet, sendChls);
+		sender.startPsi_subsetsum_asyn(sendSet.size(), recvSet.size(), 40, prng1.get<block>(), sendSet, sendChls);
 
 		thrd.join();
 
@@ -701,7 +824,7 @@ namespace tests_libOTe
 	void evalExp()
 	{
 		PRNG prng(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
-		EllipticCurve mCurve(k283, OneBlock);
+		EllipticCurve mCurve(myEccpParams, OneBlock);
 		EccPoint mG(mCurve);
 		mG = mCurve.getGenerator();
 		u64 mMyInputSize = 1 << 10;
@@ -1089,7 +1212,7 @@ namespace tests_libOTe
 
 		PRNG prng(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
 
-		EllipticCurve mCurve(k283, OneBlock);
+		EllipticCurve mCurve(myEccpParams, OneBlock);
 		EccPoint mG(mCurve);
 		mG = mCurve.getGenerator();
 
@@ -1156,7 +1279,7 @@ namespace tests_libOTe
 
 		PRNG prng(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
 
-		EllipticCurve mCurve(k283, OneBlock);
+		EllipticCurve mCurve(myEccpParams, OneBlock);
 		EccPoint mG(mCurve);
 		mG = mCurve.getGenerator();
 
@@ -1224,7 +1347,7 @@ namespace tests_libOTe
 	void schnorrZKDL()
 	{
 		PRNG prng(ZeroBlock);
-		EllipticCurve mCurve(k283, OneBlock);
+		EllipticCurve mCurve(myEccpParams, OneBlock);
 		EccPoint mG(mCurve);
 		mG = mCurve.getGenerator();
 

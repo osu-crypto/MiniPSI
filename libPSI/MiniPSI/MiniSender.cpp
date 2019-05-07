@@ -10,7 +10,7 @@ namespace osuCrypto
     using namespace std;
 	using namespace NTL;
 
-#define PASS_MIRACL
+
 
 
 	void MiniSender::outputBigPoly(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG & prng, span<block> inputs, span<Channel> chls)
@@ -35,8 +35,8 @@ namespace osuCrypto
 	
 		simple.init(mTheirInputSize, recvMaxBinSize, recvNumDummies);
 
-		EllipticCurve mCurve(k283, OneBlock);
-		//EllipticCurve mCurve(k283, OneBlock);
+		EllipticCurve mCurve(myEccpParams, OneBlock);
+		//EllipticCurve mCurve(myEccpParams, OneBlock);
 		mFieldSize = mCurve.bitCount();
 
 		//std::cout << "s mFieldSize= " << mFieldSize << "\n";
@@ -88,7 +88,7 @@ namespace osuCrypto
 		
 			int numEvalPoint = std::max(mMyInputSize, mTheirInputSize);//since the multipoint evalution require |X|>= |degree| => paadding (TODO: optimze it!)
 
-			mPrime = mPrime264;
+			mPrime = myPrime;
 			ZZ_p::init(ZZ(mPrime));
 
 			ZZ_p* zzX = new ZZ_p[numEvalPoint]; 
@@ -145,14 +145,14 @@ namespace osuCrypto
 
 		std::cout << "s Poly done\n";
 
-
+#if 1
 		auto computeGlobalHash = [&](u64 t)
 		{
 			u64 startIdx = mMyInputSize * t / numThreads;
 			u64 tempEndIdx = mMyInputSize* (t + 1) / numThreads;
 			u64 endIdx = std::min(tempEndIdx, mMyInputSize);
 
-			EllipticCurve mCurve(k283, OneBlock);
+			EllipticCurve mCurve(myEccpParams, OneBlock);
 			EccPoint g_k(mCurve);
 			EccNumber nK(mCurve);
 			nK.fromBytes(mK_bytes);
@@ -184,17 +184,17 @@ namespace osuCrypto
 
 					//std::cout << "s yri= " << toBlock(yri) <<" - " << toBlock(yri+ sizeof(block)) << std::endl;
 
+					//std::cout << "s point_ri= ";
 					point_ri.fromBytes(yri);
 #ifdef PASS_MIRACL
-					point_ri = g_k;
+					//point_ri = g_k;
 #endif // PASS_MIRACL
 
 
-					//std::cout << "s point_ri= " << point_ri << std::endl;
+					//std::cout  << point_ri << std::endl;
 
 					auto yri_K = point_ri*nK;
 					//std::cout << "s yri_K= " << yri_K << std::endl;
-
 
 					yri_K.toBytes(temp);
 					memcpy(sendBuff.data() + idx*n1n2MaskBytes, temp, n1n2MaskBytes);
@@ -218,9 +218,10 @@ namespace osuCrypto
 		for (auto& thrd : thrds)
 			thrd.join();
 
+		std::cout << "s mask done\n";
+#endif
 		gTimer.setTimePoint("computeMask");
 
-		std::cout << "s mask done\n";
 
 
 		
@@ -252,7 +253,7 @@ namespace osuCrypto
 
 		simple.init(mTheirInputSize, recvMaxBinSize, recvNumDummies);
 
-		EllipticCurve mCurve(k283, OneBlock);
+		EllipticCurve mCurve(myEccpParams, OneBlock);
 		mFieldSize = mCurve.bitCount();
 
 		//std::cout << "s mFieldSize= " << mFieldSize << "\n";
@@ -266,7 +267,7 @@ namespace osuCrypto
 
 		pG = mCurve.getGenerator();
 		mPolyBytes = pG.sizeBytes();
-		//std::cout << "s mPolyBytes= " << mPolyBytes << "\n";
+		std::cout << "s mPolyBytes= " << mPolyBytes << "\n";
 
 		auto g_k = pG*nK;
 		mG_K = new u8[g_k.sizeBytes()];
@@ -325,7 +326,7 @@ namespace osuCrypto
 			u64 tempBinEndIdx = (simple.mNumBins * (t + 1) / numThreads);
 			u64 binEndIdx = std::min(tempBinEndIdx, simple.mNumBins);
 			
-			EllipticCurve mCurve(k283, OneBlock);
+			EllipticCurve mCurve(myEccpParams, OneBlock);
 			EccNumber nK(mCurve);
 			nK.fromBytes(mK); //g^k
 
@@ -398,20 +399,34 @@ namespace osuCrypto
 
 					for (int idxYri = 0; idxYri < YRi_bytes.size(); idxYri++)
 					{
-//#ifdef PASS_MIRACL
-						//memcpy(yri, (u8*)&YRi_bytes[idx], point_ri.sizeBytes());
-						//point_ri.fromBytes(yri);
+						//std::cout << "idx= " << idxYri << "\n";
+						
 
+#ifdef PASS_MIRACL
+						memcpy(yri, (u8*)&YRi_bytes[idxYri], point_ri.sizeBytes());
 						point_ri.fromBytes(fake_point_ri_bytes);
+#else
+						point_ri.fromBytes(yri);
+#endif
+
 						yri_K = point_ri*nK; //P(x)^k
 						yri_K.toBytes(yri_K_bytes);
 						u64 hashIdx = simple.mBins[bIdx].hashIdxs[idxYri];
 						u64 itemIdx = simple.mBins[bIdx].Idxs[idxYri];
 						
+						std::cout << IoStream::lock;
 						globalHash[hashIdx][itemIdx] = new u8[n1n2MaskBytes];
-						//memcpy(globalHash[hashIdx][itemIdx], yri_K_bytes, n1n2MaskBytes);
+#ifdef PASS_MIRACL
 						block fakeBlk = mPrng.get<block>();
 						memcpy(globalHash[hashIdx][itemIdx], (u8*)&fakeBlk, n1n2MaskBytes);
+#else
+						memcpy(globalHash[hashIdx][itemIdx], yri_K_bytes, n1n2MaskBytes);
+
+#endif
+						std::cout << IoStream::unlock;
+
+						//std::cout << "idx= " << idxYri << " done\n";
+						
 
 						//std::cout << simple.mBins[bIdx].blks[idx] << "  s x bin#" << bIdx << "\n";
 						//std::cout << toBlock(yri) << "\n";
@@ -508,7 +523,7 @@ namespace osuCrypto
 
 		simple.init(mTheirInputSize, recvMaxBinSize, recvNumDummies);
 
-		EllipticCurve mCurve(k283, OneBlock);
+		EllipticCurve mCurve(myEccpParams, OneBlock);
 		mFieldSize = mCurve.bitCount();
 
 		//std::cout << "s mFieldSize= " << mFieldSize << "\n";
@@ -630,7 +645,7 @@ namespace osuCrypto
 		//=====================Poly=====================
 		u64 degree = mTheirInputSize - 1;
 
-		mPrime = mPrime264;
+		mPrime = myPrime;
 		ZZ_p::init(ZZ(mPrime));
 
 		ZZ_p* zzX = new ZZ_p[inputs.size()];
