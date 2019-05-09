@@ -31,6 +31,8 @@
 #endif //  _MSC_VER
 
 #include <memory>
+//#include <miracl\include\big.h>
+//#include <miracl\include\ec2.h>
 
 using namespace osuCrypto;
 
@@ -45,11 +47,13 @@ namespace tests_libOTe
 
 		miracl* mrc = mirsys(32, 2);
 
-		u8* src = new u8[32];
+	/*	u8* src = new u8[32];
 		prng0.get(src, 32);
 
 		big varX=mirvar(mrc, 0);
-
+		std::cout << varX << "\n";
+		
+		bytes_to_big(mrc, 32, (char*)src, varX);
 		std::cout << varX << "\n";
 
 
@@ -57,14 +61,28 @@ namespace tests_libOTe
 		epoint* mVal = (epoint *)epoint_init_mem(mrc, mMem, 0);
 
 
+		uint32_t itmp;*/
+		/*big bigtmp;
+		EC2* point*/
+
+		//compress to x-point and y-bit and convert to byte array
+		//itmp = point->get(bigtmp);
+
+		////first store the y-bit
+		//pBufIdx[0] = (uint8_t)(itmp & 0x01);
+
+		////then store the x-coordinate (sec-param/8 byte size)
+		//big_to_bytes(field_size_bytes - 1, bigtmp.getbig(), (char*)pBufIdx + 1, true);
+
+
 		//bytes_to_big(32, (char*)src, varX);
-		bytes_to_big(mrc, 32, (char*)src, varX);
-		epoint_set(mrc, varX, varX, 0, mVal);
+	//	bytes_to_big(mrc, 32, (char*)src, varX);
+	//	epoint_set(mrc, varX, varX, 0, mVal);
 
 		/*cotstr(mrc, mVal.mVal, val.mCurve->mMiracl->IOBUFF);
 		std::cout << val.mCurve->mMiracl->IOBUFF;*/
 
-		std::cout << mVal << "\n";
+		//std::cout << mVal << "\n";
 
 #if 0
 		ZZ mPrime = mPrime255_19;

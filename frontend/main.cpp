@@ -711,7 +711,7 @@ void evalExp(int n)
 	EccPoint mG(mCurve);
 	mG = mCurve.getGenerator();
 	u64 mMyInputSize = 1<<n;
-#if 1
+#if 0
 	//////============clasic g^ri==========
 
 	{
@@ -1116,16 +1116,13 @@ void testCurve(int n)
 int main(int argc, char** argv)
 {
 
-	
-
-
 	//u64 n = 1 << 10;;
 	//if (argv[1][0] == '-' && argv[1][1] == 'n') {
 	//	n= atoi(argv[2]);
 	//}
-	//testCurve(n);
+	////testCurve(n);
 
-	////evalExp(n);
+	//evalExp(n);
 	//return 0;
 
 	//u64 curStepSize = 1 << 12;

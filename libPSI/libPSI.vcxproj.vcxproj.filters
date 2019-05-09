@@ -24,6 +24,8 @@
     </ClCompile>
     <ClCompile Include="ECDH\JL10PsiReceiver.cpp" />
     <ClCompile Include="ECDH\JL10PsiSender.cpp" />
+    <ClCompile Include="ECDH\DKT10PsiReceiver.cpp" />
+    <ClCompile Include="ECDH\DKT10PsiSender.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ECDH\EcdhPsiReceiver.h" />
@@ -52,6 +54,8 @@
     </ClInclude>
     <ClInclude Include="ECDH\JL10PsiReceiver.h" />
     <ClInclude Include="ECDH\JL10PsiSender.h" />
+    <ClInclude Include="ECDH\DKT10PsiReceiver.h" />
+    <ClInclude Include="ECDH\DKT10PsiSender.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />
