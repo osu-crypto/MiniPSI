@@ -529,6 +529,8 @@ namespace osuCrypto
 		//std::cout << " g_sum.sizeBytes()= " << sizesss << "\n";
 		//std::cout << " mPolyBytes= " << mPolyBytes << "\n";
 		std::cout << " r g^ri^k done\n";
+		std::cout << "r g^ri^k done" << std::endl;
+
 
 		//=====================Poly=====================
 		auto routine = [&](u64 t)
