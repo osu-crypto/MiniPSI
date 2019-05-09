@@ -28,6 +28,9 @@
     <ClInclude Include="testData\code640_BCH511.h" />
     <ClInclude Include="UnitTests.h" />
     <ClInclude Include="miniPSI_Tests.h" />
+    <ClInclude Include="pk-crypto.h" />
+    <ClInclude Include="typedefs.h" />
+    <ClInclude Include="constants.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

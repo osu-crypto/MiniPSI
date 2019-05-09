@@ -778,8 +778,7 @@ namespace osuCrypto
 			u64 theirInputEndIdx = mTheirInputSize * (t + 1) / chls.size();
 			u64 theirSubsetInputSize = theirInputEndIdx - theirInputStartIdx;
 
-			sendBuff_mask[t].resize(n1n2MaskBytes*theirSubsetInputSize);
-			auto sendIter2 = sendBuff_mask[t].data();
+			
 
 
 			auto& chl = chls[t];
@@ -825,13 +824,16 @@ namespace osuCrypto
 			}
 
 
+			sendBuff_mask[t].resize(n1n2MaskBytes*theirSubsetInputSize);
+			auto sendIter2 = sendBuff_mask[t].data();
+
 			for (u64 i = theirInputStartIdx; i < theirInputEndIdx; i += theirStepSize)
 			{
 				auto curStepSize = std::min(theirStepSize, theirInputEndIdx - i);
 #if 1
 				//receive yi=H(.)*g^ri
 				std::vector<u8> recvBuff(xk.sizeBytes() * curStepSize); //receiving yi^k = H(.)*g^ri
-				u8* temp=new u8(yik.sizeBytes());
+				std::vector<u8> temp(yik.sizeBytes());
 
 				chl.recv(recvBuff); //recv yi^k
 
@@ -847,8 +849,8 @@ namespace osuCrypto
 				{
 					yi.fromBytes(recvIter); recvIter += yi.sizeBytes();
 					yik = yi*nK; //yi^k
-					yik.toBytes(temp);
-					memcpy(sendIter2, temp, n1n2MaskBytes);
+					yik.toBytes(temp.data());
+					memcpy(sendIter2, temp.data(), n1n2MaskBytes);
 
 					sendIter2 += n1n2MaskBytes;
 				}
@@ -870,10 +872,10 @@ namespace osuCrypto
 			thrd.join();
 
 		std::cout << "s before sending mask done\n";
-
+		gTimer.setTimePoint("s before sending mask done ");
 		//#####################Send Mask #####################
 
-#if 0
+#if 1
 		auto receiveMask = [&](u64 t)
 		{
 			auto& chl = chls[t]; //parallel along with inputs

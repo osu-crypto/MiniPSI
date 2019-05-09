@@ -21,9 +21,6 @@ namespace osuCrypto
     void EcdhPsiSender::sendInput_k283(span<block> inputs, span<Channel> chls)
     {
 		//stepSize = inputs.size();
-		std::cout << "curveParam = k283\n";
-
-        auto curveParam = k283;
 
 		u64 maskSizeByte = (40 + log2(inputs.size()*mTheirInputSize) + 7) / 8;
 		std::cout << "s maskSizeByte = " << maskSizeByte <<"\n";
@@ -55,7 +52,7 @@ namespace osuCrypto
             auto& chl = chls[t];
             auto& prng = thrdPrng[t];
 
-			EllipticCurve curve(curveParam, thrdPrng[t].get<block>());
+			EllipticCurve curve(myEccpParams, thrdPrng[t].get<block>());
 			RandomOracle inputHasher(sizeof(block));
 			EccNumber a(curve);
 			EccPoint xa(curve), point(curve), yb(curve), yba(curve);
@@ -144,6 +141,7 @@ namespace osuCrypto
 
 			};
 
+		gTimer.setTimePoint("s before sending mask done ");
 
         std::vector<std::thread> thrds(chls.size());
         for (u64 i = 0; i < u64(chls.size()); ++i)
@@ -206,7 +204,7 @@ namespace osuCrypto
 			auto& chl = chls[t];
 			auto& prng = thrdPrng[t];
 
-			EllipticCurve curve(curveParam, thrdPrng[t].get<block>());
+			EllipticCurve curve(myEccpParams, thrdPrng[t].get<block>());
 			RandomOracle inputHasher(sizeof(block));
 			EccNumber a(curve);
 			EccPoint xa(curve), point(curve), yb(curve), yba(curve);
@@ -296,6 +294,7 @@ namespace osuCrypto
 
 		};
 
+		gTimer.setTimePoint("s before sending mask done ");
 
 		std::vector<std::thread> thrds(chls.size());
 		for (u64 i = 0; i < u64(chls.size()); ++i)
@@ -322,6 +321,7 @@ namespace osuCrypto
 			thrd.join();
 
 		//std::cout << "S done" << std::endl;
+		gTimer.setTimePoint("s Psi done");
 
 	}
 

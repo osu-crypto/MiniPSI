@@ -36,7 +36,6 @@ namespace osuCrypto
 
 		u64 maskSizeByte = (40 + log2(inputs.size()*mTheirInputSize) + 7) / 8;
 
-		auto curveParam = k283;
         auto RcSeed = mPrng.get<block>();
 
 		std::unordered_map<u32, block> mapXab;
@@ -69,7 +68,7 @@ namespace osuCrypto
 			auto& prng = thrdPrng[t];
 			u8 hashOut[SHA1::HashSize];
 
-			EllipticCurve curve(curveParam, thrdPrng[t].get<block>());
+			EllipticCurve curve(myEccpParams, thrdPrng[t].get<block>());
 
 			SHA1 inputHasher;
 			EccNumber b(curve);
@@ -317,7 +316,7 @@ namespace osuCrypto
 			auto& prng = thrdPrng[t];
 			u8 hashOut[SHA1::HashSize];
 
-			EllipticCurve curve(curveParam, thrdPrng[t].get<block>());
+			EllipticCurve curve(myEccpParams, thrdPrng[t].get<block>());
 
 			SHA1 inputHasher;
 			EccNumber b(curve);
@@ -440,7 +439,12 @@ namespace osuCrypto
 		for (auto& thrd : thrds)
 			thrd.join();
 
+		std::cout << "r exp done\n";
+		gTimer.setTimePoint("r exp done");
+
 #if 1
+		//#####################Receive Mask #####################
+
 		auto routine2 = [&](u64 t)
 		{
 			u64 inputStartIdx = inputs.size() * t / chls.size();

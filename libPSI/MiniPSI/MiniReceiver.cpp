@@ -151,9 +151,50 @@ namespace osuCrypto
 		u64 n1n2MaskBytes = (n1n2MaskBits + 7) / 8;
 
 
-		
+		//#####################(g^K)^ (subsum ri) #####################
+		//compute seeds (g^K)^ri
+		std::vector<EccPoint> pgK_seeds;
+		pgK_seeds.reserve(mSetSeedsSize);
+		std::vector<u8*> mgK_seeds_bytes(mSetSeedsSize);
 
-		//=====================Poly=====================
+
+		//seeds
+		for (u64 i = 0; i < mSetSeedsSize; i++)
+		{
+			pgK_seeds.emplace_back(mCurve);
+			pgK_seeds[i] = g_k * nSeeds[i];  //(g^k)^ri
+		}
+
+
+		//generate all pairs from seeds
+		std::unordered_map<u64, std::pair<block, u64>> localMasks;
+		localMasks.reserve(inputs.size());
+
+
+		for (u64 i = 0; i < inputs.size(); i++)
+		{
+			EccPoint gk_sum(mCurve);
+
+			if (mBoundCoeffs == 2)
+				for (u64 j = 0; j < mG_pairs[i].first.size(); j++) //for all subset ri
+					gk_sum = gk_sum + pgK_seeds[mG_pairs[i].first[j]]; //(g^k)^(subsum ri)
+			else
+				for (u64 j = 0; j < mG_pairs[i].first.size(); j++) //for all subset ri
+				{
+					EccNumber ci(mCurve, mIntCi[i][j]);
+					//tempCurve.fromBytes(mgK_seeds_bytes[mG_pairs[i].first[j]]);
+					gk_sum = gk_sum + pgK_seeds[mG_pairs[i].first[j]] * ci; //(g^k)^(subsum ri)
+				}
+
+			u8* gk_sum_byte = new u8[gk_sum.sizeBytes()];
+			gk_sum.toBytes(gk_sum_byte);
+			block temp = toBlock(gk_sum_byte);
+			localMasks.emplace(*(u64*)&temp, std::pair<block, u64>(temp, i));
+		}
+		//std::cout << "r g^k^ri done\n";
+		gTimer.setTimePoint("r g^k^ri done");
+
+		//#####################Poly#####################
 		mPrime = myPrime;
 		ZZ_p::init(ZZ(mPrime));
 
@@ -204,48 +245,7 @@ namespace osuCrypto
 		std::cout << "r Poly done\n";
 
 
-		//#####################(g^K)^ (subsum ri) #####################
-		//compute seeds (g^K)^ri
-		std::vector<EccPoint> pgK_seeds;
-		pgK_seeds.reserve(mSetSeedsSize);
-		std::vector<u8*> mgK_seeds_bytes(mSetSeedsSize);
-
-
-		//seeds
-		for (u64 i = 0; i < mSetSeedsSize; i++)
-		{
-			pgK_seeds.emplace_back(mCurve);
-			pgK_seeds[i] = g_k * nSeeds[i];  //(g^k)^ri
-		}
-
-
-		//generate all pairs from seeds
-		std::unordered_map<u64, std::pair<block, u64>> localMasks;
-		localMasks.reserve(inputs.size());
-
-
-		for (u64 i = 0; i < inputs.size(); i++)
-		{
-			EccPoint gk_sum(mCurve);
-
-			if (mBoundCoeffs == 2)
-				for (u64 j = 0; j < mG_pairs[i].first.size(); j++) //for all subset ri
-					gk_sum = gk_sum + pgK_seeds[mG_pairs[i].first[j]]; //(g^k)^(subsum ri)
-			else
-				for (u64 j = 0; j < mG_pairs[i].first.size(); j++) //for all subset ri
-				{
-					EccNumber ci(mCurve, mIntCi[i][j]);
-					//tempCurve.fromBytes(mgK_seeds_bytes[mG_pairs[i].first[j]]);
-					gk_sum = gk_sum + pgK_seeds[mG_pairs[i].first[j]] * ci; //(g^k)^(subsum ri)
-				}
-
-			u8* gk_sum_byte = new u8[gk_sum.sizeBytes()];
-			gk_sum.toBytes(gk_sum_byte);
-			block temp = toBlock(gk_sum_byte);
-			localMasks.emplace(*(u64*)&temp, std::pair<block, u64>(temp, i));
-		}
-		//std::cout << "r g^k^ri done\n";
-		gTimer.setTimePoint("r g^k^ri done");
+		
 
 		//#####################Receive Mask #####################
 

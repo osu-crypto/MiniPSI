@@ -91,8 +91,10 @@
     <ClInclude Include="AknOt_Tests.h" />
     <ClInclude Include="BaseOT_Tests.h" />
     <ClInclude Include="Common.h" />
+    <ClInclude Include="constants.h" />
     <ClInclude Include="miniPSI_Tests.h" />
     <ClInclude Include="NcoOT_Tests.h" />
+    <ClInclude Include="pk-crypto.h" />
     <ClInclude Include="PSI_Tests.h" />
     <ClInclude Include="OTOracleReceiver.h" />
     <ClInclude Include="OTOracleSender.h" />
@@ -102,6 +104,7 @@
     <ClInclude Include="testData\code256_BCH511.h" />
     <ClInclude Include="testData\code384_BCH511.h" />
     <ClInclude Include="testData\code640_BCH511.h" />
+    <ClInclude Include="typedefs.h" />
     <ClInclude Include="UnitTests.h" />
   </ItemGroup>
   <ItemGroup>

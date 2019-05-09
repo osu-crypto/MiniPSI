@@ -2269,7 +2269,7 @@ namespace osuCrypto
 		std::cout<<"r exp done\n";
 		gTimer.setTimePoint("r exp done");
 
-#if 0
+#if 1
 		//#####################Receive Mask #####################
 
 

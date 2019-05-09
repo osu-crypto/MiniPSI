@@ -30,6 +30,7 @@
 #pragma warning(disable: 4800)
 #endif //  _MSC_VER
 
+#include <memory>
 
 using namespace osuCrypto;
 
@@ -38,14 +39,37 @@ namespace tests_libOTe
 
 	void curveTest()
 	{
+		PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
 		u64 setSenderSize = 1 << 4;
 		EllipticCurve mCurve(Curve25519, OneBlock);
 
+		miracl* mrc = mirsys(32, 2);
 
-		ZZ mPrime = mPrime264;
+		u8* src = new u8[32];
+		prng0.get(src, 32);
+
+		big varX=mirvar(mrc, 0);
+
+		std::cout << varX << "\n";
 
 
-		PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
+		char* mMem = (char *)ecp_memalloc(mrc, 1);
+		epoint* mVal = (epoint *)epoint_init_mem(mrc, mMem, 0);
+
+
+		//bytes_to_big(32, (char*)src, varX);
+		bytes_to_big(mrc, 32, (char*)src, varX);
+		epoint_set(mrc, varX, varX, 0, mVal);
+
+		/*cotstr(mrc, mVal.mVal, val.mCurve->mMiracl->IOBUFF);
+		std::cout << val.mCurve->mMiracl->IOBUFF;*/
+
+		std::cout << mVal << "\n";
+
+#if 0
+		ZZ mPrime = mPrime255_19;
+
+
 
 		EccPoint mG(mCurve);
 		mG = mCurve.getGenerator();
@@ -64,7 +88,7 @@ namespace tests_libOTe
 			theirInputs[i] = prng0.get<block>();
 
 			//if (i < 2)
-				theirInputs[i] = inputs[i];
+			//	theirInputs[i] = inputs[i];
 		}
 
 		ZZ_p::init(ZZ(mPrime));
@@ -156,6 +180,7 @@ namespace tests_libOTe
 
 			std::cout << "\n";
 		}
+#endif
 
 	}
 
