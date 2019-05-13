@@ -16,4 +16,7 @@ namespace tests_libOTe
 	void JL10PSI_subsetsum_malicious_impl();
 	void evalExp();
 	void curveTest();
+	void testNewGroup();
+	void Simple_Test_Impl();
+	void Ristretoo_Test_Impl();
 }

@@ -115,6 +115,24 @@ namespace tests_libOTe
 			evalExp();
 		}
 
+		TEST_METHOD(testNewGroup_TestVS)
+		{
+			InitDebugPrinting();
+			testNewGroup();
+		}
+
+		TEST_METHOD(Simple_TestVS)
+		{
+			InitDebugPrinting();
+			Simple_Test_Impl();
+		}
+
+		TEST_METHOD(Ristretoo_TestVS)
+		{
+			InitDebugPrinting();
+			Ristretoo_Test_Impl();
+		}
+
 		TEST_METHOD(curve_TestVS)
 		{
 			InitDebugPrinting();

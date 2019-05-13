@@ -29,6 +29,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestsVS", "TestsVS\TestsVS.
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libPSI", "libPSI\libPSI.vcxproj.vcxproj", "{B2498D05-9678-481A-AE20-7CBB56B82A23}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libEC", "libEC\libEC.vcxproj.vcxproj", "{2F98A5EF-C9DB-4943-90B3-7BCA793BD377}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug_DLLRT|x64 = Debug_DLLRT|x64
@@ -127,6 +129,19 @@ Global
 		{B2498D05-9678-481A-AE20-7CBB56B82A23}.Release|x64.ActiveCfg = Release|x64
 		{B2498D05-9678-481A-AE20-7CBB56B82A23}.Release|x64.Build.0 = Release|x64
 		{B2498D05-9678-481A-AE20-7CBB56B82A23}.Release|x86.ActiveCfg = Release|x64
+		{2F98A5EF-C9DB-4943-90B3-7BCA793BD377}.Debug_DLLRT|x64.ActiveCfg = Debug|x64
+		{2F98A5EF-C9DB-4943-90B3-7BCA793BD377}.Debug_DLLRT|x64.Build.0 = Debug|x64
+		{2F98A5EF-C9DB-4943-90B3-7BCA793BD377}.Debug_DLLRT|x86.ActiveCfg = Release|x64
+		{2F98A5EF-C9DB-4943-90B3-7BCA793BD377}.Debug_DLLRT|x86.Build.0 = Release|x64
+		{2F98A5EF-C9DB-4943-90B3-7BCA793BD377}.Debug|x64.ActiveCfg = Debug|x64
+		{2F98A5EF-C9DB-4943-90B3-7BCA793BD377}.Debug|x64.Build.0 = Debug|x64
+		{2F98A5EF-C9DB-4943-90B3-7BCA793BD377}.Debug|x86.ActiveCfg = Debug|x64
+		{2F98A5EF-C9DB-4943-90B3-7BCA793BD377}.Release_DLLRT|x64.ActiveCfg = Release_DLLRT|x64
+		{2F98A5EF-C9DB-4943-90B3-7BCA793BD377}.Release_DLLRT|x64.Build.0 = Release_DLLRT|x64
+		{2F98A5EF-C9DB-4943-90B3-7BCA793BD377}.Release_DLLRT|x86.ActiveCfg = Release_DLLRT|x64
+		{2F98A5EF-C9DB-4943-90B3-7BCA793BD377}.Release|x64.ActiveCfg = Release|x64
+		{2F98A5EF-C9DB-4943-90B3-7BCA793BD377}.Release|x64.Build.0 = Release|x64
+		{2F98A5EF-C9DB-4943-90B3-7BCA793BD377}.Release|x86.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

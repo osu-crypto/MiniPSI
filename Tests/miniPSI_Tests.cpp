@@ -34,10 +34,88 @@
 //#include <miracl\include\big.h>
 //#include <miracl\include\ec2.h>
 
+#include "Ristretto/test-ristretto.h"
+
 using namespace osuCrypto;
 
 namespace tests_libOTe
 {
+	struct Bin111
+	{
+		//std::vector<item> values; //index of items
+		std::vector<block> blks;
+		std::vector<u8> hashIdxs;
+		std::vector<u64> Idxs;
+	};
+
+
+
+
+	void Simple_Test_Impl()
+	{
+		setThreadName("Sender");
+		u64 setSize = 1 << 16, psiSecParam = 40, numThreads(2);
+
+		PRNG prng(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
+
+
+		std::vector<block> set(setSize);
+		for (u64 i = 0; i < set.size(); ++i)
+			set[i] = prng.get<block>();
+
+		std::vector<Bin111> mBins;
+
+		AES mAesHasher;
+		mAesHasher.setKey(prng.get<block>());
+
+		u64 mNumBins = sqrt(setSize);
+		mBins.resize(mNumBins);
+
+		block cipher;
+		u64 b1, b2; //2 bins index
+
+					//1st pass
+		for (u64 idxItem = 0; idxItem < set.size(); ++idxItem)
+		{
+			cipher = mAesHasher.ecbEncBlock(set[idxItem]);
+
+			b1 = _mm_extract_epi64(cipher, 0) % mNumBins; //1st 64 bits for finding bin location
+			b2 = _mm_extract_epi64(cipher, 1) % mNumBins; //2nd 64 bits for finding alter bin location
+
+
+			mBins[b1].blks.push_back(set[idxItem]);
+			mBins[b2].blks.push_back(set[idxItem]);
+
+			mBins[b1].hashIdxs.push_back(0);
+			mBins[b2].hashIdxs.push_back(1);
+
+			mBins[b1].Idxs.push_back(idxItem);
+			mBins[b2].Idxs.push_back(idxItem);
+		}
+
+		int maxbinsize = 0;
+		for (u64 i = 0; i < mBins.size(); i++)
+		{
+			if (mBins[i].Idxs.size() > maxbinsize)
+				maxbinsize = mBins[i].Idxs.size();
+		}
+
+		std::cout << "maxbinsize= " << maxbinsize << "\n";
+		std::cout << "mBins.size()= " << mBins.size() << "\n";
+		std::cout << "total item= " << mBins.size()*maxbinsize << "\n";
+		std::cout << "%= " << double(mBins.size()*maxbinsize/ setSize) << "\n";
+
+	}
+
+
+	void testNewGroup()
+	{
+
+	}
+
+	void Ristretoo_Test_Impl() {
+		test_ristretto();
+	}
 
 	void curveTest()
 	{

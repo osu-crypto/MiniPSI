@@ -1,5 +1,5 @@
 #include <iostream>
-
+//#include "Ristretto/test-ristretto.h"
 //using namespace std;
 #include "tests_cryptoTools/UnitTests.h"
 #include "libOTe_Tests/UnitTests.h"
@@ -83,6 +83,7 @@ using namespace osuCrypto;
 #include "libPSI/ECDH/JL10PsiSender.h"
 #include "libPSI/MiniPSI/MiniReceiver.h"
 #include "libPSI/MiniPSI/MiniSender.h"
+#include "Ristretto\test-ristretto.h"
 
 template<typename ... Args>
 std::string string_format(const std::string& format, Args ... args)
@@ -1113,8 +1114,15 @@ void testCurve(int n)
 	cout << gTimer << "\n";
 
 }
+
+
+
+
 int main(int argc, char** argv)
 {
+	//ristretto_point_t a;
+	test_ristretto();
+	return 0;
 
 	//u64 n = 1 << 10;;
 	//if (argv[1][0] == '-' && argv[1][1] == 'n') {
