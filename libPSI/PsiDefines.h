@@ -204,23 +204,24 @@ namespace osuCrypto
 		{
 			mSeq.resize(3);
 			mSeq[0] = { 1 << 7, 25, 1 << 1,setSize };
-			mSeq[1] = { 1 << 8, 20, 1 << 1,setSize };
+			mSeq[1] = { 1 << 9, 16, 1 << 1,setSize };
 			mSeq[2] = { 1 << 11, 13, 1 << 1,setSize };
 		}
 		else if (setSize <= (1 << 16))
 		{
-			mSeq.resize(3);
-			mSeq[0] = { 1 << 7, 26, 1 << 1,setSize };
-			mSeq[1] = { 1 << 10, 15, 1 << 1,setSize };
-			mSeq[2] = { 1 << 13, 11, 1 << 1,setSize };
+			mSeq.resize(4);
+			mSeq[0] = { 1 << 7, 24, 1 << 1,setSize };
+			mSeq[1] = { 1 << 8, 19, 1 << 1,setSize };
+			mSeq[2] = { 1 << 10, 15, 1 << 1,setSize };
+			mSeq[3] = { 1 << 13, 11, 1 << 1,setSize };
 		}
 		else if (setSize <= (1 << 18))
 		{
 			mSeq.resize(4);
 			mSeq[0] = { 1 << 7, 25, 1 << 1,setSize };
-			mSeq[1] = { 1 << 9, 17, 1 << 1,setSize };
-			mSeq[2] = { 1 << 12, 12, 1 << 1,setSize };
-			mSeq[3] = { 1 << 15, 10, 1 << 1,setSize };
+			mSeq[1] = { 1 << 9, 16, 1 << 1,setSize };
+			mSeq[2] = { 1 << 11, 13, 1 << 1,setSize };
+			mSeq[3] = { 1 << 16, 9, 1 << 1,setSize };
 		}
 		else if (setSize <= (1 << 20))
 		{
@@ -272,12 +273,13 @@ namespace osuCrypto
 		}
 		else if (setSize <= (1 << 12))
 		{
-			mSeq.resize(4);
+			mSeq.resize(5);
 			//mSeq[0] = { 1 << 1, 1, 1 << 106,setSize }; //numSeeds,numChosen,boundCoeff
 			mSeq[0] = { 1 << 1, 1, 1 << 10,setSize }; //numSeeds,numChosen,boundCoeff
 			mSeq[1] = { 1 << 6, 25, 1 << 2,setSize };
-			mSeq[2] = { 1 << 7, 25, 1 << 1,setSize };
-			mSeq[3] = { 1 << 9, 17, 1 << 1,setSize };
+			mSeq[2] = { 1 << 7, 24, 1 << 1,setSize };
+			mSeq[3] = { 1 << 8, 19, 1 << 1,setSize };
+			mSeq[4] = { 1 << 10, 14, 1 << 1,setSize };
 		}
 		else if (setSize <= (1 << 14))
 		{

@@ -34,12 +34,12 @@
 //#include <miracl\include\big.h>
 //#include <miracl\include\ec2.h>
 
-#include "Ristretto/test-ristretto.h"
-#include "Ristretto/ed25519-donna.h"
+//#include "Ristretto/test-ristretto.h"
+//#include "Ristretto/ed25519-donna.h"
 
 using namespace osuCrypto;
 
-#define DEBUGGING
+//#define DEBUGGING
 
 namespace tests_libOTe
 {
@@ -93,7 +93,7 @@ namespace tests_libOTe
 			mBins[b2].hashIdxs.push_back(1);*/
 
 			mBins[b1].Idxs.push_back(idxItem);
-			mBins[b2].Idxs.push_back(idxItem);
+			//mBins[b2].Idxs.push_back(idxItem);
 		}
 
 		int maxbinsize = 0;
@@ -118,7 +118,7 @@ namespace tests_libOTe
 
 	}
 
-
+#if 0
 	void print_32bits(unsigned char uchar[32], string name="")
 	{
 #ifdef DEBUGGING
@@ -294,6 +294,7 @@ namespace tests_libOTe
 		}
 	}
 
+#endif
 	void curveTest()
 	{
 		PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
@@ -585,11 +586,11 @@ namespace tests_libOTe
 
 		auto thrd = std::thread([&]() {
 			gTimer.setTimePoint("r start ");
-			recv.outputHashing(recvSet.size(), sendSet.size(), 40, prng1, recvSet, recvChls);
+			recv.outputSimpleHashing(recvSet.size(), sendSet.size(), 40, prng1, recvSet, recvChls);
 
 		});
 
-		sender.outputHashing(sendSet.size(), recvSet.size(), 40, prng0, sendSet, sendChls);
+		sender.outputSimpleHashing(sendSet.size(), recvSet.size(), 40, prng0, sendSet, sendChls);
 
 		thrd.join();
 
@@ -1717,6 +1718,8 @@ namespace tests_libOTe
 
 
 	}
+	
+	
 	/*void subsetSum_test() {
 
 		vector<EccPoint> points;

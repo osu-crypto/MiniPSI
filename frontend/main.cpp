@@ -83,7 +83,7 @@ using namespace osuCrypto;
 #include "libPSI/ECDH/JL10PsiSender.h"
 #include "libPSI/MiniPSI/MiniReceiver.h"
 #include "libPSI/MiniPSI/MiniSender.h"
-#include "Ristretto\test-ristretto.h"
+//#include "Ristretto\test-ristretto.h"
 
 template<typename ... Args>
 std::string string_format(const std::string& format, Args ... args)
@@ -387,7 +387,7 @@ void Mini19Sender(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 	for (u64 i = 0; i < numThreads; ++i)
 		sendChls[i] = ep1.addChannel("chl" + std::to_string(i + numThreads), "chl" + std::to_string(i + numThreads));
 
-	sender.outputHashing(inputs.size(), theirSetSize, 40, prng0, inputs, sendChls);
+	sender.outputSimpleHashing(inputs.size(), theirSetSize, 40, prng0, inputs, sendChls);
 	std::cout << gTimer << std::endl;
 
 	for (u64 i = 0; i < numThreads; ++i)
@@ -453,7 +453,7 @@ void Mini19Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 num
 	for (u64 i = 0; i < numThreads; ++i)
 		recvChls[i] = ep0.addChannel("chl" + std::to_string(numThreads + i), "chl" + std::to_string(numThreads + i));
 
-	recv.outputHashing(inputs.size(), theirSetSize, 40, prng1, inputs, recvChls);
+	recv.outputSimpleHashing(inputs.size(), theirSetSize, 40, prng1, inputs, recvChls);
 
 	std::cout << gTimer << std::endl;
 
@@ -732,25 +732,26 @@ void evalExp(int n)
 		std::cout << gTimer << "\n";
 
 
-		int cnt = 0;
-		std::vector<string> checkUnique;
+	//	int cnt = 0;
+	//	std::vector<string> checkUnique;
 
-		for (u64 i = 0; i < mMyInputSize; i++)
-		{
-			u8* temp = new u8[g_r[i].sizeBytes()];
-			g_r[i].toBytes(temp);
+	//	for (u64 i = 0; i < mMyInputSize; i++)
+	//	{
+	//		u8* temp = new u8[g_r[i].sizeBytes()];
+	//		g_r[i].toBytes(temp);
 
-			string str_sum = arrU8toString(temp, g_r[i].sizeBytes());
+	//		string str_sum = arrU8toString(temp, g_r[i].sizeBytes());
 
-			if (std::find(checkUnique.begin(), checkUnique.end(), str_sum) == checkUnique.end())
-				checkUnique.push_back(str_sum);
-			else
-			{
-				std::cout << "dupl. : " << str_sum << "\n";
-				cnt++;
-			}
-		}
-		std::cout << "cnt= " << cnt << "\t checkUnique.size()= " << checkUnique.size() << "\n\n";
+	//		if (std::find(checkUnique.begin(), checkUnique.end(), str_sum) == checkUnique.end())
+	//			checkUnique.push_back(str_sum);
+	//		else
+	//		{
+	//			std::cout << "dupl. : " << str_sum << "\n";
+	//			cnt++;
+	//		}
+	//	}
+	//	std::cout << "cnt= " << cnt << "\t checkUnique.size()= " << checkUnique.size() << "\n\n";
+	//
 	}
 #endif
 	//////============HSS g^ri==========
@@ -1056,7 +1057,7 @@ void evalExp(int n)
 	std::cout << gTimer << "\n";
 
 //#ifdef DOUBLE-CHECK
-#if 1
+#if 0
 	int lvlLast = mSeqParams.size();
 
 	std::cout << "pG_seeds[lvlLast].size()=" << pG_seeds[lvlLast].size() << "\n";
@@ -1121,8 +1122,8 @@ void testCurve(int n)
 int main(int argc, char** argv)
 {
 	//ristretto_point_t a;
-	test_ristretto();
-	return 0;
+	/*test_ristretto();
+	return 0;*/
 
 	//u64 n = 1 << 10;;
 	//if (argv[1][0] == '-' && argv[1][1] == 'n') {

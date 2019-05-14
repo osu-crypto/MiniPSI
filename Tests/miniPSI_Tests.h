@@ -18,5 +18,5 @@ namespace tests_libOTe
 	void curveTest();
 	void testNewGroup();
 	void Simple_Test_Impl();
-	void Ristretoo_Test_Impl();
+	//void Ristretoo_Test_Impl();
 }

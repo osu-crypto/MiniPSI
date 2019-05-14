@@ -22,14 +22,16 @@ namespace osuCrypto
 		};
 
 
-        u64 mNumBalls, mNumBins, mNumDummies, mTheirMaxBinSize;
+        u64 mNumBalls, mNumBins, mNumDummies, mTheirMaxBinSize, mMyMaxBinSize;
 
         std::vector<Bin> mBins;
         block mHashSeed;
 		AES mAesHasher;
         void print(span<block> items) ;
+		void initOneHash(u64 myInputsize, u64 theirInputSize, u64 theirNumsBin, u64 statSecParam = 40);
 		void init(u64 theirInputSize, u64 theriMaxBinSize, u64 theirNumDummies, u64 statSecParam = 40);
-        void insertItems(span<block> items);
+		void insertItems(span<block> items);
+		void insertItemsOneHash(span<block> items);
     };
 
 }

@@ -13,6 +13,7 @@
 #include <NTL/ZZ_pX.h>
 #include <NTL/ZZ.h>
 #include "Tools/BalancedIndex.h"
+#include "Tools/SimpleIndex.h"
 #include "cryptoTools/Crypto/Curve.h"
 #include "cryptoTools/Crypto/RandomOracle.h"
 
@@ -35,6 +36,8 @@ namespace osuCrypto
 
 		bool mHasBase;
 		BalancedIndex mBalance;
+		SimpleIndex simple;
+
 
 		std::vector<std::vector<int>> mIntCi;
 
@@ -59,6 +62,7 @@ namespace osuCrypto
 
 		void outputBigPoly(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG& prng, span<block> inputs, span<Channel> chls);
 		void outputHashing(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG& prng, span<block> inputs, span<Channel> chls);
+		void outputSimpleHashing(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG& prng, span<block> inputs, span<Channel> chls);
 		
 		bool outputBigPoly_malicious(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG& prng, span<block> inputs, span<Channel> chls);
 

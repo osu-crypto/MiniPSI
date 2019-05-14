@@ -127,11 +127,11 @@ namespace tests_libOTe
 			Simple_Test_Impl();
 		}
 
-		TEST_METHOD(Ristretoo_TestVS)
+		/*TEST_METHOD(Ristretoo_TestVS)
 		{
 			InitDebugPrinting();
 			Ristretoo_Test_Impl();
-		}
+		}*/
 
 		TEST_METHOD(curve_TestVS)
 		{
