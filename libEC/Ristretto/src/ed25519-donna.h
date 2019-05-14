@@ -8,7 +8,7 @@
 		Bo-Yin Yang
 */
 
-#pragma once
+
 #include "ed25519-donna-portable.h"
 
 #if defined(ED25519_SSE2)
@@ -94,9 +94,6 @@ typedef struct ge25519_pniels_t {
 	bignum25519 ysubx, xaddy, z, t2d;
 } ge25519_pniels;
 
-typedef unsigned char curved25519_key[32];
-
-
 #include "ed25519-donna-basepoint-table.h"
 
 #if defined(ED25519_64BIT)
@@ -116,58 +113,3 @@ typedef unsigned char curved25519_key[32];
 	#include "ed25519-donna-impl-base.h"
 #endif
 
-static void
-curved25519_scalarmult_basepoint(curved25519_key pk, const curved25519_key e) {
-	curved25519_key ec;
-	bignum256modm s;
-	bignum25519 ALIGN(16) yplusz, zminusy;
-	ge25519 ALIGN(16) p;
-	size_t i;
-
-	/* clamp */
-	for (i = 0; i < 32; i++) ec[i] = e[i];
-	ec[0] &= 248;
-	ec[31] &= 127;
-	ec[31] |= 64;
-
-	expand_raw256_modm(s, ec);
-
-	/* scalar * basepoint */
-	ge25519_scalarmult_base_niels(&p, ge25519_niels_base_multiples, s);
-
-	/* u = (y + z) / (z - y) */
-	curve25519_add(yplusz, p.y, p.z);
-	curve25519_sub(zminusy, p.z, p.y);
-	curve25519_recip(zminusy, zminusy);
-	curve25519_mul(yplusz, yplusz, zminusy);
-	curve25519_contract(pk, yplusz);
-}
-
-typedef unsigned char ed25519_public_key[32];
-typedef unsigned char ed25519_secret_key[32];
-
-#include <Ristretto\src\ed25519-hash.h>
-
-static void
-ed25519_extsk(hash_512bits extsk, const ed25519_secret_key sk) {
-	ed25519_hash(extsk, sk, 32);
-
-	//for (int i = 0; i < 32; i++) extsk[i] = sk[i];
-
-	extsk[0] &= 248;
-	extsk[31] &= 127;
-	extsk[31] |= 64;
-}
-
-static void
-ed25519_publickey(const ed25519_secret_key sk, ed25519_public_key pk) {
-	bignum256modm a;
-	ge25519 ALIGN(16) A;
-	hash_512bits extsk;
-
-	/* A = aB */
-	ed25519_extsk(extsk, sk);
-	expand256_modm(a, extsk, 32);
-	ge25519_scalarmult_base_niels(&A, ge25519_niels_base_multiples, a);
-	ge25519_pack(pk, &A);
-}

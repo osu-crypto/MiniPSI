@@ -10,10 +10,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-//#include "ristretto-donna.h"
-#include "test-ristretto.h"
-
-#define DEBUGGING
+#include "ristretto-donna.h"
 
 /// Random element a of GF(2^255-19), from Sage
 /// a = 10703145068883540813293858232352184442332212228051251926706380353716438957572
@@ -419,9 +416,8 @@ int test_ristretto_ct_eq()
   return result;
 }
 
-int test_ristretto()
+int main(int argc, char **argv)
 {
-
   int result;
 
   result  = test_invsqrt_random_field_element();

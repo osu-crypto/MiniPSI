@@ -1,5 +1,6 @@
 #pragma once
 #include "Ristretto\ristretto-donna.h"
+#include "ed25519-donna.h"
 
 #if defined(__cplusplus)
 extern "C" {

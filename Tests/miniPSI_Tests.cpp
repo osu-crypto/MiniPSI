@@ -35,8 +35,11 @@
 //#include <miracl\include\ec2.h>
 
 #include "Ristretto/test-ristretto.h"
+#include "Ristretto/ed25519-donna.h"
 
 using namespace osuCrypto;
+
+#define DEBUGGING
 
 namespace tests_libOTe
 {
@@ -68,7 +71,7 @@ namespace tests_libOTe
 		AES mAesHasher;
 		mAesHasher.setKey(prng.get<block>());
 
-		u64 mNumBins = sqrt(setSize);
+		u64 mNumBins = 4;// sqrt(setSize);
 		mBins.resize(mNumBins);
 
 		block cipher;
@@ -83,11 +86,11 @@ namespace tests_libOTe
 			b2 = _mm_extract_epi64(cipher, 1) % mNumBins; //2nd 64 bits for finding alter bin location
 
 
-			mBins[b1].blks.push_back(set[idxItem]);
+			/*mBins[b1].blks.push_back(set[idxItem]);
 			mBins[b2].blks.push_back(set[idxItem]);
 
 			mBins[b1].hashIdxs.push_back(0);
-			mBins[b2].hashIdxs.push_back(1);
+			mBins[b2].hashIdxs.push_back(1);*/
 
 			mBins[b1].Idxs.push_back(idxItem);
 			mBins[b2].Idxs.push_back(idxItem);
@@ -100,21 +103,195 @@ namespace tests_libOTe
 				maxbinsize = mBins[i].Idxs.size();
 		}
 
+		std::cout << "setSize= " << setSize  << "\n";
 		std::cout << "maxbinsize= " << maxbinsize << "\n";
 		std::cout << "mBins.size()= " << mBins.size() << "\n";
 		std::cout << "total item= " << mBins.size()*maxbinsize << "\n";
-		std::cout << "%= " << double(mBins.size()*maxbinsize/ setSize) << "\n";
+		std::cout << "%= " << double(mBins.size()*maxbinsize/ (double)setSize) << "\n";
 
 	}
 
 
 	void testNewGroup()
 	{
+		
 
 	}
 
+
+	void print_32bits(unsigned char uchar[32], string name="")
+	{
+#ifdef DEBUGGING
+		block blk = toBlock((u8*)&uchar[16]);
+		std::cout << name << ": " << blk;
+		blk = toBlock((u8*)&uchar[0]);
+		std::cout << blk << "\n";
+#endif
+	}
+
+	/* test data */
+	typedef struct test_data_t {
+		unsigned char sk[32], pk[32], sig[64];
+		const char *m;
+	} test_data;
+
+	static void
+		edassert_die(const unsigned char *a, const unsigned char *b, size_t len, int round, const char *failreason) {
+		size_t i;
+		if (round > 0)
+			printf("round %d, %s\n", round, failreason);
+		else
+			printf("%s\n", failreason);
+		printf("want: "); for (i = 0; i < len; i++) printf("%02x,", a[i]); printf("\n");
+		printf("got : "); for (i = 0; i < len; i++) printf("%02x,", b[i]); printf("\n");
+		printf("diff: "); for (i = 0; i < len; i++) if (a[i] ^ b[i]) printf("%02x,", a[i] ^ b[i]); else printf("  ,"); printf("\n\n");
+		exit(1);
+	}
+
+	static void
+		edassert_equal_round(const unsigned char *a, const unsigned char *b, size_t len, int round, const char *failreason) {
+		if (memcmp(a, b, len) == 0)
+			return;
+		edassert_die(a, b, len, round, failreason);
+	}
+
+	static void
+		edassert_equal(const unsigned char *a, const unsigned char *b, size_t len, const char *failreason) {
+		if (memcmp(a, b, len) == 0)
+			return;
+		edassert_die(a, b, len, -1, failreason);
+	}
+
+
 	void Ristretoo_Test_Impl() {
-		test_ristretto();
+		//test_ristretto();
+		PRNG prng(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
+
+
+		{ //test  curved25519_scalarmult_basepoint
+
+			/* result of the curve25519 scalarmult ((|255| * basepoint) * basepoint)... 1024 times */
+			const curved25519_key curved25519_expected = {
+				0xac,0xce,0x24,0xb1,0xd4,0xa2,0x36,0x21,
+				0x15,0xe2,0x3e,0x84,0x3c,0x23,0x2b,0x5f,
+				0x95,0x6c,0xc0,0x7b,0x95,0x82,0xd7,0x93,
+				0xd5,0x19,0xb6,0xf1,0xfb,0x96,0xd6,0x04
+			};
+
+			curved25519_key csk[2] = { { 255 } };
+
+			for (int i = 0; i < 1024; i++)
+				curved25519_scalarmult_basepoint(csk[(i & 1) ^ 1], csk[i & 1]);
+			edassert_equal(curved25519_expected, csk[0], sizeof(curved25519_key), "curve25519 failed to generate correct value");
+
+		}
+		{
+
+	/*		test_data dataset[] = {
+			#include "Ristretto\src\regression.h"
+			};
+			ed25519_public_key pk;
+
+			for (int i = 0; i < 1024; i++) {
+				ed25519_publickey(dataset[i].sk, pk);
+				edassert_equal_round(dataset[i].pk, pk, sizeof(pk), i, "public key didn't match");
+			}*/
+		}
+
+		{
+			ed25519_secret_key secret_key1,  secret_key2, sk_sum;
+			ed25519_public_key public_key1, public_key2,  pk_sum, pk_sum_test;
+
+			prng.get(secret_key1, 32);
+			prng.get(secret_key2, 32);
+
+			for (u32 i = 0; i < 32; i++)
+			{
+				//secret_key1[i] = 0;
+				//secret_key2[i] = 0;
+			}
+			secret_key1[0] = 1;
+			secret_key2[0] = 2;
+
+			ed25519_publickey( secret_key1, public_key1); //pk1=g^sk1
+			ed25519_publickey(secret_key2, public_key2); //pk2=g^sk2
+
+
+			hash_512bits extsk;
+			bignum256modm a1, a2, sum;
+			ed25519_extsk(extsk, secret_key1);
+			expand256_modm(a1, extsk, 32);
+			
+			ed25519_extsk(extsk, secret_key2);
+			expand256_modm(a2, extsk, 32);
+			add256_modm(sum, a1, a2);
+			contract256_modm(sk_sum, sum); //sk_sum=sk1+sk2
+
+			ed25519_publickey( sk_sum, pk_sum); // pk_sum=g^(sk1+sk2)
+
+
+			ed25519_extsk(extsk, public_key1);
+			expand256_modm(a1, extsk, 32);
+			ed25519_extsk(extsk, public_key2);
+			expand256_modm(a2, extsk, 32);
+
+			mul256_modm(sum, a1, a2);
+			contract256_modm(pk_sum_test, sum);  //pk_sum_test=pk1*pk2
+
+			print_32bits(secret_key1, "secret_key1");
+			print_32bits(public_key1, "public_key1");
+			print_32bits(secret_key2, "secret_key2");
+			print_32bits(public_key2, "public_key2");
+
+			print_32bits(pk_sum, "pk_sum     ");
+			print_32bits(pk_sum_test, "pk_sum_test");
+		}
+
+	
+		{
+			curved25519_key secret_key1, public_key1, secret_key2, public_key2, sk_sum, pk_sum, pk_sum_test;
+			prng.get(secret_key1, 32);
+			prng.get(secret_key2, 32);
+
+			for (u32 i = 0; i < 32; i++)
+			{
+				//secret_key1[i] = 0;
+				//secret_key2[i] = 0;
+			}
+			secret_key1[0] = 1;
+			secret_key2[0] = 2;
+
+			curved25519_scalarmult_basepoint(public_key1, secret_key1); //pk1=g^sk1
+			curved25519_scalarmult_basepoint(public_key2, secret_key2); //pk2=g^sk2
+
+
+
+			bignum25519 a1, a2, sum;
+			curve25519_expand(a1, secret_key1);
+			curve25519_expand(a2, secret_key2);
+			curve25519_add(sum, a1, a2);
+			curve25519_contract(sk_sum, sum); //sk_sum=sk1+sk2
+			curved25519_scalarmult_basepoint(pk_sum, sk_sum); // pk_sum=g^(sk1+sk2)
+
+			bignum25519 a11, a21, sum1;
+			curve25519_expand(a11, public_key1);
+			curve25519_expand(a21, public_key2);
+			curve25519_mul(sum1, a11, a21);
+			curve25519_contract(pk_sum_test, sum1);  //pk_sum_test=pk1*pk2
+
+			print_32bits(secret_key1, "secret_key1");
+			print_32bits(public_key1, "public_key1");
+			print_32bits(secret_key2, "secret_key2");
+			print_32bits(public_key2, "public_key2");
+
+			print_32bits(pk_sum, "pk_sum     ");
+			print_32bits(pk_sum_test, "pk_sum_test");
+
+			curve25519_square(sum1, a11); //pk1^2
+			curve25519_contract(pk_sum_test, sum1);  //pk_sum_test=pk1^2
+			print_32bits(pk_sum_test, "pk1^2");
+
+		}
 	}
 
 	void curveTest()

@@ -1,4 +1,3 @@
-#pragma once
 /*
 	Public domain by Andrew M. <liquidsun@gmail.com>
 */
@@ -66,7 +65,7 @@ reduce256_modm(bignum256modm r) {
 static void
 barrett_reduce256_modm(bignum256modm r, const bignum256modm q1, const bignum256modm r1) {
 	bignum256modm q3, r2;
-	uint128_tt c, mul;
+	uint128_t c, mul;
 	bignum256modm_element_t f, b, pb;
 
 	/* q1 = x >> 248 = 264 bits = 5 56 bit elements
@@ -124,7 +123,7 @@ add256_modm(bignum256modm r, const bignum256modm x, const bignum256modm y) {
 static void
 mul256_modm(bignum256modm r, const bignum256modm x, const bignum256modm y) {
 	bignum256modm q1, r1;
-	uint128_tt c, mul;
+	uint128_t c, mul;
 	bignum256modm_element_t f;
 
 	mul64x64_128(c, x[0], y[0])
@@ -360,5 +359,3 @@ isatmost128bits256_modm_batch(const bignum256modm a) {
 
 	return (mask == 0);
 }
-
-

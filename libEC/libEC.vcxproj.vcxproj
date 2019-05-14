@@ -26,10 +26,15 @@
     <ClInclude Include="Ristretto\modm-donna-64bit.h" />
     <ClInclude Include="Ristretto\ristretto-donna.h" />
     <ClInclude Include="Ristretto\ristretto-utils.h" />
+    <ClInclude Include="Ristretto\src\ed25519-hash-custom.h" />
+    <ClInclude Include="Ristretto\src\ed25519-hash.h" />
+    <ClInclude Include="Ristretto\src\regression.h" />
     <ClInclude Include="Ristretto\test-ristretto.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Ristretto\ristretto-donna.c" />
+    <ClCompile Include="Ristretto\src\test-internals.c" />
+    <ClCompile Include="Ristretto\src\test.c" />
     <ClCompile Include="Ristretto\test-ristretto.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

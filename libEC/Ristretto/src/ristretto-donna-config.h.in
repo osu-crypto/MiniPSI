@@ -1,0 +1,2 @@
+#define ristretto_donna_VERSION_MAJOR @ristretto_donna_VERSION_MAJOR@
+#define ristretto_donna_VERSION_MINOR @ristretto_donna_VERSION_MINOR@
