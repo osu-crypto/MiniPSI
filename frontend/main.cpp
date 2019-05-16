@@ -245,13 +245,13 @@ void JL10Sender(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numThre
 
 	JL10PsiSender sender;
 
-#if 0
+#if 1
 	
 	//====================JL psi
 	for (u64 i = 0; i < numThreads; ++i)
 		sendChls[i] = ep1.addChannel("chl" + std::to_string(i), "chl" + std::to_string(i));
 
-	sender.startPsi(inputs.size(), theirSetSize, 40, prng0.get<block>(), inputs, sendChls);
+	sender.startPsi_subsetsum_malicious(inputs.size(), theirSetSize, 40, prng0.get<block>(), inputs, sendChls);
 	std::cout << gTimer << std::endl;
 
 	for (u64 i = 0; i < numThreads; ++i)
@@ -259,7 +259,7 @@ void JL10Sender(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numThre
 #endif
 
 	//====================JL psi startPsi_subsetsum
-#if 1
+#if 0
 	for (u64 i = 0; i < numThreads; ++i)
 		sendChls[i] = ep1.addChannel("chl" + std::to_string(i+ numThreads), "chl" + std::to_string(i+ numThreads));
 
@@ -292,19 +292,19 @@ void JL10Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 	for (u64 i = 0; i < expectedIntersection; ++i)
 		inputs[i] = prngSet.get<block>();
 
-	for (u64 i = expectedIntersection; i < inputs.size(); ++i)
-		inputs[i] = prng1.get<block>();
+	//for (u64 i = expectedIntersection; i < inputs.size(); ++i)
+	//	inputs[i] = prng1.get<block>();
 
 
 	JL10PsiReceiver recv;
 	u64 dataSent = 0, dataRecv(0);
 
 	//====================JL psi
-#if 0
+#if 1
 	for (u64 i = 0; i < numThreads; ++i)
 		recvChls[i] = ep0.addChannel("chl" + std::to_string(i), "chl" + std::to_string(i));
 
-	recv.startPsi_gK(inputs.size(), theirSetSize, 40, prng1.get<block>(), inputs, recvChls);
+	recv.startPsi_subsetsum_malicious(inputs.size(), theirSetSize, 40, prng1.get<block>(), inputs, recvChls);
 
 
 	std::cout << gTimer << std::endl;
@@ -323,7 +323,7 @@ void JL10Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 #endif
 
 	//====================JL psi startPsi_subsetsum
-#if 1
+#if 0
 
 	for (u64 i = 0; i < numThreads; ++i)
 		recvChls[i] = ep0.addChannel("chl" + std::to_string(numThreads+i), "chl" + std::to_string(numThreads+i));
@@ -352,7 +352,7 @@ void JL10Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 
 
 
-void Mini19Sender(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numThreads = 1)
+void Mini19Sender(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numBins, u64 numThreads = 1)
 {
 	u64 psiSecParam = 40;
 	PRNG prngSet(_mm_set_epi32(4253465, 3434565, 234435, 0));
@@ -384,21 +384,29 @@ void Mini19Sender(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 	std::cout << "\n";
 	//====================
 #if 1
-	for (u64 i = 0; i < numThreads; ++i)
-		sendChls[i] = ep1.addChannel("chl" + std::to_string(i + numThreads), "chl" + std::to_string(i + numThreads));
+	int minSize = std::min(inputs.size(),theirSetSize);
 
-	sender.outputSimpleHashing(inputs.size(), theirSetSize, 40, prng0, inputs, sendChls);
-	std::cout << gTimer << std::endl;
+	//for (int idxNumBin = 1; idxNumBin < log2(minSize); idxNumBin++)
+	{
+		//numBins = 1 << idxNumBin;
+		std::cout << "================numBins = " << numBins << "\n";
 
-	for (u64 i = 0; i < numThreads; ++i)
-		sendChls[i].close();
+		for (u64 i = 0; i < numThreads; ++i)
+			sendChls[i] = ep1.addChannel("chl" + std::to_string(i + numThreads), "chl" + std::to_string(i + numThreads));
+
+		sender.outputSimpleHashing(inputs.size(), theirSetSize, 40, prng0, inputs, sendChls, numBins);
+		std::cout << gTimer << std::endl;
+
+		for (u64 i = 0; i < numThreads; ++i)
+			sendChls[i].close();
+	}
 #endif
 
 
 	ep1.stop();	ios.stop();
 }
 
-void Mini19Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numThreads = 1)
+void Mini19Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numBins, u64 numThreads = 1)
 {
 	expectedIntersection = mySetSize;
 
@@ -449,26 +457,34 @@ void Mini19Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 num
 
 	//====================outputHashing
 #if 1
+
 	std::cout << "\n";
-	for (u64 i = 0; i < numThreads; ++i)
-		recvChls[i] = ep0.addChannel("chl" + std::to_string(numThreads + i), "chl" + std::to_string(numThreads + i));
+	int minSize = std::min(inputs.size(), theirSetSize);
 
-	recv.outputSimpleHashing(inputs.size(), theirSetSize, 40, prng1, inputs, recvChls);
-
-	std::cout << gTimer << std::endl;
-
-	dataSent = 0, dataRecv=0;
-	for (u64 g = 0; g < recvChls.size(); ++g)
+	//for (int idxNumBin = 1; idxNumBin < log2(minSize); idxNumBin++)
 	{
-		dataSent += recvChls[g].getTotalDataSent();
-		dataRecv += recvChls[g].getTotalDataRecv();
-		recvChls[g].resetStats();
-	}
-	std::cout << "      Total Comm = " << string_format("%5.2f", (dataRecv + dataSent) / std::pow(2.0, 20)) << " MB\n";
-	std::cout << "recv.mIntersection vs exp : " << recv.mIntersection.size() << " vs " << expectedIntersection << std::endl;
+		//numBins = 1 << idxNumBin;
+		std::cout << "================numBins = " << numBins << "\n";
+		for (u64 i = 0; i < numThreads; ++i)
+			recvChls[i] = ep0.addChannel("chl" + std::to_string(numThreads + i), "chl" + std::to_string(numThreads + i));
 
-	for (u64 i = 0; i < numThreads; ++i)
-		recvChls[i].close();
+		recv.outputSimpleHashing(inputs.size(), theirSetSize, 40, prng1, inputs, recvChls, numBins);
+
+		std::cout << gTimer << std::endl;
+
+		dataSent = 0, dataRecv = 0;
+		for (u64 g = 0; g < recvChls.size(); ++g)
+		{
+			dataSent += recvChls[g].getTotalDataSent();
+			dataRecv += recvChls[g].getTotalDataRecv();
+			recvChls[g].resetStats();
+		}
+		std::cout << "      Total Comm = " << string_format("%5.2f", (dataRecv + dataSent) / std::pow(2.0, 20)) << " MB\n";
+		std::cout << "recv.mIntersection vs exp : " << recv.mIntersection.size() << " vs " << expectedIntersection << std::endl;
+
+		for (u64 i = 0; i < numThreads; ++i)
+			recvChls[i].close();
+	}
 
 #endif
 
@@ -1116,11 +1132,31 @@ void testCurve(int n)
 
 }
 
+#include <fstream>
+void get_bin_size_list()
+{
 
+	SimpleIndex simple;
 
+	for (int iNsize = 8; iNsize < 25; iNsize++)
+	{
+		u64 numBalls = 1 << iNsize;
+		std::cout << "{" << iNsize;
+		for (int pB = 0; pB < 25; pB++)
+		{
+			u64 numBin = 1 << pB;
+
+			u64 binsize = simple.get_bin_size(numBin, numBalls, 40);
+			std::cout << "," << binsize;
+		}
+		std::cout << "},\n";
+	}
+}
 
 int main(int argc, char** argv)
 {
+	/*get_bin_size_list();
+	return 0;*/
 	//ristretto_point_t a;
 	/*test_ristretto();
 	return 0;*/
@@ -1151,12 +1187,24 @@ int main(int argc, char** argv)
 	
 
 	string ipadrr = "localhost:1212";
-	u64 sendSetSize = 1 << 8, recvSetSize = 1 << 9, numThreads = 2;
+	u64 sendSetSize = 1 << 8, recvSetSize = 1 << 9, numThreads = 2, numBins=4;
 
 	PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
 
 
-	if (argc == 9 
+	if (argc == 11 
+		&& argv[3][0] == '-' && argv[3][1] == 'n'
+		&& argv[5][0] == '-' && argv[5][1] == 'm'
+		&& argv[7][0] == '-' && argv[7][1] == 't'
+		&& argv[9][0] == '-' && argv[9][1] == 'b')
+	{
+		sendSetSize = 1 << atoi(argv[4]);
+		recvSetSize = 1 << atoi(argv[6]);
+		numThreads = atoi(argv[8]);
+		numBins = atoi(argv[10]);
+	}
+
+	if (argc == 9
 		&& argv[3][0] == '-' && argv[3][1] == 'n'
 		&& argv[5][0] == '-' && argv[5][1] == 'm'
 		&& argv[7][0] == '-' && argv[7][1] == 't')
@@ -1165,7 +1213,6 @@ int main(int argc, char** argv)
 		recvSetSize = 1 << atoi(argv[6]);
 		numThreads = atoi(argv[8]);
 	}
-
 
 	if (argc == 7
 		&& argv[3][0] == '-' && argv[3][1] == 'n'
@@ -1182,6 +1229,18 @@ int main(int argc, char** argv)
 		sendSetSize = 1 << atoi(argv[4]);
 		recvSetSize = sendSetSize;
 		numThreads = atoi(argv[6]);
+	}
+
+	if (argc == 9
+		&& argv[3][0] == '-' && argv[3][1] == 'n'
+		&& argv[5][0] == '-' && argv[5][1] == 't'
+		&& argv[7][0] == '-' && argv[7][1] == 'b')
+	{
+		sendSetSize = 1 << atoi(argv[4]);
+		recvSetSize = sendSetSize;
+		numThreads = atoi(argv[6]);
+		numBins = atoi(argv[8]);
+
 	}
 
 	std::vector<block> sendSet(sendSetSize), recvSet(recvSetSize);
@@ -1210,13 +1269,13 @@ int main(int argc, char** argv)
 		std::thread thrd = std::thread([&]() {
 			//EchdSender(sendSetSize, recvSetSize, "localhost:1214", numThreads);
 			//JL10Sender(sendSetSize, recvSetSize,"localhost:1214", numThreads);
-			Mini19Sender(sendSetSize, recvSetSize, "localhost:1214", numThreads);
+			Mini19Sender(sendSetSize, recvSetSize, "localhost:1214", numBins, numThreads);
 
 		});
 
 		//EchdReceiver(recvSetSize, sendSetSize, "localhost:1214", numThreads);
 		//JL10Receiver(recvSetSize, sendSetSize, "localhost:1214", numThreads);
-		Mini19Receiver(recvSetSize, sendSetSize, "localhost:1214", numThreads);
+		Mini19Receiver(recvSetSize, sendSetSize, "localhost:1214", numBins, numThreads);
 
 		thrd.join();
 
@@ -1224,16 +1283,16 @@ int main(int argc, char** argv)
 	else if (argv[1][0] == '-' && argv[1][1] == 'r' && atoi(argv[2]) == 0) {
 
 
-		EchdSender(sendSetSize, recvSetSize, ipadrr, numThreads);
+		//EchdSender(sendSetSize, recvSetSize, ipadrr, numThreads);
 		JL10Sender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
-		Mini19Sender(sendSetSize, recvSetSize, "localhost:1214", numThreads);
+		//Mini19Sender(sendSetSize, recvSetSize, "localhost:1214", numBins, numThreads);
 
 
 	}
 	else if (argv[1][0] == '-' && argv[1][1] == 'r' && atoi(argv[2]) == 1) {
-		EchdReceiver(recvSetSize, sendSetSize, ipadrr, numThreads);
+		//EchdReceiver(recvSetSize, sendSetSize, ipadrr, numThreads);
 		JL10Receiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
-		Mini19Receiver(recvSetSize, sendSetSize, "localhost:1214", numThreads);
+		//Mini19Receiver(recvSetSize, sendSetSize, "localhost:1214", numBins, numThreads);
 
 	}
 	else {

@@ -766,7 +766,7 @@ namespace osuCrypto
 	}
 
 
-	void MiniSender::outputSimpleHashing(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG & prng, span<block> inputs, span<Channel> chls)
+	void MiniSender::outputSimpleHashing(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG & prng, span<block> inputs, span<Channel> chls, u64 numBins)
 	{
 		for (u64 i = 0; i < chls.size(); ++i)
 		{
@@ -816,7 +816,7 @@ namespace osuCrypto
 
 		u64 n1n2MaskBits = (40 + log2(mTheirInputSize*mMyInputSize));
 		u64 n1n2MaskBytes = (n1n2MaskBits + 7) / 8;
-		simple.initOneHash(mMyInputSize, mTheirInputSize, 4, 40);
+		simple.initOneHash(mMyInputSize, mTheirInputSize, numBins, 40);
 
 #pragma endregion
 
@@ -829,7 +829,7 @@ namespace osuCrypto
 		gTimer.setTimePoint("r online start ");
 		simple.insertItemsOneHash(inputs);
 		gTimer.setTimePoint("s_binning");
-		std::cout << "s_simple_binning done" << std::endl;
+		std::cout << "s_simple_binning done, maxbinsize: " << simple.mMyMaxBinSize << " vs " <<simple.mTheirMaxBinSize  << std::endl;
 
 		chls[0].asyncSend(std::move(tempSend));//send g^k
 											   //std::cout << "s g^k= " << g_k << std::endl;

@@ -1150,7 +1150,7 @@ namespace osuCrypto
 	}
 
 
-	void MiniReceiver::outputSimpleHashing(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG & prng, span<block> inputs, span<Channel> chls)
+	void MiniReceiver::outputSimpleHashing(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG & prng, span<block> inputs, span<Channel> chls, u64 numBins)
 	{
 		for (u64 i = 0; i < chls.size(); ++i)
 		{
@@ -1258,7 +1258,7 @@ namespace osuCrypto
 
 			mG_pairs.push_back(std::make_pair(subIdx, temp));
 		}
-		simple.initOneHash(mMyInputSize, mTheirInputSize, 4, 40);
+		simple.initOneHash(mMyInputSize, mTheirInputSize, numBins, 40);
 
 		u64 numThreads(chls.size());
 		const bool isMultiThreaded = numThreads > 1;
@@ -1284,7 +1284,12 @@ namespace osuCrypto
 		gTimer.setTimePoint("r online start ");
 		simple.insertItemsOneHash(inputs);//Simple=====================
 		gTimer.setTimePoint("r_simple_binning done");
-		std::cout << "r_binning done" << std::endl;
+		std::cout << "r_simple_binning done, size: " << mMyInputSize << " vs " << mTheirInputSize << std::endl;
+		std::cout << "r_simple_binning done, maxbinsize: " << simple.mMyMaxBinSize << " vs " << simple.mTheirMaxBinSize << std::endl;
+		std::cout << "r_simple_binning done, %dum radio: "
+			<< (simple.mNumBins*simple.mMyMaxBinSize / (double)mMyInputSize) 
+			<< " vs " << (simple.mNumBins*simple.mTheirMaxBinSize / (double)mTheirInputSize) << std::endl;
+
 
 
 		std::vector<u8> mG_K; chls[0].recv(mG_K);
@@ -1332,7 +1337,7 @@ namespace osuCrypto
 
 		//std::cout << " g_sum.sizeBytes()= " << sizesss << "\n";
 		//std::cout << " mPolyBytes= " << mPolyBytes << "\n";
-		std::cout << " r g^ri^k done\n";
+		gTimer.setTimePoint(" r g^ri^k done");
 		std::cout << "r g^ri^k done" << std::endl;
 
 

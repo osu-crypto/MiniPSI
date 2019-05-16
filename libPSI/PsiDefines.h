@@ -44,8 +44,8 @@ namespace osuCrypto
 
 
 	static const u8 mMiniPolySlices(2); //2*128 
-	static const u64 stepSize(1 << 6);
-	static const u64 numStep(1 << 1);
+	static const u64 stepSize(1 << 2);
+	static const u64 numStep(1 << 2);
 	static const u64 stepSizeMaskSent(1<<11);
 //	static const u8 numSuperBlocks(4); //wide of T (or field size) 
 	static const u8 numSuperBlocks(3); //wide of T (or field size)  =3 for HD-PSI
@@ -66,48 +66,48 @@ namespace osuCrypto
 
 		if (setSize <= (1 << 8))
 		{
-			numSeeds = 256;
-			numChosen = 16;
+			numSeeds = 1<<7;
+			numChosen = 23;
 		}
 		else if (setSize <= (1 << 10))
 		{
-			numSeeds = 512;
-			numChosen = 16;
+			numSeeds = 1<<7;
+			numChosen = 24;
 		}
 		else if (setSize <= (1 << 12))
 		{
-			numSeeds = 512;
-			numChosen = 17;
+			numSeeds = 1<<7;
+			numChosen = 25;
 		}
 		else if (setSize <= (1 << 14))
 		{
-			numSeeds = 1024;
-			numChosen = 16;
+			numSeeds = 1<<8;
+			numChosen = 20;
 		}
 		else if (setSize <= (1 << 16))
 		{
-			numSeeds = 2048;
-			numChosen = 14;
+			numSeeds = 1<<9;
+			numChosen = 17;
 		}
 		else if (setSize <= (1 << 18))
 		{
-			numSeeds = 2048;
+			numSeeds = 1<<10;
 			numChosen = 15;
 		}
 		else if (setSize <= (1 << 20))
 		{
-			numSeeds = 2048;
-			numChosen = 15;
+			numSeeds = 1<<13;
+			numChosen = 11;
 		}
 		else if (setSize <= (1 << 22))
 		{
-			numSeeds = 2048;
-			numChosen = 16;
+			numSeeds = 1<<14;
+			numChosen = 11;
 		}
 		else if (setSize <= (1 << 24))
 		{
-			numSeeds = 2048;
-			numChosen = 18;
+			numSeeds = 1<<15;
+			numChosen = 10;
 		}
 	}
 

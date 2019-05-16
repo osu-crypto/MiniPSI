@@ -32,6 +32,7 @@ namespace osuCrypto
 		void init(u64 theirInputSize, u64 theriMaxBinSize, u64 theirNumDummies, u64 statSecParam = 40);
 		void insertItems(span<block> items);
 		void insertItemsOneHash(span<block> items);
+		u64 get_bin_size(u64 numBins, u64 numBalls, u64 statSecParam);
     };
 
 }
