@@ -11,6 +11,9 @@
     <ClCompile Include="OT_Tests.cpp" />
     <ClCompile Include="UnitTests.cpp" />
     <ClCompile Include="miniPSI_Tests.cpp" />
+    <ClCompile Include="GLS-254\dh.h">
+      <Filter>GLS-254</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AknOt_Tests.h" />
@@ -31,8 +34,28 @@
     <ClInclude Include="pk-crypto.h" />
     <ClInclude Include="typedefs.h" />
     <ClInclude Include="constants.h" />
+    <ClInclude Include="GLS-254\api.h">
+      <Filter>GLS-254</Filter>
+    </ClInclude>
+    <ClInclude Include="GLS-254\eca.h">
+      <Filter>GLS-254</Filter>
+    </ClInclude>
+    <ClInclude Include="GLS-254\ffa.h">
+      <Filter>GLS-254</Filter>
+    </ClInclude>
+    <ClInclude Include="GLS-254\lib.h">
+      <Filter>GLS-254</Filter>
+    </ClInclude>
+    <ClInclude Include="GLS-254\smu.h">
+      <Filter>GLS-254</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="GLS-254">
+      <UniqueIdentifier>{eef7be23-57b9-43cf-8952-ef640259ee0b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>
