@@ -33,6 +33,7 @@
 #define smu_add_128(c0, c1, a0, a1)\
     c0 = a0+c0;\
     c1 = a1+c1;
+
 #else
 #define smu_add_128(c0, c1, a0, a1)\
     asm ("addq %2, %0 \n\t"\
@@ -68,7 +69,24 @@ void smu_reg_rec(int8_t *dig, uint64_t *k00) {
     return;
 }
 
+#ifdef _MSC_VER
+typedef struct uint128_t {
+	uint64_t lo, hi;
+} uint128_t;
+
+#define mul64x64_128(out,a,b) out.lo = _umul128(a,b,&out.hi);
+#define shr128_pair(out,hi,lo,shift) out = __shiftright128(lo, hi, shift);
+#define shl128_pair(out,hi,lo,shift) out = __shiftleft128(lo, hi, shift);
+#define shr128(out,in,shift) shr128_pair(out, in.hi, in.lo, shift)
+#define shl128(out,in,shift) shl128_pair(out, in.hi, in.lo, shift)
+#define add128(a,b) { uint64_t p = a.lo; a.lo += b.lo; a.hi += b.hi + (a.lo < p); }
+#define add128_64(a,b) { uint64_t p = a.lo; a.lo += b; a.hi += (a.lo < p); }
+#define lo128(a) (a.lo)
+#define hi128(a) (a.hi)
+
+#else
 typedef unsigned int uint128_t __attribute__((mode(TI)));
+#endif
 
 /* schoolbook multiplication (4 x 1) 64-bit words */
 #define SCHBOOK_4x1(h, c, a, b)\
@@ -161,8 +179,13 @@ typedef unsigned int uint128_t __attribute__((mode(TI)));
    Method described in http://cacr.uwaterloo.ca/techreports/2012/cacr2012-24.pdf (Sec. 3.2) */
 void gls_recoding(uint64_t k[], uint64_t k1[], uint64_t k2[], int *k1neg, int *k2neg) {
     //const uint64_t BETA_22 = 0xD792EA76691524E3; /* "t" term of #E = t^2 - (q-1)^2 */
-    /* WEIER */ const uint64_t BETA_22[2] = {0x38cd186180b532d3, 0x1}; /* "t" term of #E = t^2 - (q-1)^2 */
-    ///* HUFF */ const uint64_t BETA_22 = 0X2826AEC5683DD7BF;
+    /* WEIER */ 
+#ifdef _MSC_VER
+	uint64_t BETA_22[2] = {0x38cd186180b532d3, 0x1}; /* "t" term of #E = t^2 - (q-1)^2 */
+#else
+	const uint64_t BETA_22[2] = { 0x38cd186180b532d3, 0x1 }; /* "t" term of #E = t^2 - (q-1)^2 */
+#endif
+														   ///* HUFF */ const uint64_t BETA_22 = 0X2826AEC5683DD7BF;
     const uint64_t ALL_ZERO = 0;
 
     uint128_t reg_128; /* 128-bit "register" */

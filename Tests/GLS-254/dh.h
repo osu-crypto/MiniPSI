@@ -281,3 +281,84 @@ int crypto_dh_gls254prot_hash(unsigned char *out, unsigned char *sk) {
     _mm_store_si128((__m128i *) &out[48], l1);
 #endif
 }
+
+#if 0
+#define AES_BYTES 16
+void dh_pm_test() {
+
+	uint32_t size = 5;
+
+	uint8_t* seed = (uint8_t*)malloc(AES_BYTES);
+	uint32_t  symsecbits = 128;
+	uint32_t  fe_bytes;
+
+	crypto* crypt = new crypto(symsecbits, seed);
+	pk_crypto* m_cPKCrypto = crypt->gen_field(ECC_FIELD);
+	fe_bytes = m_cPKCrypto->fe_byte_size();
+
+	cout << "=1 \n";
+
+	num* alpha, * beta;
+	fe* g, * ga, * gb, * gab, * gba;
+
+
+
+
+
+	alpha = m_cPKCrypto->get_rnd_num();
+	cout << "=2 \n";
+	beta = m_cPKCrypto->get_rnd_num();
+	cout << "=3 \n";
+
+	g = m_cPKCrypto->get_rnd_generator();
+
+	cout << "=4 \n";
+
+	ga = m_cPKCrypto->get_fe();
+	ga->set_pow(g, alpha);
+
+	gab = m_cPKCrypto->get_fe();
+	gab->set_pow(ga, beta);
+
+	gb = m_cPKCrypto->get_fe();
+	gb->set_pow(g, beta);
+
+	gba = m_cPKCrypto->get_fe();
+	gba->set_pow(gb, alpha);
+
+	uint8_t* byte_gba = (uint8_t*)malloc(sizeof(uint8_t) * fe_bytes);
+	uint8_t* byte_gab = (uint8_t*)malloc(sizeof(uint8_t) * fe_bytes);
+
+	gab->export_to_bytes(byte_gab);
+	gba->export_to_bytes(byte_gba);
+	//byte_gab = (uint8_t*) malloc(m_cPKCrypto->fe_byte_size());
+	//uint32_t size= 5;//m_cPKCrypto->fe_byte_size();
+//	printf("%02x", size);
+
+	//cout << "matched \n";
+
+	cout << byte_gab << "\n";
+	gab->print();
+
+	if (memcmp(byte_gab, byte_gab, sizeof(uint8_t) * fe_bytes) == 0)
+		cout << "matched \n";
+	else
+		cout << "unmatched \n";
+
+
+	if (memcmp(byte_gab, byte_gba, sizeof(uint8_t) * fe_bytes) == 0)
+		cout << "matched \n";
+	else
+		cout << "un-matched \n";
+
+	num* exponent = new ecc_num((ecc_field*)m_cPKCrypto);
+	exponent->import_from_bytes(byte_gab, fe_bytes);
+
+	//ga->print();
+
+//tmpfe->print();
+
+	//psi_demonstrator(argc, argv);
+}
+
+#endif
