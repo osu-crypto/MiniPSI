@@ -1,0 +1,68 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="ECDH\EcdhPsiReceiver.cpp" />
+    <ClCompile Include="ECDH\EcdhPsiSender.cpp" />
+    <ClCompile Include="miniPSI\MiniReceiver.cpp" />
+    <ClCompile Include="miniPSI\MiniSender.cpp" />
+    <ClCompile Include="PRTY\PrtyReceiver.cpp" />
+    <ClCompile Include="PRTY\PrtySender.cpp" />
+    <ClCompile Include="Poly\polyFFT.cpp">
+      <Filter>Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="Poly\polyFFT2.cpp">
+      <Filter>Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="Poly\polyNTL.cpp">
+      <Filter>Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="Tools\SimpleIndex .cpp">
+      <Filter>Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="Tools\BalancedIndex.cpp">
+      <Filter>Tools</Filter>
+    </ClCompile>
+    <ClCompile Include="ECDH\JL10PsiReceiver.cpp" />
+    <ClCompile Include="ECDH\JL10PsiSender.cpp" />
+    <ClCompile Include="ECDH\DKT10PsiReceiver.cpp" />
+    <ClCompile Include="ECDH\DKT10PsiSender.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ECDH\EcdhPsiReceiver.h" />
+    <ClInclude Include="ECDH\EcdhPsiSender.h" />
+    <ClInclude Include="miniPSI\MiniReceiver.h" />
+    <ClInclude Include="miniPSI\MiniSender.h" />
+    <ClInclude Include="PRTY\PrtyReceiver.h" />
+    <ClInclude Include="PRTY\PrtySender.h" />
+    <ClInclude Include="Poly\polyFFT.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="Poly\polyFFT2.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="Poly\polyNTL.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="Tools\SimpleIndex.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="Tools\BalancedIndex.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="PsiDefines.h">
+      <Filter>Tools</Filter>
+    </ClInclude>
+    <ClInclude Include="ECDH\JL10PsiReceiver.h" />
+    <ClInclude Include="ECDH\JL10PsiSender.h" />
+    <ClInclude Include="ECDH\DKT10PsiReceiver.h" />
+    <ClInclude Include="ECDH\DKT10PsiSender.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Tools">
+      <UniqueIdentifier>{280a941a-f474-4d5e-90be-5d9150e28af7}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

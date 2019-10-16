@@ -1153,12 +1153,12 @@ void get_bin_size_list()
 	}
 }
 
-#include "Tests/GLS-254/dh.h"
+//#include "Tests/GLS-254/dh.h"
 
 int main(int argc, char** argv)
 {
 
-	ec_test();
+	//ec_test();
 	return 0;
 	/*get_bin_size_list();
 	return 0;*/
