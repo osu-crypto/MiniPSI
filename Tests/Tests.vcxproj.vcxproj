@@ -79,7 +79,6 @@
     <ClCompile Include="AknOt_Tests.cpp" />
     <ClCompile Include="BaseOT_Tests.cpp" />
     <ClCompile Include="Common.cpp" />
-    <ClCompile Include="GLS-254\dh.h" />
     <ClCompile Include="miniPSI_Tests.cpp" />
     <ClCompile Include="NcoOT_Tests.cpp" />
     <ClCompile Include="PSI_Tests.cpp" />
@@ -92,15 +91,8 @@
     <ClInclude Include="AknOt_Tests.h" />
     <ClInclude Include="BaseOT_Tests.h" />
     <ClInclude Include="Common.h" />
-    <ClInclude Include="constants.h" />
-    <ClInclude Include="GLS-254\api.h" />
-    <ClInclude Include="GLS-254\eca.h" />
-    <ClInclude Include="GLS-254\ffa.h" />
-    <ClInclude Include="GLS-254\lib.h" />
-    <ClInclude Include="GLS-254\smu.h" />
     <ClInclude Include="miniPSI_Tests.h" />
     <ClInclude Include="NcoOT_Tests.h" />
-    <ClInclude Include="pk-crypto.h" />
     <ClInclude Include="PSI_Tests.h" />
     <ClInclude Include="OTOracleReceiver.h" />
     <ClInclude Include="OTOracleSender.h" />
@@ -110,7 +102,6 @@
     <ClInclude Include="testData\code256_BCH511.h" />
     <ClInclude Include="testData\code384_BCH511.h" />
     <ClInclude Include="testData\code640_BCH511.h" />
-    <ClInclude Include="typedefs.h" />
     <ClInclude Include="UnitTests.h" />
   </ItemGroup>
   <ItemGroup>

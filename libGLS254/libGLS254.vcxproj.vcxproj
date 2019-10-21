@@ -15,47 +15,39 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ECDH\DKT10PsiReceiver.cpp" />
-    <ClCompile Include="ECDH\DKT10PsiSender.cpp" />
-    <ClCompile Include="ECDH\EcdhPsiReceiver.cpp" />
-    <ClCompile Include="ECDH\EcdhPsiSender.cpp" />
-    <ClCompile Include="ECDH\JL10PsiReceiver.cpp" />
-    <ClCompile Include="ECDH\JL10PsiSender.cpp" />
-    <ClCompile Include="miniPSI\MiniReceiver.cpp" />
-    <ClCompile Include="miniPSI\MiniSender.cpp" />
-    <ClCompile Include="Poly\polyFFT.cpp" />
-    <ClCompile Include="Poly\polyFFT2.cpp" />
-    <ClCompile Include="Poly\polyNTL.cpp" />
-    <ClCompile Include="PRTY\PrtyReceiver.cpp" />
-    <ClCompile Include="PRTY\PrtySender.cpp" />
-    <ClCompile Include="Tools\BalancedIndex.cpp" />
-    <ClCompile Include="Tools\SimpleIndex .cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="ECDH\DKT10PsiReceiver.h" />
-    <ClInclude Include="ECDH\DKT10PsiSender.h" />
-    <ClInclude Include="ECDH\EcdhPsiReceiver.h" />
-    <ClInclude Include="ECDH\EcdhPsiSender.h" />
-    <ClInclude Include="ECDH\JL10PsiReceiver.h" />
-    <ClInclude Include="ECDH\JL10PsiSender.h" />
-    <ClInclude Include="miniPSI\MiniReceiver.h" />
-    <ClInclude Include="miniPSI\MiniSender.h" />
-    <ClInclude Include="Poly\polyFFT.h" />
-    <ClInclude Include="Poly\polyFFT2.h" />
-    <ClInclude Include="Poly\polyNTL.h" />
-    <ClInclude Include="PRTY\PrtyReceiver.h" />
-    <ClInclude Include="PRTY\PrtySender.h" />
-    <ClInclude Include="PsiDefines.h" />
-    <ClInclude Include="Tools\BalancedIndex.h" />
-    <ClInclude Include="Tools\SimpleIndex.h" />
-  </ItemGroup>
-  <ItemGroup>
     <Text Include="CMakeLists.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="GLS-254\api.h" />
+    <ClInclude Include="GLS-254\codewords.h" />
+    <ClInclude Include="GLS-254\Config.h" />
+    <ClInclude Include="GLS-254\constants.h" />
+    <ClInclude Include="GLS-254\crypto.h" />
+    <ClInclude Include="GLS-254\dh.h" />
+    <ClInclude Include="GLS-254\eca.h" />
+    <ClInclude Include="GLS-254\ecc-pk-crypto.h" />
+    <ClInclude Include="GLS-254\ffa.h" />
+    <ClInclude Include="GLS-254\gmp-pk-crypto.h" />
+    <ClInclude Include="GLS-254\intrin_sequential_enc8.h" />
+    <ClInclude Include="GLS-254\lib.h" />
+    <ClInclude Include="GLS-254\pk-crypto.h" />
+    <ClInclude Include="GLS-254\smu.h" />
+    <ClInclude Include="GLS-254\socket.h" />
+    <ClInclude Include="GLS-254\TedKrovetzAesNiWrapperC.h" />
+    <ClInclude Include="GLS-254\typedefs.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="GLS-254\codewords.cpp" />
+    <ClCompile Include="GLS-254\crypto.cpp" />
+    <ClCompile Include="GLS-254\ecc-pk-crypto.cpp" />
+    <ClCompile Include="GLS-254\gmp-pk-crypto.cpp" />
+    <ClCompile Include="GLS-254\intrin_sequential_enc8.cpp" />
+    <ClCompile Include="GLS-254\TedKrovetzAesNiWrapperC.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{B2498D05-9678-481A-AE20-7CBB56B82A23}</ProjectGuid>
+    <ProjectGuid>{F1CCAD73-D861-453E-8422-AFF08491DE92}</ProjectGuid>
     <RootNamespace>libOTe</RootNamespace>
-    <ProjectName>libPSI</ProjectName>
+    <ProjectName>libGLS254</ProjectName>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
