@@ -19,4 +19,5 @@ namespace tests_libOTe
 	void testNewGroup();
 	void Simple_Test_Impl();
 	//void Ristretoo_Test_Impl();
+	int Ristretto_Test_Impl();
 }

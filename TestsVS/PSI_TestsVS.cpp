@@ -139,7 +139,15 @@ namespace tests_libOTe
 			curveTest();
 		}
 
+		TEST_METHOD(Ristretto_Test_ImplVS)
+		{
+			InitDebugPrinting();
+			Ristretto_Test_Impl();
+		}
 
+
+
+		
 	};
 }
 #endif
