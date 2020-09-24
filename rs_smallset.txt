@@ -1,0 +1,279 @@
+qdisc htb 1: root refcnt 2 r2q 10 default 11 direct_packets_stat 0 direct_qlen 1000
+ Sent 19919 bytes 64 pkt (dropped 0, overlimits 92 requeues 0)
+ backlog 0b 0p requeues 0
+qdisc netem 10: parent 1:11 limit 100000 delay 200us
+ Sent 19919 bytes 64 pkt (dropped 0, overlimits 0 requeues 0)
+ backlog 0b 0p requeues 0
+class htb 1:11 parent 1:1 leaf 10: prio 0 rate 10Gbit ceil 10Gbit burst 0b cburst 0b
+class htb 1:1 root rate 8Gbit ceil 8Gbit burst 0b cburst 0b
+
+-bash-4.2$ ./bin/frontend.exe -t 0 -n 7  & ./bin/frontend.exe -t 1 -n 7
+[1] 18501
+SetSize: 128 vs 128   |  numThreads: 1
+SetSize: 128 vs 128   |  numThreads: 1
+====================================JL10====================================
+SetSize: 128 vs 128   |  numThreads: 1  SetSize: 128 vs 128   |  numThreads: 1  s g_k= 552936223600335fbfbc09ffd061270a
+startPsi r mSetSeedsSize= 128 - 128 - 139893479938464
+====================================JL10====================================
+SetSize: 128 vs 128   |  numThreads: 1  g^ri done
+Label  00000000000  Time (ms)  diff (ms)
+__________________________________
+r online start 000  0000009.5  00009.466  **************************************************************************
+s exp done00000000  0000051.1  00041.591  ***************************************************************************************************************************
+s Psi done00000000  0000051.1  00000.088  **
+
+Label  00000000000  Time (ms)  diff (ms)
+__________________________________
+r online start 000  0000009.5  00009.466  ************************************************
+s exp done00000000  0000051.1  00041.591  *******************************************************************************
+s Psi done00000000  0000051.1  00000.088  *
+r exp done00000000  0000079.0  00027.821  **********************************************************************
+r psi done00000000  0000079.4  00000.442  *
+
+      Total Comm =  8.91 KB
+recv.mIntersection vs exp : 100 vs 100
+
+
+-bash-4.2$ ./bin/frontend.exe -i 0 -n 7  & ./bin/frontend.exe -i 1 -n 7
+[1] 22989
+SetSize: 128 vs 128   |  numThreads: 1
+SetSize: 128 vs 128   |  numThreads: 1
+
+
+====================================Mini19Receiver_Ris====================================
+SetSize: 128 vs 128   |  numThreads: 1  r mSetSeedsSize= 128 - 128 - 24
+r mG_pairs_elligator done
+r Poly done
+SetSize: 128 vs 128   |  numThreads: 1  s Poly done
+s mask done
+Label                       Time (ms)  diff (ms)
+__________________________________
+r online start                    0.2      0.190  **
+s received coeff start           41.3     41.153  ******************************************************************************************
+s received coeff start           45.0      3.651  ********************************
+s Poly done                      47.5      2.466  **********************
+s mask done                      56.8      9.328  ******************************************************
+
+
+psi done
+Label               Time (ms)  diff (ms)
+__________________________________
+r online start           31.1     31.120  ****************************************************************************
+r Poly done              44.1     12.994  *********************************************************
+r g^k^ri done            63.5     19.397  ******************************************************************
+
+-bash-4.2$ ./bin/PSI_test -r 0 -ss 7 -rs 7 -w 609 -h 16 -hash 9 -ip 127.0.0.1 & ./bin/PSI_test -r 1 -ss 7 -rs 7 -w 609 -h 16 -hash 9 -ip 127.0.0.1
+[2] 35082
+Receiver matrix sent and transposed hash input computed
+Label                                     Time (ms)  diff (ms)
+__________________________________
+Sender base OT finished                       206.5    206.460  **********
+Sender set transformed                        206.6      0.146
+Sender transposed hash input computed         254.6     47.984  *******
+Sender hash outputs computed and sent         255.0      0.402
+Receiver intersection computed - correct!
+Label                                                       Time (ms)  diff (ms)
+__________________________________
+Receiver base OT finished                                       206.4    206.365  **********
+Receiver initialized                                            206.5      0.137
+Receiver set transformed                                        206.6      0.049
+Receiver matrix sent and transposed hash input computed         240.5     33.935  *******
+Receiver hash outputs computed                                  241.0      0.472
+Receiver intersection computed                                  254.5     13.493  *****
+Receiver sent communication: 4.764 MB
+Receiver received communication: 0.017 MB
+Receiver total communication: 4.781 MB
+
+
+-bash-4.2$ ./Release/bOPRFmain.exe -r 0 & ./Release/bOPRFmain.exe -r 1
+[2] 39469
+BopSender()
+role  = sender (1) SSOtPSI
+BopRecv()
+role  = recv (1) SSOtPSI
+--------------------------
+setSize                         |  offline(ms)  |  online(ms)
+128 vs 128                              175             22
+128 vs 128-- Online Avg Time: 22 ms
+128 vs 128-- Offline Avg Time: 175 ms
+128 vs 128-- Total Avg Time: 197 ms
+
+
+-bash-4.2$  /scratch/setup-network status
+qdisc htb 1: root refcnt 2 r2q 10 default 11 direct_packets_stat 0 direct_qlen 1000
+ Sent 0 bytes 0 pkt (dropped 0, overlimits 0 requeues 0)
+ backlog 0b 0p requeues 0
+qdisc netem 10: parent 1:11 limit 100000 delay 80.0ms
+ Sent 0 bytes 0 pkt (dropped 0, overlimits 0 requeues 0)
+ backlog 0b 0p requeues 0
+class htb 1:11 parent 1:1 leaf 10: prio 0 rate 100Mbit ceil 100Mbit burst 1600b cburst 1600b
+class htb 1:1 root rate 8Gbit ceil 8Gbit burst 0b cburst 0b
+
+-bash-4.2$ ./bin/frontend.exe -t 0 -n 7  & ./bin/frontend.exe -t 1 -n 7
+[1] 29000
+SetSize: 128 vs 128   |  numThreads: 1
+SetSize: 128 vs 128   |  numThreads: 1
+====================================JL10====================================
+SetSize: 128 vs 128   |  numThreads: 1  SetSize: 128 vs 128   |  numThreads: 1  SetSize: 128 vs 128   |  numThreads: 1      s g_k= 950231511864dd9e86d68bc3dc1e03f4
+startPsi r mSetSeedsSize= 128 - 128 - 139726962502048
+g^ri done
+Label  00000000000  Time (ms)  diff (ms)
+__________________________________
+r online start 000  0000010.6  00010.585  ******************************************************************
+s exp done00000000  0000128.3  00117.759  *************************************************************************************************************************************
+s Psi done00000000  0000128.4  00000.105  **
+
+async_accept error, failed to receive first header on connection handshake. Other party may have closed the connection. Error code:Operation canceled  /scratch/nini/miniPSI/libOTe/cryptoTools/cryptoTools/Network/IOService.cpp:146
+Label  00000000000  Time (ms)  diff (ms)
+__________________________________
+r online start 000  0000010.6  00010.585  ***************************************
+s exp done00000000  0000128.3  00117.759  ********************************************************************************
+s Psi done00000000  0000128.4  00000.105  *
+r exp done00000000  0000239.1  00110.642  *******************************************************************************
+r psi done00000000  0000239.6  00000.458  *
+
+      Total Comm =  8.91 KB
+recv.mIntersection vs exp : 100 vs 100
+
+-bash-4.2$ ./bin/frontend.exe -i 0 -n 7  & ./bin/frontend.exe -i 1 -n 7
+[1] 29811
+SetSize: 128 vs 128   |  numThreads: 1
+SetSize: 128 vs 128   |  numThreads: 1
+
+
+====================================Mini19Receiver_Ris====================================
+SetSize: 128 vs 128   |  numThreads: 1  r mSetSeedsSize= 128 - 128 - 24
+r mG_pairs_elligator done
+r Poly done
+SetSize: 128 vs 128   |  numThreads: 1  s Poly done
+s mask done
+Label                       Time (ms)  diff (ms)
+__________________________________
+r online start                    0.2      0.202  *
+s received coeff start          200.2    200.019  **********************************************************************************************************
+s received coeff start          204.0      3.759  ***************************
+s Poly done                     206.5      2.508  ******************
+s mask done                     216.9     10.401  ***********************************************
+
+
+psi done
+Label               Time (ms)  diff (ms)
+__________________________________
+r online start           30.9     30.932  *************************************************
+r Poly done              43.5     12.532  ************************************
+r g^k^ri done            61.8     18.376  ******************************************
+r on masks done         216.6    154.756  ************************************************************************
+
+      Total Comm =  4.91 KB
+recv.mIntersection vs exp : 0 vs 100
+
+-bash-4.2$ ./bin/PSI_test -r 0 -ss 7 -rs 7 -w 609 -h 16 -hash 9 -ip 127.0.0.1 & ./bin/PSI_test -r 1 -ss 7 -rs 7 -w 609 -h 16 -hash 9 -ip 127.0.0.1
+[2] 35858
+Receiver matrix sent and transposed hash input computed
+Label                                     Time (ms)  diff (ms)
+__________________________________
+Sender base OT finished                       553.6    553.638  *********
+Sender set transformed                        553.8      0.149
+Sender transposed hash input computed        1552.3    998.507  **********
+Sender hash outputs computed and sent        1552.7      0.451
+Receiver intersection computed - correct!
+Label                                                       Time (ms)  diff (ms)
+__________________________________
+Receiver base OT finished                                       633.0    632.987  *********
+Receiver initialized                                            633.1      0.134
+Receiver set transformed                                        633.2      0.049
+Receiver matrix sent and transposed hash input computed         667.3     34.146  *****
+Receiver hash outputs computed                                  667.8      0.457
+Receiver intersection computed                                 1631.8    964.065  **********
+Receiver sent communication: 4.764 MB
+Receiver received communication: 0.017 MB
+Receiver total communication: 4.781 MB
+[2]-  Done                    ./bin/PSI_test -r 0 -ss 7 -rs 7 -w 609 -h 16 -hash 9 -ip 127.0.0.1
+
+
+-bash-4.2$ ./Release/bOPRFmain.exe -r 0 & ./Release/bOPRFmain.exe -r 1
+[2] 40285
+BopRecv()
+BopSender()
+role  = sender (1) SSOtPSI
+role  = recv (1) SSOtPSI
+--------------------------
+setSize                         |  offline(ms)  |  online(ms)
+128 vs 128                              341             657
+128 vs 128-- Online Avg Time: 657 ms
+128 vs 128-- Offline Avg Time: 341 ms
+128 vs 128-- Total Avg Time: 998 ms
+
+
+
+-bash-4.2$ /scratch/setup-network status
+qdisc htb 1: root refcnt 2 r2q 10 default 11 direct_packets_stat 0 direct_qlen 1000
+ Sent 29052 bytes 100 pkt (dropped 0, overlimits 188 requeues 0)
+ backlog 0b 0p requeues 0
+qdisc netem 10: parent 1:11 limit 100000 delay 80.0ms
+ Sent 29052 bytes 100 pkt (dropped 0, overlimits 0 requeues 0)
+ backlog 0b 0p requeues 0
+class htb 1:11 parent 1:1 leaf 10: prio 0 rate 1Mbit ceil 1Mbit burst 1600b cburst 1600b
+class htb 1:1 root rate 8Gbit ceil 8Gbit burst 0b cburst 0b
+-bash-4.2$ ./bin/frontend.exe -t 0 -n 7  & ./bin/frontend.exe -t 1 -n 7
+[1] 31536
+SetSize: 128 vs 128   |  numThreads: 1
+SetSize: 128 vs 128   |  numThreads: 1
+====================================JL10====================================
+====================================JL10====================================
+terminate called after throwing an instance of 'std::future_error'
+  what():  std::future_error: Promise already satisfied
+SetSize: 128 vs 128   |  numThreads: 1  SetSize: 128 vs 128   |  numThreads: 1  SetSize: 128 vs 128   |  numThreads: 1      s g_k= 2ff9d8305a299a281950108dd09fb806
+startPsi r mSetSeedsSize= 128 - 128 - 139831319861664
+g^ri done
+Label  00000000000  Time (ms)  diff (ms)
+__________________________________
+r online start 000  0000010.7  00010.654  ******************************************************************
+s exp done00000000  0000129.2  00118.573  ************************************************************************************************************************************
+s Psi done00000000  0000129.4  00000.132  **
+
+async_accept error, failed to receive first header on connection handshake. Other party may have closed the connection. Error code:Operation canceled  /scratch/nini/miniPSI/libOTe/cryptoTools/cryptoTools/Network/IOService.cpp:146
+Label  00000000000  Time (ms)  diff (ms)
+__________________________________
+r online start 000  0000010.7  00010.654  ***************************************
+s exp done00000000  0000129.2  00118.573  ********************************************************************************
+s Psi done00000000  0000129.4  00000.132  *
+r exp done00000000  0000240.2  00110.823  *******************************************************************************
+r psi done00000000  0000240.6  00000.426  *
+
+      Total Comm =  8.91 KB
+recv.mIntersection vs exp : 100 vs 100
+
+
+-bash-4.2$ ./bin/frontend.exe -i 0 -n 7  & ./bin/frontend.exe -i 1 -n 7
+[1] 32025
+SetSize: 128 vs 128   |  numThreads: 1
+SetSize: 128 vs 128   |  numThreads: 1
+
+
+====================================Mini19Receiver_Ris====================================
+SetSize: 128 vs 128   |  numThreads: 1  r mSetSeedsSize= 128 - 128 - 24
+r mG_pairs_elligator done
+r Poly done
+SetSize: 128 vs 128   |  numThreads: 1  s Poly done
+s mask done
+Label                       Time (ms)  diff (ms)
+__________________________________
+r online start                    0.2      0.188  *
+s received coeff start          201.4    201.208  *********************************************************************************************************
+s received coeff start          205.7      4.289  *****************************
+s Poly done                     208.2      2.530  ******************
+s mask done                     218.8     10.566  ***********************************************
+
+
+psi done
+Label               Time (ms)  diff (ms)
+__________________________________
+r online start           31.6     31.623  *************************************************
+r Poly done              44.8     13.213  ************************************
+r g^k^ri done            68.2     23.362  ********************************************
+r on masks done         218.8    150.646  ***********************************************************************
+
+      Total Comm =  4.91 KB
+recv.mIntersection vs exp : 0 vs 100
+
