@@ -1158,8 +1158,11 @@ void get_bin_size_list()
 int main(int argc, char** argv)
 {
 
+	/*MiniPSI_impl();
+	return 0;*/
+
 	//ec_test();
-	return 0;
+	//return 0;
 	/*get_bin_size_list();
 	return 0;*/
 	//ristretto_point_t a;

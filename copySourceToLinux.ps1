@@ -1,8 +1,8 @@
-$RemoteUserName='trieun'
+$RemoteUserName='coe_nitrieu'
 $RemoteHostName='eve.eecs.oregonstate.edu'
-$PrivateKey='C:\EvePrivatekey.ppk'
+$PrivateKey='C:\Putty\EvePrivatekey.ppk'
 $SolutionDir=$PWD
-$RemoteWorkingDir='/scratch/nini/miniPSI'
+$RemoteWorkingDir='/scratch/ni_new/miniPSI'
 
 # only files with these extensions will be copied
 $FileMasks='**.cpp;**.c;**.h;*.bin,*.S,*.sh,*CMake*;*/Tools/*.txt;*/gsl/*;**.mak;thirdparty/linux/**.get;*/libOTe_Tests/testData/*.txt,*.get'
@@ -10,7 +10,7 @@ $FileMasks='**.cpp;**.c;**.h;*.bin,*.S,*.sh,*CMake*;*/Tools/*.txt;*/gsl/*;**.mak
 # everything in these folders will be skipped
 $ExcludeDirs='.git/;thirdparty/;Debug/;Release/;x64/;ipch/;.vs/'
 
-C:\tools\WinSCP.com  /command `
+C:\WinSCP\WinSCP.com  /command `
     "open $RemoteUserName@$RemoteHostName -privatekey=""$PrivateKey"""`
     "call mkdir -p $RemoteWorkingDir"`
     "synchronize Remote $SolutionDir $RemoteWorkingDir -filemask=""$FileMasks|$ExcludeDirs;"" -transfer=binary"`

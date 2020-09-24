@@ -31,7 +31,7 @@
 #endif //  _MSC_VER
 
 #include <memory>
-#include <sodium.h>
+//#include <sodium.h>
 
 //#include <miracl\include\big.h>
 //#include <miracl\include\ec2.h>
@@ -53,7 +53,7 @@ namespace tests_libOTe
 		std::vector<u64> Idxs;
 	};
 
-
+#if 0
 	int Ristretto_Test_Impl()
 	{
 	
@@ -185,7 +185,7 @@ namespace tests_libOTe
 
 	}
 
-#if 0
+
 	void print_32bits(unsigned char uchar[32], string name="")
 	{
 #ifdef DEBUGGING

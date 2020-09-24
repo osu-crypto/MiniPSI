@@ -85,9 +85,39 @@ namespace osuCrypto
 
 		//=====================Poly=====================
 		u64 degree = mTheirInputSize - 1;
-		
-			int numEvalPoint = std::max(mMyInputSize, mTheirInputSize);//since the multipoint evalution require |X|>= |degree| => paadding (TODO: optimze it!)
+		int numEvalPoint = std::max(mMyInputSize, mTheirInputSize);//since the multipoint evalution require |X|>= |degree| => paadding (TODO: optimze it!)
 
+#ifdef PolyNTL_flag
+		polyNTL poly;
+		poly.NtlPolyInit(mPolyBytes);
+
+			//=====================receive Poly=====================
+			std::vector<u8> recvBuffs; 
+			chls[0].recv(recvBuffs);
+			u64 iterSend = 0, iterRecvs = 0;
+			std::vector<std::array<block, numSuperBlocks>> setY(numEvalPoint), coeffs(degree + 1); //
+			std::vector < block> setX(numEvalPoint);
+
+			for (u64 idx = 0; idx < mMyInputSize; idx++)
+			{
+				memcpy((u8*)&setX[idx], (u8*)&inputs[idx], sizeof(block));
+			}
+
+			for (u64 idx = mMyInputSize; idx < numEvalPoint; idx++)
+			{
+				setX[idx] = mPrng.get<block>();
+			}
+
+			for (int c = 0; c <= degree; c++) {
+				memcpy((u8*)&coeffs[c], recvBuffs.data() + iterRecvs, mPolyBytes);
+				iterRecvs += mPolyBytes;
+			}
+
+			poly.evalSuperPolynomial(coeffs, setX, setY); //P(x)
+
+
+			
+#else
 			mPrime = myPrime;
 			ZZ_p::init(ZZ(mPrime));
 
@@ -143,6 +173,11 @@ namespace osuCrypto
 				//	std::cout << "s P(y)= " << idx << " - " << toBlock(pY) << std::endl;
 				//}
 
+
+#endif
+
+
+
 		std::cout << "s Poly done\n";
 
 #if 1
@@ -177,8 +212,11 @@ namespace osuCrypto
 					u64 idxItem = i + idx;
 
 					u8* yri = new u8[point_ri.sizeBytes()];
+#ifdef PolyNTL_flag
+					memcpy(yri, (u8*)&setY[idxItem], mPolyBytes);
+#else
 					BytesFromZZ(yri, rep(zzY[idxItem]), mPolyBytes);
-
+#endif
 					//if(mPolyBytes!= point_ri.sizeBytes())
 					//	std::cout << "mPolyBytes!= point_ri.sizeBytes()" << mPolyBytes <<" != "<< point_ri.sizeBytes() << std::endl;
 

@@ -14,6 +14,7 @@
 
 using namespace NTL;
 #define NTL_Threads_ON
+#define PolyNTL_flag
 #ifdef _MSC_VER
 //#define PSI_PRINT
 //#define PRINT

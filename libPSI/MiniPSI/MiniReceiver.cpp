@@ -195,10 +195,65 @@ namespace osuCrypto
 		gTimer.setTimePoint("r g^k^ri done");
 
 		//#####################Poly#####################
+
+
+		std::vector<u8> sendBuff;
+		sendBuff.resize(inputs.size()* mPolyBytes);
+		u64 degree = inputs.size() - 1;
+
+#ifdef PolyNTL_flag
+
+		polyNTL poly;
+		poly.NtlPolyInit(mPolyBytes);
+
+			u64 iterSend = 0;
+
+				//=====================Pack=====================
+			std::vector<std::array<block, numSuperBlocks>> setY(inputs.size());
+			std::vector<block>setX(inputs.size());
+				std::vector<std::array<block, numSuperBlocks>> coeffs;
+
+
+				//get list of g^ri for xi in bin
+				for (u64 idx = 0; idx < setY.size(); ++idx)
+				{
+					for (u64 j = 0; j < numSuperBlocks; ++j)
+						setY[idx][j] = ZeroBlock; //init
+
+					u8* temp = new u8[mPolyBytes];
+
+//#ifdef PASS_MIRACL
+//					block rndblk = mPrng.get < block>();
+//					memcpy(temp, (u8*)&rndblk, sizeof(block));
+//#else
+//					memcpy(temp, mG_pairs[idx].second, mPolyBytes);
+//#endif // PASS_MIRACL
+
+					//mG_pairs[mBalance.mBins[bIdx].idxs[idx]].second.toBytes(temp);
+
+					memcpy((u8*)&setY[idx], mG_pairs[idx].second, mPolyBytes);
+					memcpy((u8*)&setX[idx], (u8*)&inputs[idx], sizeof(block));
+				}
+
+				poly.getSuperBlksCoefficients(degree, setX, setY, coeffs);
+				for (int c = 0; c < coeffs.size(); c++) {
+
+					//for (int iii = 0; iii < numSuperBlocks; iii++)
+					//	std::cout << coeffs[c][iii] << "  r coeff\n bin#" << bIdx << "\n";
+
+					memcpy(sendBuff.data() + iterSend, (u8*)&coeffs[c], mPolyBytes);
+					iterSend += mPolyBytes;
+				}
+
+				//std::cout << "r Coef" << bIdx << std::endl;
+							   	
+
+
+#else 
+		//////////
 		mPrime = myPrime;
 		ZZ_p::init(ZZ(mPrime));
 
-		u64 degree = inputs.size() - 1;
 		ZZ_p* zzX = new ZZ_p[inputs.size()];
 		ZZ_p* zzY = new ZZ_p[inputs.size()];
 
@@ -207,7 +262,6 @@ namespace osuCrypto
 		ZZ_p *a = new ZZ_p[degree + 1];;
 		ZZ_pX* temp = new ZZ_pX[degree * 2 + 1];
 		ZZ_pX Polynomial;
-		std::vector<u8> sendBuff;
 
 
 		for (u64 idx = 0; idx < inputs.size(); idx++)
@@ -225,11 +279,9 @@ namespace osuCrypto
 
 		prepareForInterpolate(zzX, degree, M, a, numThreads, mPrime);
 
-
 		iterative_interpolate_zp(Polynomial, temp, zzY, a, M, degree * 2 + 1, numThreads, mPrime);
 
 		u64 iterSends = 0;
-		sendBuff.resize(inputs.size() * mPolyBytes);
 		for (int c = 0; c <= degree; c++) {
 			BytesFromZZ(sendBuff.data() + iterSends, rep(Polynomial.rep[c]), mPolyBytes);
 
@@ -238,12 +290,11 @@ namespace osuCrypto
 			iterSends += mPolyBytes;
 
 		}
+#endif
 
 		chls[0].asyncSend(std::move(sendBuff));
-
 		gTimer.setTimePoint("r_Poly");
 		std::cout << "r Poly done\n";
-
 
 		
 
