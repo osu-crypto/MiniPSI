@@ -247,7 +247,8 @@ namespace osuCrypto
 
 				//std::cout << "r Coef" << bIdx << std::endl;
 							   	
-
+				chls[0].asyncSend(std::move(sendBuff));
+				gTimer.setTimePoint("r_Poly_n^2");
 
 #else 
 		//////////
@@ -290,10 +291,10 @@ namespace osuCrypto
 			iterSends += mPolyBytes;
 
 		}
-#endif
-
 		chls[0].asyncSend(std::move(sendBuff));
-		gTimer.setTimePoint("r_Poly");
+		gTimer.setTimePoint("r_Poly_nlogn");
+
+#endif
 		std::cout << "r Poly done\n";
 
 		
