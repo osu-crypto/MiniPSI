@@ -1,0 +1,15 @@
+/scratch/setup-network status >> output_smallsets
+
+echo "======================================================="  >> output_smallsets
+
+./bin/frontend.exe -r 0 -n 7  >> output_smallsets & ./bin/frontend.exe -r 1 -n 7 >> output_smallsets
+
+
+sleep 20
+
+./bin/frontend.exe -t 0 -n 7  >> output_smallsets & ./bin/frontend.exe -t 1 -n 7 >> output_smallsets
+
+
+sleep 20
+
+./bin/frontend.exe -i 0 -n 7  >> output_smallsets & ./bin/frontend.exe -i 1 -n 7 >> output_smallsets
