@@ -45,8 +45,10 @@ The database is generated randomly. The outputs include the average online/offli
    -m: log of sender's set size (e.g. n=8 => setsize =2^8)
    
    -r: evaluating DH-based PSI
+   
    -e:  evaluating JL10-based PSI
-   -i: evaluating our poly-based protocol
+   
+   -i: evaluating our poly-based PSI
    
 #### Examples: 
 ##### 1. Unit test:
