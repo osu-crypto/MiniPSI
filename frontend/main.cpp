@@ -1438,15 +1438,17 @@ int main(int argc, char** argv)
     if (argv[1][0] == '-' && argv[1][1] == 't') {
 
         std::thread thrd = std::thread([&]() {
-            //EchdSender(sendSetSize, recvSetSize, "localhost:1214", numThreads);
+            EchdSender(sendSetSize, recvSetSize, "localhost:1214", numThreads);
             //JL10Sender(sendSetSize, recvSetSize, "localhost:1214", numThreads);
-            Mini19Sender(sendSetSize, recvSetSize, "localhost:1214", numBins, numThreads);
+            //Mini19Sender(sendSetSize, recvSetSize, "localhost:1214", numBins, numThreads);
+             //Mini19Sender_Ris(sendSetSize, recvSetSize, "localhost:1214", numBins, numThreads);
 
             });
 
-        //EchdReceiver(recvSetSize, sendSetSize, "localhost:1214", numThreads);
+        EchdReceiver(recvSetSize, sendSetSize, "localhost:1214", numThreads);
         //JL10Receiver(recvSetSize, sendSetSize, "localhost:1214", numThreads);
-        Mini19Receiver(recvSetSize, sendSetSize, "localhost:1214", numBins, numThreads);
+        //Mini19Receiver(recvSetSize, sendSetSize, "localhost:1214", numBins, numThreads);
+        //Mini19Receiver_Ris(recvSetSize, sendSetSize, "localhost:1214", numBins, numThreads);
 
         thrd.join();
 
