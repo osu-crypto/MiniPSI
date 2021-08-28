@@ -1,0 +1,40 @@
+/scratch/setup-network status >> recv_CCS19_single
+/scratch/setup-network status >> send_CCS19_single
+
+./bin/frontend.exe -r 0 -n 10 -m 10 -t 1 >> send_CCS19_single & ./bin/frontend.exe -r 1 -n 10 -m 10 -t 1 >> recv_CCS19_single
+
+sleep 10
+echo "======================================================="  >> recv_CCS19_single
+echo "======================================================="  >> send_CCS19_single
+
+./bin/frontend.exe -r 0 -n 12 -m 12 -t 1 >> send_CCS19_single & ./bin/frontend.exe -r 1 -n 12 -m 12 -t 1 >> recv_CCS19_single
+
+sleep 10
+echo "======================================================="  >> recv_CCS19_single
+echo "======================================================="  >> send_CCS19_single
+
+
+./bin/frontend.exe -r 0 -n 14 -m 14 -t 1 >> send_CCS19_single & ./bin/frontend.exe -r 1 -n 14 -m 14 -t 1 >> recv_CCS19_single
+
+
+sleep 10
+echo "======================================================="  >> recv_CCS19_single
+echo "======================================================="  >> send_CCS19_single
+
+./bin/frontend.exe -r 0 -n 16 -m 16 -t 1 >> send_CCS19_single & ./bin/frontend.exe -r 1 -n 16 -m 16 -t 1 >> recv_CCS19_single
+
+
+sleep 10
+echo "======================================================="  >> recv_CCS19_single
+echo "======================================================="  >> send_CCS19_single
+
+
+./bin/frontend.exe -r 0 -n 18 -m 18 -t 1 >> send_CCS19_single & ./bin/frontend.exe -r 1 -n 18 -m 18 -t 1 >> recv_CCS19_single
+
+
+sleep 10
+echo "======================================================="  >> recv_CCS19_single
+echo "======================================================="  >> send_CCS19_single
+
+./bin/frontend.exe -r 0 -n 20 -m 20 -t 1 >> send_CCS19_single & ./bin/frontend.exe -r 1 -n 20 -m 20 -t 1 >> recv_CCS19_single
+

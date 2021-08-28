@@ -1,0 +1,110 @@
+/scratch/setup-network status >> recv_CCS19_thread
+/scratch/setup-network status >> send_CCS19_thread
+
+./bin/frontend.exe -r 0 -n 10 -m 10 -t 16 >> send_CCS19_thread & ./bin/frontend.exe -r 1 -n 10 -m 10 -t 16 >> recv_CCS19_thread
+./bin/frontend.exe -r 0 -n 10 -m 10 -t 32 >> send_CCS19_thread & ./bin/frontend.exe -r 1 -n 10 -m 10 -t 32 >> recv_CCS19_thread
+./bin/frontend.exe -r 0 -n 10 -m 10 -t 8 >> send_CCS19_thread & ./bin/frontend.exe -r 1 -n 10 -m 10 -t 8 >> recv_CCS19_thread
+
+sleep 10
+echo "======================================================="  >> recv_CCS19_thread
+echo "======================================================="  >> send_CCS19_thread
+
+./bin/frontend.exe -r 0 -n 12 -m 12 -t 16 >> send_CCS19_thread & ./bin/frontend.exe -r 1 -n 12 -m 12 -t 16 >> recv_CCS19_thread
+./bin/frontend.exe -r 0 -n 12 -m 12 -t 32 >> send_CCS19_thread & ./bin/frontend.exe -r 1 -n 12 -m 12 -t 32 >> recv_CCS19_thread
+./bin/frontend.exe -r 0 -n 12 -m 12 -t 8 >> send_CCS19_thread & ./bin/frontend.exe -r 1 -n 12 -m 12 -t 8 >> recv_CCS19_thread
+
+sleep 10
+echo "======================================================="  >> recv_CCS19_thread
+echo "======================================================="  >> send_CCS19_thread
+
+
+./bin/frontend.exe -r 0 -n 14 -m 14 -t 16 >> send_CCS19_thread & ./bin/frontend.exe -r 1 -n 14 -m 14 -t 16 >> recv_CCS19_thread
+./bin/frontend.exe -r 0 -n 14 -m 14 -t 32 >> send_CCS19_thread & ./bin/frontend.exe -r 1 -n 14 -m 14 -t 32 >> recv_CCS19_thread
+./bin/frontend.exe -r 0 -n 14 -m 14 -t 8 >> send_CCS19_thread & ./bin/frontend.exe -r 1 -n 14 -m 14 -t 8 >> recv_CCS19_thread
+
+sleep 10
+echo "======================================================="  >> recv_CCS19_thread
+echo "======================================================="  >> send_CCS19_thread
+
+./bin/frontend.exe -r 0 -n 16 -m 16 -t 16 >> send_CCS19_thread & ./bin/frontend.exe -r 1 -n 16 -m 16 -t 16 >> recv_CCS19_thread
+./bin/frontend.exe -r 0 -n 16 -m 16 -t 32 >> send_CCS19_thread & ./bin/frontend.exe -r 1 -n 16 -m 16 -t 32 >> recv_CCS19_thread
+./bin/frontend.exe -r 0 -n 16 -m 16 -t 8 >> send_CCS19_thread & ./bin/frontend.exe -r 1 -n 16 -m 16 -t 8 >> recv_CCS19_thread
+
+sleep 10
+echo "======================================================="  >> recv_CCS19_thread
+echo "======================================================="  >> send_CCS19_thread
+
+
+./bin/frontend.exe -r 0 -n 18 -m 18 -t 16 >> send_CCS19_thread & ./bin/frontend.exe -r 1 -n 18 -m 18 -t 16 >> recv_CCS19_thread
+./bin/frontend.exe -r 0 -n 18 -m 18 -t 32 >> send_CCS19_thread & ./bin/frontend.exe -r 1 -n 18 -m 18 -t 32 >> recv_CCS19_thread
+./bin/frontend.exe -r 0 -n 18 -m 18 -t 8 >> send_CCS19_thread & ./bin/frontend.exe -r 1 -n 18 -m 18 -t 8 >> recv_CCS19_thread
+
+sleep 10
+echo "======================================================="  >> recv_CCS19_thread
+echo "======================================================="  >> send_CCS19_thread
+
+./bin/frontend.exe -r 0 -n 20 -m 20 -t 16 >> send_CCS19_thread & ./bin/frontend.exe -r 1 -n 20 -m 20 -t 16 >> recv_CCS19_thread
+./bin/frontend.exe -r 0 -n 20 -m 20 -t 32 >> send_CCS19_thread & ./bin/frontend.exe -r 1 -n 20 -m 20 -t 32 >> recv_CCS19_thread
+./bin/frontend.exe -r 0 -n 20 -m 20 -t 8 >> send_CCS19_thread & ./bin/frontend.exe -r 1 -n 20 -m 20 -t 8 >> recv_CCS19_thread
+
+sleep 10
+echo "======================================================="  >> recv_CCS19_thread
+echo "======================================================="  >> send_CCS19_thread
+
+echo "==========================ASYN============================="  >> recv_asyn_CCS19_thread
+echo "==========================ASYN============================="  >> send_asyn_CCS19_thread
+echo "==========================ASYN============================="  >> recv_asyn_CCS19_thread
+echo "==========================ASYN============================="  >> send_asyn_CCS19_thread
+
+/scratch/setup-network status >> recv_asyn_CCS19_thread
+/scratch/setup-network status >> send_asyn_CCS19_thread
+
+./bin/frontend.exe -r 0 -n 10 -m 14 -t 16 >> send_asyn_CCS19_thread & ./bin/frontend.exe -r 1 -n 10 -m 14 -t 16 >> recv_asyn_CCS19_thread
+./bin/frontend.exe -r 0 -n 10 -m 14 -t 32 >> send_asyn_CCS19_thread & ./bin/frontend.exe -r 1 -n 10 -m 14 -t 32 >> recv_asyn_CCS19_thread
+./bin/frontend.exe -r 0 -n 10 -m 14 -t 8 >> send_asyn_CCS19_thread & ./bin/frontend.exe -r 1 -n 10 -m 14 -t 8 >> recv_asyn_CCS19_thread
+
+sleep 10
+echo "======================================================="  >> recv_asyn_CCS19_thread
+echo "======================================================="  >> send_asyn_CCS19_thread
+
+./bin/frontend.exe -r 0 -n 12 -m 16 -t 16 >> send_asyn_CCS19_thread & ./bin/frontend.exe -r 1 -n 12 -m 16 -t 16 >> recv_asyn_CCS19_thread
+./bin/frontend.exe -r 0 -n 12 -m 16 -t 32 >> send_asyn_CCS19_thread & ./bin/frontend.exe -r 1 -n 12 -m 16 -t 32 >> recv_asyn_CCS19_thread
+./bin/frontend.exe -r 0 -n 12 -m 16 -t 8 >> send_asyn_CCS19_thread & ./bin/frontend.exe -r 1 -n 12 -m 16 -t 8 >> recv_asyn_CCS19_thread
+
+sleep 10
+echo "======================================================="  >> recv_asyn_CCS19_thread
+echo "======================================================="  >> send_asyn_CCS19_thread
+
+
+./bin/frontend.exe -r 0 -n 14 -m 18 -t 16 >> send_asyn_CCS19_thread & ./bin/frontend.exe -r 1 -n 14 -m 18 -t 16 >> recv_asyn_CCS19_thread
+./bin/frontend.exe -r 0 -n 14 -m 18 -t 32 >> send_asyn_CCS19_thread & ./bin/frontend.exe -r 1 -n 14 -m 18 -t 32 >> recv_asyn_CCS19_thread
+./bin/frontend.exe -r 0 -n 14 -m 18 -t 8 >> send_asyn_CCS19_thread & ./bin/frontend.exe -r 1 -n 14 -m 18 -t 8 >> recv_asyn_CCS19_thread
+
+sleep 10
+echo "======================================================="  >> recv_asyn_CCS19_thread
+echo "======================================================="  >> send_asyn_CCS19_thread
+
+./bin/frontend.exe -r 0 -n 16 -m 20 -t 16 >> send_asyn_CCS19_thread & ./bin/frontend.exe -r 1 -n 16 -m 20 -t 16 >> recv_asyn_CCS19_thread
+./bin/frontend.exe -r 0 -n 16 -m 20 -t 32 >> send_asyn_CCS19_thread & ./bin/frontend.exe -r 1 -n 16 -m 20 -t 32 >> recv_asyn_CCS19_thread
+./bin/frontend.exe -r 0 -n 16 -m 20 -t 8 >> send_asyn_CCS19_thread & ./bin/frontend.exe -r 1 -n 16 -m 20 -t 8 >> recv_asyn_CCS19_thread
+
+sleep 10
+echo "======================================================="  >> recv_asyn_CCS19_thread
+echo "======================================================="  >> send_asyn_CCS19_thread
+
+
+./bin/frontend.exe -r 0 -n 18 -m 22 -t 16 >> send_asyn_CCS19_thread & ./bin/frontend.exe -r 1 -n 18 -m 22 -t 16 >> recv_asyn_CCS19_thread
+./bin/frontend.exe -r 0 -n 18 -m 22 -t 32 >> send_asyn_CCS19_thread & ./bin/frontend.exe -r 1 -n 18 -m 22 -t 32 >> recv_asyn_CCS19_thread
+./bin/frontend.exe -r 0 -n 18 -m 22 -t 8 >> send_asyn_CCS19_thread & ./bin/frontend.exe -r 1 -n 18 -m 22 -t 8 >> recv_asyn_CCS19_thread
+
+sleep 10
+echo "======================================================="  >> recv_asyn_CCS19_thread
+echo "======================================================="  >> send_asyn_CCS19_thread
+
+./bin/frontend.exe -r 0 -n 20 -m 24 -t 16 >> send_asyn_CCS19_thread & ./bin/frontend.exe -r 1 -n 20 -m 24 -t 16 >> recv_asyn_CCS19_thread
+./bin/frontend.exe -r 0 -n 20 -m 24 -t 32 >> send_asyn_CCS19_thread & ./bin/frontend.exe -r 1 -n 20 -m 24 -t 32 >> recv_asyn_CCS19_thread
+./bin/frontend.exe -r 0 -n 20 -m 24 -t 8 >> send_asyn_CCS19_thread & ./bin/frontend.exe -r 1 -n 20 -m 24 -t 8 >> recv_asyn_CCS19_thread
+
+sleep 10
+echo "======================================================="  >> recv_asyn_CCS19_thread
+echo "======================================================="  >> send_asyn_CCS19_thread

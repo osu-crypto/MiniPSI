@@ -85,6 +85,31 @@ message(status "gf2x  ${GF2X_LIB}")
 message(status "gf2x ${GF2X_Include_Dirs}")
 message(status "gf2x ${GF2X_Lib_Dirs}")
 
+##############################################
+##                 Link SODIUM                  #
+##############################################
+set(SODIUM_Lib_Dirs "${SODIUM_Dirs}bin/lib/")
+set(SODIUM_Include_Dirs "${SODIUM_Dirs}bin/include/")
+  find_library(
+    SODIUM_LIB 
+    names sodium libsodium.a  
+    paths "${SODIUM_Lib_Dirs}")
+  
+  # if we still cant fint it, throw an error
+  if(NOT SODIUM_LIB) 
+	if(EXISTS "${SODIUM_Lib_Dirs}libsodium.a")
+		set(SODIUM_LIB "${SODIUM_Lib_Dirs}libsodium.a")
+	else()
+	   message(${SODIUM_LIB})
+		message(fatal_error "failed to find gf2x at ${SODIUM_Lib_Dirs} or at system locations." )
+	endif()
+  endif()
+#endif()
+
+message(status "sodium  ${SODIUM_LIB}")
+message(status "sodium ${SODIUM_Include_Dirs}")
+message(status "sodium ${SODIUM_Lib_Dirs}")
+
 
 #############################################
 #                 Link Boost                #
@@ -153,7 +178,8 @@ target_include_directories(libPSI PUBLIC ${Boost_INCLUDE_DIR})
 target_include_directories(libPSI PUBLIC ${NTL_Include_Dirs}) 
 target_include_directories(libPSI PUBLIC ${GMP_Include_Dirs})
 target_include_directories(libPSI PUBLIC ${GF2X_Include_Dirs})
+target_include_directories(libPSI PUBLIC ${SODIUM_Include_Dirs})
 target_include_directories(libPSI PUBLIC ${CMAKE_SOURCE_DIR}/libPSI) 
 target_include_directories(libPSI PUBLIC ${CMAKE_SOURCE_DIR}/libPSI) 
 
-target_link_libraries(libPSI ${libOTe_LIB}  ${cryptoTools_LIB} ${MIRACL_LIB}  ${Boost_LIBRARIES} ${NTL_LIB} ${GMP_LIB} ${GF2X_LIB} )
+target_link_libraries(libPSI ${libOTe_LIB}  ${cryptoTools_LIB} ${MIRACL_LIB}  ${Boost_LIBRARIES} ${NTL_LIB} ${GMP_LIB} ${GF2X_LIB} ${SODIUM_LIB})

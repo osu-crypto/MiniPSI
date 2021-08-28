@@ -35,6 +35,9 @@ namespace osuCrypto
 
 		void startPsi_subsetsum_asyn(u64 myInputSize, u64 theirInputSize, u64 secParam, block seed, span<block> inputs, span<Channel> chls);
 
+		void startPsi_ristretoo(u64 myInputSize, u64 theirInputSize, u64 secParam, block seed, span<block> inputs, span<Channel> chls);
+		bool startPsi_malicious_ristretoo(u64 myInputSize, u64 theirInputSize, u64 secParam, block seed, span<block> inputs, span<Channel> chls);
+
 
     };
 

@@ -24,7 +24,8 @@ namespace osuCrypto
         std::vector<u64> mIntersection;
 
 		void sendInput_k283(span<block> inputs, span<Channel> chls);
-		void sendInput_Curve25519(span<block> inputs, span<Channel> chls);
+        void sendInput_Curve25519(span<block> inputs, span<Channel> chls);
+        void sendInput_Ristretto(span<block> inputs, span<Channel> chls);
         void sendInput(u64 n, u64 theirInputSize, u64 secParam, block seed, span<block> inputs, span<Channel> chl0,int curveType);
 
     };

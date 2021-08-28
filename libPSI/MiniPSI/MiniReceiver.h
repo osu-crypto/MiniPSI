@@ -60,6 +60,7 @@ namespace osuCrypto
 
 		std::vector<block> Outputs;
 
+		void expTinvert(u64 myInputSize, u64 psiSecParam, PRNG& prng);
 		void outputBigPoly(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG& prng, span<block> inputs, span<Channel> chls);
 		void outputHashing(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG& prng, span<block> inputs, span<Channel> chls);
 		void outputSimpleHashing(u64 myInputSize, u64 theirInputSize, u64 psiSecParam, PRNG& prng, span<block> inputs, span<Channel> chls, u64 numBins=8);

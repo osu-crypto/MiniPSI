@@ -907,5 +907,532 @@ namespace osuCrypto
 
 	}
 
+	void JL10PsiSender::startPsi_ristretoo(u64 myInputSize, u64 theirInputSize, u64 secParam, block seed, span<block> inputs, span<Channel> chls)
+	{
+		//stepSize = myInputSize;
+		for (u64 i = 0; i < chls.size(); ++i)
+		{
+			u8 dummy[1];
+			chls[i].recv(dummy, 1);
+			chls[i].asyncSend(dummy, 1);
+			chls[i].resetStats();
+		}
+
+		//####################### offline #########################
+
+		myStepSize = myInputSize / numStep;
+		theirStepSize = mTheirInputSize / numStep;
+
+		gTimer.reset();
+		gTimer.setTimePoint("s offline start ");
+
+		mSecParam = secParam;
+		mPrng.SetSeed(seed);
+
+		mMyInputSize = myInputSize;
+		mTheirInputSize = theirInputSize;
+		myStepSize = myInputSize / numStep;
+		theirStepSize = mTheirInputSize / numStep;
+
+		mPrng.SetSeed(seed);
+
+		mFieldSize = crypto_core_ristretto255_BYTES;
+
+
+		mN_byte = new unsigned char[crypto_core_ristretto255_SCALARBYTES];
+		mgK_byte = new unsigned char[crypto_core_ristretto255_BYTES];
+		crypto_core_ristretto255_scalar_random(mN_byte);
+		crypto_scalarmult_ristretto255_base(mgK_byte, mN_byte); //g^k
+
+
+		std::vector<u8> tempSend(crypto_core_ristretto255_BYTES);
+		memcpy(tempSend.data(), mgK_byte, crypto_core_ristretto255_BYTES);
+
+		//####################### online #########################
+		gTimer.setTimePoint("s online start ");
+
+		//chls[0].send(mG_K); //send g^k
+		std::cout << "s g_k= " << toBlock((u8*)mgK_byte) << std::endl;
+
+		chls[0].asyncSend(std::move(tempSend));
+
+
+
+
+		u64 numThreads(chls.size());
+		const bool isMultiThreaded = numThreads > 1;
+		std::vector<std::thread> thrds(numThreads);
+		std::mutex mtx;
+
+
+		u64 n1n2MaskBits = (40 + log2(mTheirInputSize * mMyInputSize));
+		u64 n1n2MaskBytes = (n1n2MaskBits + 7) / 8;
+
+
+		std::vector<std::vector<u8>> sendBuff_mask(chls.size()); //H(x)^k
+
+
+		//##################### compute H(x*)^k. compute/send yi^k#####################
+
+		//auto start = timer.setTimePoint("start");
+		/*std::cout << mTheirInputSize << inputs.size() << " inpu t\n";
+		std::cout << myStepSize << " " << theirStepSize << " s myStepSize t\n";*/
+
+		auto routine = [&](u64 t)
+		{
+
+			u64 inputStartIdx = inputs.size() * t / chls.size();
+			u64 inputEndIdx = inputs.size() * (t + 1) / chls.size();
+			u64 subsetInputSize = inputEndIdx - inputStartIdx;
+
+			u64 theirInputStartIdx = mTheirInputSize * t / chls.size();
+			u64 theirInputEndIdx = mTheirInputSize * (t + 1) / chls.size();
+			u64 theirSubsetInputSize = theirInputEndIdx - theirInputStartIdx;
+
+			sendBuff_mask[t].resize(n1n2MaskBytes * subsetInputSize);
+			int idxSendMaskIter = 0;
+
+			auto& chl = chls[t];
+			u8 hashOut[SHA1::HashSize];
+
+
+			RandomOracle inputHasher(sizeof(block));
+
+			unsigned char* point = new unsigned char[crypto_core_ristretto255_BYTES];
+			unsigned char* yik = new unsigned char[crypto_core_ristretto255_BYTES];
+			unsigned char* yi = new unsigned char[crypto_core_ristretto255_BYTES];
+			unsigned char* xk = new unsigned char[crypto_core_ristretto255_BYTES];
+			unsigned char* point_hash = new unsigned char[crypto_core_ristretto255_HASHBYTES];
+
+			u8* temp = new u8[crypto_core_ristretto255_BYTES];
+
+
+			for (u64 i = inputStartIdx; i < inputEndIdx; i += myStepSize)  //yi=H(xi)*g^ri
+			{
+				auto curStepSize = std::min(myStepSize, inputEndIdx - i);
+
+				//	std::cout << "send H(y)^b" << std::endl;
+
+				//gTimer.setTimePoint("s online H(x)^k start ");
+#if 1
+		//compute H(x)^k
+				for (u64 k = 0; k < curStepSize; ++k)
+				{
+					block seed;
+					inputHasher.Reset();
+					inputHasher.Update(inputs[i + k]);
+					inputHasher.Final(seed);
+					ristretto255_hash_from_blk(point_hash, seed);
+					crypto_core_ristretto255_from_hash(point, point_hash);
+
+													   //std::cout << "sp  " << point << "  " << toBlock(hashOut) << std::endl;
+					//compute H(x)^k
+					if (crypto_scalarmult_ristretto255(xk, mN_byte, point) != 0) {
+
+						std::cout << "s crypto_scalarmult_ristretto255(xa, a, poin) != 0\n";
+						throw std::runtime_error("rt error at " LOCATION);
+					}
+
+					
+
+#ifdef PRINT
+					std::cout << "s xk[" << i + k << "] " << toBlock(xk) << std::endl;
+#endif
+					memcpy(sendBuff_mask[t].data() + idxSendMaskIter, xk, n1n2MaskBytes);
+					idxSendMaskIter += n1n2MaskBytes;
+				}
+				//gTimer.setTimePoint("s online H(x)^k done ");
+#endif
+			}
+
+#if 1
+			for (u64 i = theirInputStartIdx; i < theirInputEndIdx; i += theirStepSize)
+			{
+				auto curStepSize = std::min(theirStepSize, theirInputEndIdx - i);
+
+				//receive yi=H(.)*g^ri
+				std::vector<u8> recvBuff(crypto_core_ristretto255_BYTES * curStepSize); //receiving yi^k = H(.)*g^ri
+
+				chl.recv(recvBuff); //recv yi^k
+
+				if (recvBuff.size() != curStepSize * crypto_core_ristretto255_BYTES)
+				{
+					std::cout << "error @ " << (LOCATION) << std::endl;
+					throw std::runtime_error(LOCATION);
+				}
+
+				auto recvIter = recvBuff.data();
+
+				std::vector<u8> sendBuff_yik(crypto_core_ristretto255_BYTES * curStepSize);
+				auto sendIter_yik = sendBuff_yik.data();
+
+				//gTimer.setTimePoint("s online yi^k start ");
+
+				for (u64 k = 0; k < curStepSize; ++k)
+				{
+					memcpy(yi, recvIter, crypto_core_ristretto255_BYTES);
+					recvIter += crypto_core_ristretto255_BYTES;
+
+#ifdef PRINT
+					if (i + k == 10)
+						std::cout << "s yi[" << i + k << "] " << yi << std::endl;
+#endif
+
+					//yi^k
+					if (crypto_scalarmult_ristretto255(yik, mN_byte, yi) != 0) {
+
+						std::cout << "s crypto_scalarmult_ristretto255(yik, mN_byte, yi)) != 0\n";
+						throw std::runtime_error("rt error at " LOCATION);
+					}
+
+					//std::cout << "s yik[" << i + k << "] " << toBlock(yik) << std::endl;
+
+					memcpy(sendIter_yik, yik, crypto_core_ristretto255_BYTES);
+					sendIter_yik += crypto_core_ristretto255_BYTES;
+				}
+				//gTimer.setTimePoint("s online yi^k start ");
+
+				chl.asyncSend(std::move(sendBuff_yik));  //sending yi^k
+
+			}
+#endif
+
+		};
+
+
+		for (u64 i = 0; i < numThreads; ++i)
+		{
+			thrds[i] = std::thread([=] {
+				routine(i);
+				});
+		}
+
+		for (auto& thrd : thrds)
+			thrd.join();
+
+
+		gTimer.setTimePoint("s exp done");
+
+		//#####################Send Mask #####################
+
+#if 1
+		auto receiveMask = [&](u64 t)
+		{
+			auto& chl = chls[t]; //parallel along with inputs
+			u64 startIdx = myInputSize * t / numThreads;
+			u64 tempEndIdx = myInputSize * (t + 1) / numThreads;
+			u64 endIdx = std::min(tempEndIdx, myInputSize);
+			u64 subsetInputSize = endIdx - startIdx;
+
+			auto myMasks = sendBuff_mask[t].data();
+			//std::cout << "s toBlock(sendBuff_mask): " << t << " - " << toBlock(myMasks) << std::endl;
+			chl.asyncSend(std::move(sendBuff_mask[t]));
+
+
+		};
+
+		for (u64 i = 0; i < thrds.size(); ++i)//thrds.size()
+		{
+			thrds[i] = std::thread([=] {
+				receiveMask(i);
+				});
+		}
+
+		for (auto& thrd : thrds)
+			thrd.join();
+#endif
+		gTimer.setTimePoint("s Psi done");
+		//std::cout << "s gkr done\n";
+
+
+	}
+
+
+	bool JL10PsiSender::startPsi_malicious_ristretoo(u64 myInputSize, u64 theirInputSize, u64 secParam, block seed, span<block> inputs, span<Channel> chls)
+	{
+		u64 numSuperBlocks = 2;
+		for (u64 i = 0; i < chls.size(); ++i)
+		{
+			u8 dummy[1];
+			chls[i].recv(dummy, 1);
+			chls[i].asyncSend(dummy, 1);
+			chls[i].resetStats();
+		}
+		//####################### offline #########################
+		gTimer.reset();
+		gTimer.reset();
+		gTimer.setTimePoint("s offline start ");
+
+		mSecParam = secParam;
+		mPrng.SetSeed(seed);
+
+		mMyInputSize = myInputSize;
+		mTheirInputSize = theirInputSize;
+
+		mPrng.SetSeed(seed);
+
+		EllipticCurve mCurve(myEccpParams, OneBlock);
+		mFieldSize = mCurve.bitCount();
+
+
+		unsigned char* nK = new unsigned char[crypto_core_ristretto255_SCALARBYTES];
+		unsigned char* mG_K = new unsigned char[crypto_core_ristretto255_BYTES];
+		crypto_core_ristretto255_scalar_random(nK);
+		crypto_scalarmult_ristretto255_base(mG_K, nK); //g^k
+
+		unsigned char* nV = new unsigned char[crypto_core_ristretto255_SCALARBYTES];
+		crypto_core_ristretto255_scalar_random(nV);//g^v for ZKDL
+
+		std::vector<block> hashX(inputs.size());
+
+		//####################### online #########################
+		gTimer.setTimePoint("s online start ");
+
+		chls[0].asyncSend(mG_K); //send g^k
+
+		u64 numThreads(chls.size());
+		const bool isMultiThreaded = numThreads > 1;
+		std::vector<std::thread> thrds(numThreads);
+		std::mutex mtx;
+
+
+		u64 n1n2MaskBits = (40 + log2(mTheirInputSize * mMyInputSize));
+		u64 n1n2MaskBytes = (n1n2MaskBits + 7) / 8;
+
+
+		std::vector<block> xik(inputs.size()); //H(x)^k //todo: not really secure here
+
+
+																 //##################### compute H(x*)^k. compute/send yi^k#####################
+
+		auto start = timer.setTimePoint("start");
+
+		auto routine = [&](u64 t)
+		{
+
+			u64 inputStartIdx = inputs.size() * t / chls.size();
+			u64 inputEndIdx = inputs.size() * (t + 1) / chls.size();
+			u64 subsetInputSize = inputEndIdx - inputStartIdx;
+
+			auto& chl = chls[t];
+			RandomOracle inputHasher(sizeof(block));
+			block hashOut;
+
+			//EllipticCurve curve(p256k1, thrdPrng[t].get<block>());
+
+			//EllipticCurve mCurve(myEccpParams, OneBlock);
+
+			unsigned char* point = new unsigned char[crypto_core_ristretto255_BYTES];
+			unsigned char* yik = new unsigned char[crypto_core_ristretto255_BYTES];
+			unsigned char* yi = new unsigned char[crypto_core_ristretto255_BYTES];
+			unsigned char* xk = new unsigned char[crypto_core_ristretto255_BYTES];
+			unsigned char* point_hash = new unsigned char[crypto_core_ristretto255_HASHBYTES];
+
+			u8* temp = new u8[crypto_core_ristretto255_BYTES];
+
+
+			for (u64 i = inputStartIdx; i < inputEndIdx; i += stepSize)  //yi=H(xi)*g^ri
+			{
+				auto curStepSize = std::min(stepSize, inputEndIdx - i);
+				std::vector<u8*> challeger_bytes(2); //(yi^k, yi^v)
+				block* challenger = new block[numSuperBlocks]; //H(yi^k, yi^v)
+				block temp_challenger = ZeroBlock;
+
+				//	std::cout << "send H(y)^b" << std::endl;
+
+				//compute H(x)^k
+				for (u64 k = 0; k < curStepSize; ++k)
+				{
+
+					inputHasher.Reset();
+					inputHasher.Update(inputs[i + k]);
+					inputHasher.Final(hashX[i + k]);
+
+					ristretto255_hash_from_blk(point_hash, hashX[i + k]);
+					crypto_core_ristretto255_from_hash(point, point_hash); //H(x)
+
+				  //std::cout << "sp  " << point << "  " << toBlock(hashOut) << std::endl;
+
+					//compute H(x)^k
+					if (crypto_scalarmult_ristretto255(xk, nK, point) != 0) {
+
+						std::cout << "s crypto_scalarmult_ristretto255xk, nK, point)) != 0\n";
+						throw std::runtime_error("rt error at " LOCATION);
+					}
+
+#ifdef PRINT
+					if (i + k == 10 || i + k == 20)
+						std::cout << "s xk[" << i + k << "] " << xk << std::endl;
+#endif
+					u8* temp = new u8[crypto_core_ristretto255_BYTES];
+					memcpy(temp, xk, crypto_core_ristretto255_BYTES);
+
+					block blkTemp = ZeroBlock;
+					for (int idxBlock = 0; idxBlock < numSuperBlocks; idxBlock++)
+					{
+						auto minsize = std::min(sizeof(block), crypto_core_ristretto255_BYTES - idxBlock * sizeof(block));
+						memcpy((u8*)&blkTemp, temp + minsize, minsize);
+						xik[i + k] = xik[i + k] + blkTemp;
+					}
+				}
+
+#if 1
+				//receive yi=H(.)*g^ri
+				std::vector<u8> recvBuff(crypto_core_ristretto255_BYTES * curStepSize); //receiving yi^k = H(.)*g^ri
+
+				chl.recv(recvBuff); //recv yi^k
+
+				if (recvBuff.size() != curStepSize * crypto_core_ristretto255_BYTES)
+				{
+					std::cout << "error @ " << (LOCATION) << std::endl;
+					throw std::runtime_error(LOCATION);
+				}
+
+				auto recvIter = recvBuff.data();
+
+				std::vector<u8> sendBuff_yik((crypto_core_ristretto255_BYTES * 2 + 1) * curStepSize); //sending yi^k, yi^v, r s.t. r=v-c*k
+				auto sendIter_yik = sendBuff_yik.data();
+
+				for (u64 k = 0; k < curStepSize; ++k)
+				{
+					memcpy(yi, recvIter, crypto_core_ristretto255_BYTES);
+					recvIter += crypto_core_ristretto255_BYTES;
+
+					//yi^k
+					if (crypto_scalarmult_ristretto255(yik, nK, yi) != 0) {
+
+						std::cout << "s crypto_scalarmult_ristretto255(yik, nK, yi)) != 0\n";
+						throw std::runtime_error("rt error at " LOCATION);
+					}
+
+
+					challeger_bytes[0] = new u8[crypto_core_ristretto255_BYTES];
+					//yi^k  
+					memcpy(challeger_bytes[0], &yik, crypto_core_ristretto255_BYTES);
+
+					unsigned char* yiv = new unsigned char[crypto_core_ristretto255_BYTES];
+
+					//yi^k
+					if (crypto_scalarmult_ristretto255(yiv, nV, yi) != 0) {
+
+						std::cout << "s crypto_scalarmult_ristretto255(yik, nK, yi)) != 0\n";
+						throw std::runtime_error("rt error at " LOCATION);
+					}
+
+					challeger_bytes[1] = new u8[crypto_core_ristretto255_BYTES];
+					//yi^v
+					memcpy(challeger_bytes[1], &yiv, crypto_core_ristretto255_BYTES);
+
+
+
+					for (int idxChall = 0; idxChall < challeger_bytes.size(); idxChall++)
+						for (int idxBlock = 0; idxBlock < numSuperBlocks; idxBlock++)
+						{
+							auto minsize = std::min(sizeof(block), crypto_core_ristretto255_BYTES - idxBlock * sizeof(block));
+							memcpy((u8*)&temp_challenger, challeger_bytes[idxChall] + idxBlock * minsize, minsize);
+							challenger[idxBlock] = challenger[idxBlock] + temp_challenger;
+						}
+
+					memcpy(sendIter_yik, yik, crypto_core_ristretto255_BYTES);
+					sendIter_yik += crypto_core_ristretto255_BYTES;
+
+					memcpy(sendIter_yik, yiv, crypto_core_ristretto255_BYTES);// sending yi^v
+					sendIter_yik += crypto_core_ristretto255_BYTES;
+				}
+
+				std::vector<block> cipher_challenger(numSuperBlocks);
+				mAesFixedKey.ecbEncBlocks(challenger, numSuperBlocks, cipher_challenger.data()); //compute H(sum (yi^k+ yi^v))
+				
+				
+				//u8* nC_bytes = new u8[crypto_core_ristretto255_BYTES];
+				//memcpy(nC_bytes, cipher_challenger.data(), crypto_core_ristretto255_BYTES);
+				//nC.fromBytes(nC_bytes); //c=H(sum (yi^k+ yi^v))
+
+				//std::cout << "s nC= " << nC << " idx= " << i << "\n";
+
+				//EccNumber nR(mCurve);
+				//nR = nV - nC * nK; //r=v-ck //todo with ristretto
+
+				unsigned char* nR = new unsigned char[crypto_core_ristretto255_BYTES]; //simulater nR
+				crypto_core_ristretto255_scalar_random(nR);
+
+				memcpy(sendIter_yik, nR, crypto_core_ristretto255_BYTES);
+
+				chl.asyncSend(std::move(sendBuff_yik));  //sending yi^k||yi^v...||r
+
+				u8* onebit;
+				chl.recv(onebit);
+				if (onebit[0] == 1)
+					return false;
+#endif
+			}
+
+
+		};
+
+
+		for (u64 i = 0; i < numThreads; ++i)
+		{
+			thrds[i] = std::thread([=] {
+				routine(i);
+				});
+		}
+
+		for (auto& thrd : thrds)
+			thrd.join();
+
+
+		//#####################Send Mask #####################
+
+#if 1
+		auto receiveMask = [&](u64 t)
+		{
+			auto& chl = chls[t]; //parallel along with inputs
+			u64 startIdx = mTheirInputSize * t / numThreads;
+			u64 tempEndIdx = mTheirInputSize * (t + 1) / numThreads;
+			u64 endIdx = std::min(tempEndIdx, mTheirInputSize);
+			u64 subsetInputSize = endIdx - startIdx;
+
+			RandomOracle inputHasher(sizeof(block));
+			block hashOut;
+
+			for (u64 i = startIdx; i < endIdx; i += stepSizeMaskSent)
+			{
+
+				auto curStepSize = std::min(stepSizeMaskSent, endIdx - i);
+				std::vector<u8> sendBuff_mask(n1n2MaskBytes * curStepSize);
+
+				for (u64 k = 0; k < curStepSize; ++k)
+				{
+					inputHasher.Reset();
+					xik[i + k] = xik[i + k] + hashX[i + k];//not really secur here
+					//inputHasher.Update(hashX[i + k]);
+					inputHasher.Update(xik[i + k]);
+					inputHasher.Final(hashOut);
+
+					memcpy(sendBuff_mask.data() + k * n1n2MaskBytes, (u8*)&hashOut, n1n2MaskBytes);
+				}
+				//	std::cout << "s toBlock(sendBuff_mask): " << t << " - " << toBlock(sendBuff_mask) << std::endl;
+				chl.asyncSend(std::move(sendBuff_mask));
+			}
+		};
+
+		for (u64 i = 0; i < thrds.size(); ++i)//thrds.size()
+		{
+			thrds[i] = std::thread([=] {
+				receiveMask(i);
+				});
+		}
+
+		for (auto& thrd : thrds)
+			thrd.join();
+#endif
+		gTimer.setTimePoint("s Psi done");
+		//std::cout << "s gkr done\n";
+
+		return true;
+
+	}
+
 
 }

@@ -1,0 +1,16 @@
+git clone --recursive git@github.com:osu-crypto/MiniPSI.git
+cd MiniPSI/
+cd libOTe/cryptoTools/thirdparty/linux/
+bash all.get
+cd 
+cd ../../../
+cmake .
+make -j
+cd ..
+cd thirdparty/linux/
+bash all.get 
+cd ../../libsodium-stable
+make -j
+cd ..
+cmake .
+make -j

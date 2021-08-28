@@ -1,0 +1,26 @@
+sleep 10
+./bin/frontend.exe -t -n 8 >> outputT_invert
+sleep 10
+
+./bin/frontend.exe -t -n 10 >> outputT_invert
+sleep 10
+
+./bin/frontend.exe -t -n 12 >> outputT_invert
+sleep 10
+
+./bin/frontend.exe -t -n 14 >> outputT_invert
+sleep 10
+
+./bin/frontend.exe -t -n 16 >> outputT_invert
+sleep 10
+
+.//bin/frontend.exe -t -n 18 >> outputT_invert
+sleep 10
+
+./bin/frontend.exe -t -n 20 >> outputT_invert
+sleep 10
+
+./bin/frontend.exe -t -n 22 >> outputT_invert
+sleep 10
+
+./bin/frontend.exe -t -n 24 >> outputT_invert

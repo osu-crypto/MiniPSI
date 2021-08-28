@@ -1,0 +1,23 @@
+/scratch/setup-network status >> poly_result
+
+echo "======================================================="  >> poly_result
+./bin/frontend.exe -i 0 -n 12 &  ./bin/frontend.exe -i 1 -n 12 >> poly_result
+sleep 10
+
+./bin/frontend.exe -i 0 -n 12 -m 8 &  ./bin/frontend.exe -i 1 -n 12 -m 8 >> poly_result
+sleep 10
+
+echo "======================================================="  >> poly_result
+./bin/frontend.exe -i 0 -n 16 &  ./bin/frontend.exe -i 1 -n 16 >> poly_result
+sleep 10
+
+./bin/frontend.exe -i 0 -n 16 -m 12 &  ./bin/frontend.exe -i 1 -n 16 -m 12 >> poly_result
+sleep 10
+
+
+echo "======================================================="  >> poly_result
+./bin/frontend.exe -i 0 -n 20 &  ./bin/frontend.exe -i 1 -n 20 >> poly_result
+sleep 10
+
+./bin/frontend.exe -i 0 -n 20 -m 16 &  ./bin/frontend.exe -i 1 -n 20 -m 16 >> poly_result
+sleep 10

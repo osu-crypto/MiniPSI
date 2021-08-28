@@ -1,0 +1,23 @@
+/scratch/setup-network status >> ECDH_result
+
+echo "======================================================="  >> ECDH_result
+./bin/frontend.exe -r 0 -n 12 &  ./bin/frontend.exe -r 1 -n 12 >> ECDH_result
+sleep 10
+
+./bin/frontend.exe -r 0 -n 12 -m 8 &  ./bin/frontend.exe -r 1 -n 12 -m 8 >> ECDH_result
+sleep 10
+
+echo "======================================================="  >> ECDH_result
+./bin/frontend.exe -r 0 -n 16 &  ./bin/frontend.exe -r 1 -n 16 >> ECDH_result
+sleep 10
+
+./bin/frontend.exe -r 0 -n 14 -m 12 &  ./bin/frontend.exe -r 1 -n 16 -m 12 >> ECDH_result
+sleep 10
+
+
+echo "======================================================="  >> ECDH_result
+./bin/frontend.exe -r 0 -n 20 &  ./bin/frontend.exe -r 1 -n 20 >> ECDH_result
+sleep 10
+
+./bin/frontend.exe -r 0 -n 20 -m 16 &  ./bin/frontend.exe -r 1 -n 20 -m 16 >> ECDH_result
+sleep 10

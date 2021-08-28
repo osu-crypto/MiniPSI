@@ -105,29 +105,6 @@ u64 protocolId = 0; //bin
 
 void usage(const char* argv0)
 {
-    std::cout << "Error! Please use:" << std::endl;
-    std::cout << "\t 1. For unit test (balanced PSI): " << argv0 << " -t" << std::endl;
-    std::cout << "\t 2. For simulation (2 terminals): " << std::endl;;
-    std::cout << "\t\t EchdSender terminal: " << argv0 << " -r 0" << std::endl;
-    std::cout << "\t\t Receiver terminal: " << argv0 << " -r 1" << std::endl;
-
-    std::cout << "\t 2. For 2 machines: " << std::endl;
-    std::cout << "\t\t Balanced PSI with best communication: " << std::endl;
-    std::cout << "\t\t\t EchdSender terminal: " << argv0 << "-r 0 -n <log(setsize)> -t <#thread> -p 0 -ip <ip:port>" << std::endl;
-    std::cout << "\t\t\t Receiver terminal: " << argv0 << "-r 1 -n <log(setsize)> -t <#thread> -p 0 -ip <ip:port>" << std::endl;
-    std::cout << "\t\t\t EchdSender Example: " << argv0 << "-r 0 -n 16 -t 1 -p 0 -ip 172.31.22.179:1212" << std::endl;
-
-
-    std::cout << "\t\t Balanced PSI with running time: " << std::endl;
-    std::cout << "\t\t\t EchdSender terminal: " << argv0 << "-r 0 -n <log(setsize)> -t <#thread> -p 1 -ip <ip:port>" << std::endl;
-    std::cout << "\t\t\t Receiver terminal: " << argv0 << "-r 1 -n <log(setsize)> -t <#thread> -p 1 -ip <ip:port>" << std::endl;
-    std::cout << "\t\t\t EchdSender Example: " << argv0 << "-r 0 -n 16 -t 1 -p 1 -ip 172.31.22.179:1212" << std::endl;
-
-
-    std::cout << "\t\t Unbalanced PSI: " << std::endl;
-    std::cout << "\t\t\t EchdSender terminal: " << argv0 << "-r 0 -n <log(largesize)> -N <smallsize> -t <#thread> -ip <ip:port>" << std::endl;
-    std::cout << "\t\t\t Receiver terminal: " << argv0 << "-r 1 -n <log(largesize)> -N <smallsize> -t <#thread> -ip <ip:port>" << std::endl;
-    std::cout << "\t\t\t EchdSender Example: " << argv0 << "-r 0 -n 20 -N 5000 -t 1 -ip 172.31.22.179:1212" << std::endl;
 
 
 }
@@ -205,8 +182,7 @@ void EchdReceiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
 
     std::cout << gTimer << std::endl;
 
-    std::cout << "recv.mIntersection  : " << recv.mIntersection.size() << std::endl;
-    std::cout << "expectedIntersection: " << expectedIntersection << std::endl;
+
     for (u64 i = 0; i < recv.mIntersection.size(); ++i)//thrds.size()
     {
         /*std::cout << "#id: " << recv.mIntersection[i] <<
@@ -323,7 +299,6 @@ void JL10Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
         recvChls[g].resetStats();
     }
     std::cout << "      Total Comm = " << string_format("%5.2f", (dataRecv + dataSent) / std::pow(2.0, 10)) << " KB\n";
-    std::cout << "recv.mIntersection vs exp : " << recv.mIntersection.size() << " vs " << expectedIntersection << std::endl;
 
     for (u64 i = 0; i < numThreads; ++i)
         recvChls[i].close();
@@ -347,7 +322,6 @@ void JL10Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 numTh
         recvChls[g].resetStats();
     }
     std::cout << "      Total Comm = " << string_format("%5.2f", (dataRecv + dataSent) / std::pow(2.0, 10)) << " KB\n";
-    std::cout << "recv.mIntersection vs exp : " << recv.mIntersection.size() << " vs " << expectedIntersection << std::endl;
 
     for (u64 i = 0; i < numThreads; ++i)
         recvChls[i].close();
@@ -454,7 +428,7 @@ void Mini19Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 num
         recvChls[g].resetStats();
     }
     std::cout << "      Total Comm = " << string_format("%5.2f", (dataRecv + dataSent) / std::pow(2.0, 10)) << " KB\n";
-    std::cout << "recv.mIntersection vs exp : " << recv.mIntersection.size() << " vs " << expectedIntersection << std::endl;
+
 
     for (u64 i = 0; i < numThreads; ++i)
         recvChls[i].close();
@@ -485,7 +459,7 @@ void Mini19Receiver(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64 num
             recvChls[g].resetStats();
         }
         std::cout << "      Total Comm = " << string_format("%5.2f", (dataRecv + dataSent) / std::pow(2.0, 10)) << " KB\n";
-        std::cout << "recv.mIntersection vs exp : " << recv.mIntersection.size() << " vs " << expectedIntersection << std::endl;
+
 
         for (u64 i = 0; i < numThreads; ++i)
             recvChls[i].close();
@@ -594,7 +568,6 @@ void Mini19Receiver_Ris(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64
         recvChls[g].resetStats();
     }
     std::cout << "      Total Comm = " << string_format("%5.2f", (dataRecv + dataSent) / std::pow(2.0, 10)) << " KB\n";
-    std::cout << "recv.mIntersection vs exp : " << recv.mIntersection.size() << " vs " << expectedIntersection << std::endl;
 
     for (u64 i = 0; i < numThreads; ++i)
         recvChls[i].close();
@@ -625,7 +598,6 @@ void Mini19Receiver_Ris(u64 mySetSize, u64 theirSetSize, string ipAddr_Port, u64
             recvChls[g].resetStats();
         }
         std::cout << "      Total Comm = " << string_format("%5.2f", (dataRecv + dataSent) / std::pow(2.0, 10)) << " KB\n";
-        std::cout << "recv.mIntersection vs exp : " << recv.mIntersection.size() << " vs " << expectedIntersection << std::endl;
 
         for (u64 i = 0; i < numThreads; ++i)
             recvChls[i].close();
@@ -1311,6 +1283,8 @@ void get_bin_size_list()
 //#include <sodium/crypto_core_ed25519.h>
 //#include <sodium/crypto_core_ristretto255.h>
 
+#include <cryptoTools/Crypto/Rijndael256.h>
+#define OC_ENABLE_AESNI ON
 
 int main(int argc, char** argv)
 {
@@ -1359,7 +1333,7 @@ int main(int argc, char** argv)
 
 
     string ipadrr = "localhost:1212";
-    u64 sendSetSize = 1 << 20, recvSetSize = 1 << 16, numThreads = 1, numBins = 4;
+    u64 sendSetSize = 1 << 8, recvSetSize = 1 << 8, numThreads = 1, numBins = 4;
 
     PRNG prng0(_mm_set_epi32(4253465, 3434565, 234435, 23987045));
 
@@ -1442,13 +1416,18 @@ int main(int argc, char** argv)
 #if 0
     std::thread thrd = std::thread([&]() {
         //EchdSender(sendSetSize, recvSetSize, ipadrr, numThreads);
-        JL10Sender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
-        //Mini19Sender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
+        //JL10Sender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
+    //    Mini19Sender(sendSetSize, recvSetSize, "localhost:1212", numThreads);
+       Mini19Sender_Ris(sendSetSize, recvSetSize, "localhost:1214", numBins, numThreads);
+
+
         });
 
     //EchdReceiver(recvSetSize, sendSetSize, ipadrr, numThreads);
-    JL10Receiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
+    //JL10Receiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
     //Mini19Receiver(recvSetSize, sendSetSize, "localhost:1212", numThreads);
+    Mini19Receiver_Ris(recvSetSize, sendSetSize, "localhost:1214", numBins, numThreads);
+
 
     thrd.join();
     return 0;
@@ -1460,14 +1439,14 @@ int main(int argc, char** argv)
 
         std::thread thrd = std::thread([&]() {
             //EchdSender(sendSetSize, recvSetSize, "localhost:1214", numThreads);
-            JL10Sender(sendSetSize, recvSetSize, "localhost:1214", numThreads);
-            //Mini19Sender(sendSetSize, recvSetSize, "localhost:1214", numBins, numThreads);
+            //JL10Sender(sendSetSize, recvSetSize, "localhost:1214", numThreads);
+            Mini19Sender(sendSetSize, recvSetSize, "localhost:1214", numBins, numThreads);
 
             });
 
         //EchdReceiver(recvSetSize, sendSetSize, "localhost:1214", numThreads);
-        JL10Receiver(recvSetSize, sendSetSize, "localhost:1214", numThreads);
-        //Mini19Receiver(recvSetSize, sendSetSize, "localhost:1214", numBins, numThreads);
+        //JL10Receiver(recvSetSize, sendSetSize, "localhost:1214", numThreads);
+        Mini19Receiver(recvSetSize, sendSetSize, "localhost:1214", numBins, numThreads);
 
         thrd.join();
 

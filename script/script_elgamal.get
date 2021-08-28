@@ -1,0 +1,23 @@
+/scratch/setup-network status >> elgamal_result
+
+echo "======================================================="  >> elgamal_result
+./bin/frontend.exe -e 0 -n 12 &  ./bin/frontend.exe -e 1 -n 12 >> elgamal_result
+sleep 10
+
+./bin/frontend.exe -e 0 -n 12 -m 8 &  ./bin/frontend.exe -e 1 -n 12 -m 8 >> elgamal_result
+sleep 10
+
+echo "======================================================="  >> elgamal_result
+./bin/frontend.exe -e 0 -n 16 &  ./bin/frontend.exe -e 1 -n 16 >> elgamal_result
+sleep 10
+
+./bin/frontend.exe -e 0 -n 16 -m 12 &  ./bin/frontend.exe -e 1 -n 16 -m 12 >> elgamal_result
+sleep 10
+
+
+echo "======================================================="  >> elgamal_result
+./bin/frontend.exe -e 0 -n 20 &  ./bin/frontend.exe -e 1 -n 20 >> elgamal_result
+sleep 10
+
+./bin/frontend.exe -e 0 -n 20 -m 16 &  ./bin/frontend.exe -e 1 -n 20 -m 16 >> elgamal_result
+sleep 10

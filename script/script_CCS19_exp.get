@@ -1,0 +1,27 @@
+echo "=====================8======================="  >> rs_exp_CCS19
+./bin/frontend.exe -n 8 >> rs_exp_CCS19
+
+echo "=====================10======================="  >> rs_exp_CCS19
+./bin/frontend.exe -n 10 >> rs_exp_CCS19
+
+echo "=====================12======================="  >> rs_exp_CCS19
+./bin/frontend.exe -n 12 >> rs_exp_CCS19
+
+echo "=====================14======================="  >> rs_exp_CCS19
+./bin/frontend.exe -n 14 >> rs_exp_CCS19
+
+echo "=====================16======================="  >> rs_exp_CCS19
+./bin/frontend.exe -n 16 >> rs_exp_CCS19
+
+echo "=====================18======================="  >> rs_exp_CCS19
+./bin/frontend.exe -n 18 >> rs_exp_CCS19
+
+echo "=====================20======================="  >> rs_exp_CCS19
+./bin/frontend.exe -n 20 >> rs_exp_CCS19
+
+echo "=====================22======================="  >> rs_exp_CCS19
+./bin/frontend.exe -n 22 >> rs_exp_CCS19
+
+echo "=====================24======================="  >> rs_exp_CCS19
+./bin/frontend.exe -n 24 >> rs_exp_CCS19
+
