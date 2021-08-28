@@ -25,9 +25,9 @@ NOTE: if you meet problem with NTL, try to do the following and read [`Building 
 ### Building the Project
 After cloning project from git, 
 ##### Windows:
-1. build cryptoTools,libOTe, and libOPRF projects in order.
-2. add argument for bOPRFmain project (for example: -u)
-3. run bOPRFmain project
+1. build cryptoTools,libOTe, libsodium, libPSI projects in order.
+2. add argument for frontend project (for example: -t)
+3. run frontend project
  
 ##### Linux:
 1. make (requirements: `CMake`, `Make`, `g++` or similar)
