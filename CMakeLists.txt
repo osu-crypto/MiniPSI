@@ -58,12 +58,9 @@ include_directories("${libOTe_Dirs}/cryptoTools")
 set(Miracl_Dirs "${libOTe_Dirs}/cryptoTools/thirdparty/linux/miracl/")
 include_directories("${Miracl_Dirs}") 
 
-# default location for miracl-gls
-set(Miracl_GLS_Dirs "${CMAKE_SOURCE_DIR}/libGLS254/Miracl")
-include_directories("${Miracl_GLS_Dirs}") 
-
 # default location for NTL
 set(NTL_Dirs "${CMAKE_SOURCE_DIR}/thirdparty/linux/ntl/")
+#set(NTL_Dirs "/home/bush/Desktop/Avishay/NTL/ntl-10.5.0/")
 include_directories("${NTL_Dirs}/include/")
 
 # default location for GMP
@@ -77,19 +74,15 @@ include_directories("${GF2X_Dirs}/include/")
 # default location for Boost
 set(BOOST_ROOT "${libOTe_Dirs}/cryptoTools/thirdparty/linux/boost/")
 
+# default location for SODIUM
+set(SODIUM_Dirs "${CMAKE_SOURCE_DIR}/libsodium-stable/")
+include_directories("${SODIUM_Dirs}/bin/include/")
 
 #############################################
 #               Build libPSI                 #
 #############################################
 add_subdirectory(libPSI)
 include_directories(libPSI)
-
-
-#############################################
-#               Build libGLS254                 #
-#############################################
-add_subdirectory(libGLS254)
-include_directories(libGLS254)
 
 
 #############################################
