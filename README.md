@@ -39,11 +39,11 @@ After cloning project from git,
 The database is generated randomly. The outputs include the average online/offline/total runtime that displayed on the screen and output.txt. 
 #### Flags:
    -t		unit test which computes PSI of 2 paries, each with set size 2^8 in semi-honest setting
-	-n		log of receiver's set size (e.g. n=8 => setsize =2^8)
+   -n		log of receiver's set size (e.g. n=8 => setsize =2^8)
    -m		log of sender's set size (e.g. n=8 => setsize =2^8)
-	-r	   evaluating DH-based PSI
-   -e	   evaluating JL10-based PSI
-	-i    evaluating our poly-based protocol
+   -r           evaluating DH-based PSI
+   -e	        evaluating JL10-based PSI
+   -i           evaluating our poly-based protocol
    
 #### Examples: 
 ##### 1. Unit test:
