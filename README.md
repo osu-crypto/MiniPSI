@@ -25,7 +25,7 @@ NOTE: if you meet problem with NTL, try to do the following and read [`Building 
 ### Building the Project
 After cloning project from git, 
 ##### Windows:
-1. build cryptoTools,libOTe, libsodium, libPSI projects in order.
+1. build cryptoTools, libOTe, libsodium, libPSI projects in order.
 2. add argument for frontend project (for example: -t)
 3. run frontend project
  
@@ -36,7 +36,6 @@ After cloning project from git,
 
 
 ## Running the code
-The database is generated randomly. The outputs include the average online/offline/total runtime that displayed on the screen and output.txt. 
 #### Flags:
    -t: unit test which computes PSI of 2 paries, each with set size 2^8 in semi-honest setting
    
