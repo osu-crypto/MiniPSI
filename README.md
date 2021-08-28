@@ -1,4 +1,4 @@
-# Sparse OT Extension & PSI
+#  Private Set Intersection for Small Sets
 This is the implementation of our [CCS 2021](http://dl.acm.org/citation.cfm?id=2978381)  paper: **Compact and Malicious Private Set Intersection for Small Sets**[[ePrint](https://eprint.iacr.org/2021)]. 
 
 
