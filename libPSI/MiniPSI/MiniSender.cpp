@@ -74,7 +74,7 @@ namespace osuCrypto
 
 
 		u64 n1n2MaskBits = (40 + log2(mTheirInputSize*mMyInputSize));
-		u64 n1n2MaskBytes = (n1n2MaskBits + 7) / 8;
+		u64 n1n2MaskBytes = 256 / 8; // (n1n2MaskBits + 7) / 8;
 		std::vector<u8> tempSend(g_k.sizeBytes());
 		memcpy(tempSend.data(), mG_K, g_k.sizeBytes());
 
@@ -318,7 +318,7 @@ namespace osuCrypto
 
 
 		u64 n1n2MaskBits = (40 + log2(mTheirInputSize*mMyInputSize));
-		u64 n1n2MaskBytes = (n1n2MaskBits + 7) / 8;
+		u64 n1n2MaskBytes = 256 / 8;// (n1n2MaskBits + 7) / 8;
 		simple.init(mTheirInputSize, recvMaxBinSize, recvNumDummies);
 
 #pragma endregion
@@ -595,7 +595,7 @@ namespace osuCrypto
 
 
 		u64 n1n2MaskBits = (40 + log2(mTheirInputSize*mMyInputSize));
-		u64 n1n2MaskBytes = (n1n2MaskBits + 7) / 8;
+		u64 n1n2MaskBytes = 256 / 8;// (n1n2MaskBits + 7) / 8;
 
 
 		//ZKDL
@@ -853,7 +853,7 @@ namespace osuCrypto
 
 
 		u64 n1n2MaskBits = (40 + log2(mTheirInputSize*mMyInputSize));
-		u64 n1n2MaskBytes = (n1n2MaskBits + 7) / 8;
+		u64 n1n2MaskBytes = 256 / 8; // (n1n2MaskBits + 7) / 8;
 		simple.initOneHash(mMyInputSize, mTheirInputSize, numBins, 40);
 
 #pragma endregion
