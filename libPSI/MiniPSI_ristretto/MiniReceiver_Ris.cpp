@@ -885,6 +885,14 @@ namespace osuCrypto
 				throw std::runtime_error("rt error at " LOCATION);
 			}
 
+			/*	SHA2 inputHasher;
+				u8 hashOut[SHA2::HashSize];
+				inputHasher.Reset();
+				inputHasher.Update(gk_sum);
+				inputHasher.Update(inputs[i]);
+				inputHasher.Final(gk_sum);
+				*/
+
 			block temp = toBlock((u8*)&gk_sum);
 			localMasks.emplace(*(u64*)&temp, std::pair<block, u64>(temp, i));
 		}

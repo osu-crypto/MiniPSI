@@ -182,7 +182,8 @@ namespace osuCrypto
 
 					//(g^ri)^k
 					crypto_scalarmult_ristretto255(yri_K, mK, point_ri);
-
+					
+					//SHA2
 					//std::cout <<idx << "s yri_K= " << yri_K << std::endl;
 
 					memcpy(sendBuff.data() + idx*n1n2MaskBytes, yri_K, n1n2MaskBytes);
@@ -418,6 +419,14 @@ namespace osuCrypto
 
 					//(g^ri)^k
 					crypto_scalarmult_ristretto255(yri_K, mK, point_ri);
+
+				/*	SHA2 inputHasher;  
+					u8 hashOut[SHA2::HashSize];
+					inputHasher.Reset();
+					inputHasher.Update(yri_K);
+					inputHasher.Update(inputs[idxItem]);
+				    inputHasher.Final(yri_K);
+					*/
 
 					//std::cout <<idx << "s yri_K= " << yri_K << std::endl;
 
