@@ -712,7 +712,7 @@ namespace osuCrypto
 		std::vector<std::thread> thrds(numThreads);
 		std::mutex mtx;
 
-		u64 n1n2MaskBits = 2*128; //(40 + log2(mTheirInputSize * mMyInputSize));
+		u64 n1n2MaskBits = 2*128; //(40 + log2(mTheirInputSize * mMyInputSize)); //for malicious
 		u64 n1n2MaskBytes = (n1n2MaskBits + 7) / 8;
 		//std::cout << n1n2MaskBytes << " r n1n2MaskBytes\n";
 
